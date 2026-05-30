@@ -237,70 +237,11 @@ def _split(obj, *, by=None, size=None, key=None, predicate=None):
     raise TypeError(f"split(): unsupported object type {type(obj)!r}")
 
 
-class _Checker:
-    def __init__(self, values, aggregator):
-        self.values = values
-        self.aggregator = aggregator
 
-    def _evaluate_comparison(self, op, other):
-        results = []
-        errors = []
-
-        for value in self.values:
-            try:
-                result = op(value, other)
-                results.append(result)
-            except Exception as e:
-                errors.append(e)
-        if len(errors) == len(self.values) and len(self.values) > 0:
-            raise errors[0]
-        return self.aggregator(results) if results else False
-
-    def __eq__(self, other):
-        return self._evaluate_comparison(lambda x, y: x == y, other)
-
-    def __ne__(self, other):
-        return self._evaluate_comparison(lambda x, y: x != y, other)
-
-    def __lt__(self, other):
-        return self._evaluate_comparison(lambda x, y: x < y, other)
-
-    def __le__(self, other):
-        return self._evaluate_comparison(lambda x, y: x <= y, other)
-
-    def __gt__(self, other):
-        return self._evaluate_comparison(lambda x, y: x > y, other)
-
-    def __ge__(self, other):
-        return self._evaluate_comparison(lambda x, y: x >= y, other)
-
-    def __contains__(self, item):
-        results = []
-        errors = []
-
-        for value in self.values:
-            try:
-                result = item in value
-                results.append(result)
-            except Exception as e:
-                errors.append(e)
-
-        if len(errors) == len(self.values) and len(self.values) > 0:
-            raise errors[0]
-
-        return self.aggregator(results) if results else False
-
-    def is_(self, other):
-        results = [x is other for x in self.values]
-        return self.aggregator(results)
-
-    def is_not(self, other):
-        results = [x is not other for x in self.values]
-        return self.aggregator(results)
 
 class Checker:
     def __init__(self, aggregator):
         self.aggregator = aggregator
 
     def __call__(self, *args):
-        return _Checker(args, self.aggregator)
+        return CheckerProxy(args, self.aggregator)

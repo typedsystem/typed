@@ -1,7 +1,7 @@
 from typed.mods.loader import lazy
 
 __imports__ = {
-    "typed.mods.types": [
+    "typed.mods.poly": [
 
     ]
 }

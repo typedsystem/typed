@@ -1,5 +1,7 @@
-from typed.mods.core import TYPESYSTEM, UNIVERSE, ABSTRACT
+from typed.mods.init import TYPESYSTEM, UNIVERSE, ABSTRACT
 from typed.mods.err import NotDefined
+
+UNIVERSE_1 = UNIVERSE(1)
 
 TYPE = UNIVERSE(0)
 TYPE.__name__ = "TYPE"
@@ -7,7 +9,7 @@ TYPE.__display__ = TYPE.__name__
 TYPE.__builtin__ = NotDefined
 
 META = ABSTRACT(0)
-META.__name__ = "TYPE"
+META.__name__ = "META"
 META.__display__ = META.__name__
 META.__builtin__ = NotDefined
 
@@ -42,14 +44,14 @@ class PARAMETRIC(TYPE):
     """
     def __isterm__(typ, trm):
         from typed.mods.types.func import Factory
-        from typed.mods.core import type
+        from typed.mods.typesystem import type
         if hasattr(type(trm), "__call__"):
             return type(trm).__iter__ in Factory
         return False
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "PARAMETRIC"
     __null__    = NotDefined
     __builtin__ = NotDefined
@@ -63,7 +65,7 @@ class NILL(TYPE):
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "NILL"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -76,14 +78,14 @@ class ANY(TYPE):
         return True
 
     def __issub__(typ, other):
-        return False
+        return True
 
     def __issup__(typ, other):
-        return True
+        return False
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "ANY"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -95,13 +97,12 @@ class INT(TYPE):
     """
 
     def __isterm__(typ, trm):
-        from typed.mods.types.base import Int
-        from typed.mods.core import type, issub
-        return isinstance(trm, int) or issub(type(trm), Int)
+        from typed.mods.typesystem import typeof, issub
+        return isinstance(trm, int) or issub(typeof(typeof(trm)), INT)
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "INT"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -113,13 +114,12 @@ class FLOAT(TYPE):
     """
 
     def __isterm__(typ, trm):
-        from typed.mods.types.base import Float
-        from typed.mods.core import type, issub
-        return isinstance(trm, float) or issub(type(trm), Float)
+        from typed.mods.typesystem import typeof, issub
+        return isinstance(trm, float) or issub(typeof(typeof(trm)), FLOAT)
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "FLOAT"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -131,13 +131,12 @@ class STR(TYPE):
     """
 
     def __isterm__(typ, trm):
-        from typed.mods.types.base import Str
-        from typed.mods.core import type, issub
-        return isinstance(trm, str) or issub(type(trm), Str)
+        from typed.mods.typesystem import typeof, issub
+        return isinstance(trm, str) or issub(typeof(typeof(trm)), STR)
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "STR"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -155,13 +154,12 @@ class BOOL(TYPE):
         yield False
 
     def __isterm__(typ, trm):
-        from typed.mods.types.base import Bool
-        from typed.mods.core import type, issub
-        return isinstance(trm, bool) or issub(type(trm), Bool)
+        from typed.mods.typesystem import typeof, issub
+        return isinstance(trm, bool) or issub(typeof(typeof(trm)), BOOL)
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "BOOL"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -174,13 +172,12 @@ class BYTES(TYPE):
 
     def __isterm__(typ, trm):
         from builtins import bytes, bytearray
-        from typed.mods.types.base import Bytes
-        from typed.mods.core import type, issub
-        return isinstance(trm, (bytes, bytearray)) or issub(type(trm), Bytes)
+        from typed.mods.typesystem import typeof, issub
+        return isinstance(trm, (bytes, bytearray)) or issub(typeof(typeof(trm)), BYTES)
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "BYTES"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -192,10 +189,9 @@ class TUPLE(TYPE):
     """
 
     def __isterm__(typ, trm):
-        from typed.mods.types.base import Tuple
-        from typed.mods.core import type, issub, isterm
+        from typed.mods.typesystem import typeof, issub, isterm
 
-        if not (isinstance(trm, tuple) or issub(type(trm), Tuple)):
+        if  not isinstance(trm, tuple) and not issub(typeof(typeof(trm)), TUPLE):
             return False
 
         types = getattr(typ, '__types__', None)
@@ -206,7 +202,7 @@ class TUPLE(TYPE):
         return True
 
     def __issub__(typ, other):
-        from typed.mods.core import issub
+        from typed.mods.typesystem import issub
         if type(other) is type(typ):
             typ_types = getattr(typ, '__types__', None)
             other_types = getattr(other, '__types__', None)
@@ -221,28 +217,28 @@ class TUPLE(TYPE):
         return False
 
     def __call__(typ, *types, typesystem=None):
-        from typed.mods.core import TYPESYSTEM, names
+        from typed.mods.typesystem import names
         if typesystem is None:
             typesystem = TYPESYSTEM
 
-        types_set = set(types)
+        types = set(types)
         if typesystem.is_restrictive:
-            for t in types_set:
+            for t in types:
                 if t not in typesystem.__types__:
                     raise TypeError(f"Type {t} not in typesystem.__types__")
 
-        name = f"Tuple({names(*types_set)})" if types_set else "Tuple"
+        name = f"Tuple({names(*types)})" if types else "Tuple"
 
         return TYPE(name, (typ,), {
             "__display__": name,
-            "__types__": types_set,
+            "__types__": types,
             "__typesystems__": [typesystem],
             "is_type": True
         })
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "TUPLE"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -254,10 +250,9 @@ class LIST(TYPE):
     """
 
     def __isterm__(typ, trm):
-        from typed.mods.types.base import List
-        from typed.mods.core import type, issub, isterm
+        from typed.mods.typesystem import typeof, issub, isterm
 
-        if not (isinstance(trm, list) or issub(type(trm), List)):
+        if not isinstance(trm, list) and not issub(typeof(typeof(trm)), LIST):
             return False
 
         types = getattr(typ, '__types__', None)
@@ -268,7 +263,7 @@ class LIST(TYPE):
         return True
 
     def __issub__(typ, other):
-        from typed.mods.core import issub
+        from typed.mods.typesystem import issub
         if type(other) is type(typ):
             typ_types = getattr(typ, '__types__', None)
             other_types = getattr(other, '__types__', None)
@@ -283,28 +278,28 @@ class LIST(TYPE):
         return False
 
     def __call__(typ, *types, typesystem=None):
-        from typed.mods.core import TYPESYSTEM, names
+        from typed.mods.typesystem import names
         if typesystem is None:
             typesystem = TYPESYSTEM
 
-        types_set = set(types)
+        types = set(types)
         if typesystem.is_restrictive:
-            for t in types_set:
+            for t in types:
                 if t not in typesystem.__types__:
                     raise TypeError(f"Type {t} not in typesystem.__types__")
 
-        name = f"List({names(*types_set)})" if types_set else "List"
+        name = f"List({names(*types)})" if types else "List"
 
         return type.__new__(typ.__class__, name, (typ,), {
             "__display__": name,
-            "__types__": types_set,
+            "__types__": types,
             "__typesystems__": [typesystem],
             "is_type": True
         })
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "LIST"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -315,11 +310,9 @@ class SET(TYPE):
     The metatype of sets.
     """
     def __isterm__(typ, trm):
-        from builtins import set as __Set__
-        from typed.mods.types.base import Set
-        from typed.mods.core import type, issub, isterm
+        from typed.mods.typesystem import typeof, issub, isterm
 
-        if not (isinstance(trm, __Set__) or issub(type(trm), Set)):
+        if not isinstance(trm, set) and not issub(typeof(typeof(trm)), SET):
             return False
 
         types = getattr(typ, '__types__', None)
@@ -330,7 +323,7 @@ class SET(TYPE):
         return True
 
     def __issub__(typ, other):
-        from typed.mods.core import issub
+        from typed.mods.typesystem import issub
         if type(other) is type(typ):
             typ_types = getattr(typ, '__types__', None)
             other_types = getattr(other, '__types__', None)
@@ -345,28 +338,28 @@ class SET(TYPE):
         return False
 
     def __call__(typ, *types, typesystem=None):
-        from typed.mods.core import TYPESYSTEM, names
+        from typed.mods.typesystem import names
         if typesystem is None:
             typesystem = TYPESYSTEM
 
-        types_set = set(types)
+        types = set(types)
         if typesystem.is_restrictive:
-            for t in types_set:
+            for t in types:
                 if t not in typesystem.__types__:
                     raise TypeError(f"Type {t} not in typesystem.__types__")
 
-        name = f"Set({names(*types_set)})" if types_set else "Set()"
+        name = f"Set({names(*types)})" if types else "Set()"
 
         return type.__new__(typ.__class__, name, (typ,), {
             "__display__": name,
-            "__types__": types_set,
+            "__types__": types,
             "__typesystems__": [typesystem],
             "is_type": True
         })
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "SET"
     __null__ = NotDefined
     __builtin__ = NotDefined
@@ -377,11 +370,9 @@ class DICT(TYPE):
     The metatype of dictionaries.
     """
     def __isterm__(typ, trm):
-        from builtins import dict as __Dict__
-        from typed.mods.types.base import Dict
-        from typed.mods.core import type, issub, isterm
+        from typed.mods.typesystem import typeof, issub, isterm
 
-        if not (isinstance(trm, __Dict__) or issub(type(trm), Dict)):
+        if not isinstance(trm, dict) and not issub(typeof(typeof(trm)), DICT):
             return False
 
         types = getattr(typ, "__types__", None)
@@ -400,7 +391,7 @@ class DICT(TYPE):
         return True
 
     def __issub__(typ, other):
-        from typed.mods.core import issub
+        from typed.mods.typesystem import issub
         if type(other) is type(typ):
             typ_types = getattr(typ, '__types__', None)
             other_types = getattr(other, '__types__', None)
@@ -425,26 +416,26 @@ class DICT(TYPE):
         return False
 
     def __call__(typ, *types, key=None, typesystem=None):
-        from typed.mods.core import TYPESYSTEM, names, name
+        from typed.mods.typesystem import names, nameof
         if typesystem is None:
             typesystem = TYPESYSTEM
 
-        types_set = set(types)
+        types = set(types)
         if typesystem.is_restrictive:
-            for t in types_set:
+            for t in types:
                 if t not in typesystem.__types__:
                     raise TypeError(f"Type {t} not in typesystem.__types__")
             if key is not None and key not in typesystem.__types__:
                 raise TypeError(f"Type {key} not in typesystem.__types__")
 
         if key is not None:
-            display_name = f"Dict({names(*types_set)}, key={name(key)})" if types_set else f"Dict(key={name(key)})"
+            name = f"Dict({names(*types)}, key={nameof(key)})" if types else f"Dict(key={nameof(key)})"
         else:
-            display_name = f"Dict({names(*types_set)})" if types_set else "Dict()"
+            name = f"Dict({names(*types)})" if types else "Dict"
 
-        return TYPE(typ.__class__, display_name, (typ,), {
-            "__display__": display_name,
-            "__types__": types_set,
+        return TYPE(typ.__class__, name, (typ,), {
+            "__display__": name,
+            "__types__": types,
             "__key_type__": key,
             "__typesystems__": [typesystem],
             "is_type": True
@@ -452,11 +443,10 @@ class DICT(TYPE):
 
     is_meta = True
     __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
+    __type__ = UNIVERSE_1
     __display__ = "DICT"
     __null__ = NotDefined
     __builtin__ = NotDefined
-
 
 TYPESYSTEM.add(
     EMPTY, PARAMETRIC, ANY,

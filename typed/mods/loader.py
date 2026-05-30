@@ -85,16 +85,16 @@ def lazy(target):
         raise TypeError("lazy() expects a dict (module-level setup) or str (library proxy).")
 
 
-def __typed__(enabled=True, **configs):
+def __typed__(enabled=True, **confs):
     from sys import _getframe
-    from typed.mods.config import config
+    from typed.mods.init import conf
 
-    config.enabled = enabled
-    for key, value in configs.items():
-        if hasattr(config, key):
-            setattr(config, key, value)
+    conf.enabled = enabled
+    for key, value in confs.items():
+        if hasattr(conf, key):
+            setattr(conf, key, value)
         else:
-            raise ValueError(f"Unknown typed configuration: {key}")
+            raise ValueError(f"Unknown typed confuration: {key}")
 
     caller_frame = _getframe(1)
     caller_globals = caller_frame.f_globals

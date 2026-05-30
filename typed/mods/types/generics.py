@@ -3,52 +3,15 @@ from functools import lru_cache as cache
 @cache
 def Union(*types, typesystem=None):
     """
-    Build the 'union' of types:
-        > an object 'p' of 'Union(X, Y, ...)'
-        > is an object of some of 'X, Y, ...'
+    Build the 'union' type.
+
+    : types: Tuple
+    : typesystem: __TYPESYSTEM__
+
+    : isterm(x, Union(*types)) iff isterm(x, *types, checker=some)
+    : issub(T, Union(*types))  iff issub(T, *types, checker=some)
+    : builtin(Union(*types))
     """
-    if not types:
-        from typed.mods.types.base import Nill
-        from typed.mods.core import typeof
-        return Nill
-
-    if typesystem is None:
-        from typed.mods.core import TYPESYSTEM
-        typesystem = TYPESYSTEM
-
-    if typesystem.is_restrictive:
-        if not all(typeof(t, typesystem) in typesystem.__universes__ for t in types):
-            from typed.mods.err import TypeSystemErr
-            raise TypeSystemErr(
-                types=[t for t in types if typeof(t, typesystem) not in typesystem.__universes__],
-                typesystem=typesystem
-            )
-
-    if len(types) == 1:
-        return types[0]
-
-    from typed.mods.meta.base import TYPE
-    class UNION(TYPE):
-        def __isterm__(cls, instance):
-            return any(isinstance(instance, t) for t in cls.__types__)
-
-        def __subclasscheck__(cls, subclass):
-            if subclass is cls:
-                return True
-            if hasattr(subclass, '__types__'):
-                return all(any(issubclass(st, ct) for ct in cls.__types__)
-                           for st in subclass.__types__)
-            return any(issubclass(subclass, t) for t in cls.__types__)
-
-    class_name = f"Union({_name_list(*types)})"
-
-    __null__ = _null_from_list(*types)
-
-    return UNION(class_name, (), {
-        '__display__': class_name,
-        '__types__': types,
-        '__null__': __null__,
-    })
 
 @cache
 def Prod(*args):
@@ -117,22 +80,7 @@ def Prod(*args):
                 )
 
     from typed.mods.meta.base import _TYPE_
-    from typed.mods.types.base import Tuple
-    class PROD(_TYPE_):
-        def __instancecheck__(cls, instance):
-            if not isinstance(instance, Tuple):
-                return False
-            if len(instance) != len(cls.__types__):
-                return False
-            return all(isinstance(x, t) for x, t in zip(instance, cls.__types__))
-
-        def __subclasscheck__(cls, subclass):
-            from typed.mods.types.base import Any
-            if subclass is cls or subclass is Any or issubclass(subclass, tuple):
-                return True
-            if hasattr(subclass, '__bases__') and Tuple in subclass.__bases__ and hasattr(subclass, '__types__') and len(subclass.__types__) == len(cls.__types__):
-                return all(issubclass(st, ct) for st, ct in zip(subclass.__types__, cls.__types__))
-            return False
+    from typed.mods.types.base import Tuple 
 
     def prod_new(cls, *args):
         if len(args) == 1 and isinstance(args[0], Tuple):
@@ -860,3 +808,64 @@ def Maybe(*types):
         "__display__": class_name,
         "__null__": _null_from_list(*types)
     })
+
+@cache
+def ATTR(*attrs):
+    for attr in attrs:
+        if not isinstance(attr, Str):
+            raise TypeError("Attributes must be strings.")
+
+    class _ATTR_(_TYPE_):
+        def __init__(cls, name, bases, dct, attrs=None):
+            super().__init__(name, bases, dct)
+            if attrs:
+                setattr(cls, '__attrs__', attrs)
+
+        def __instancecheck__(cls, instance):
+            attrs = getattr(cls, '__attrs__', None)
+            if attrs:
+                return all(hasattr(instance, attr) for attr in attrs)
+            return False
+
+    class_name = f'ATTR({_names(*attrs)})'
+
+    from typed.mods.types.base import Nill
+    return _ATTR_(class_name, (TYPE,), {
+        '__attrs__': attrs,
+        "__null__": Nill,
+        "__display__": class_name
+    })
+
+@cache
+def SUBTYPES(*types):
+    """
+    Build the metatype of subtypes of a given types.
+        > An object of `SUBTYPE(X, Y, ...)`
+        > is a type T such that issubclass(T, K) is True
+        > for some K in (X, Y, ...)
+    """
+    if not types:
+        from typed.mods.types.base import Nill
+        return Nill
+    for typ in types:
+        if not isinstance(typ, TYPE):
+            raise TypeError(
+                "Wrong type in SUBTYPES metafactory: \n"
+                f" ==> {_name(typ)}: has unexpected type\n"
+                f"     [expected_type] a subtype of TYPE\n"
+                f"     [received_type] {_name(type(typ))}"
+            )
+
+    class _SUBTYPES_(_TYPE_):
+        def __instancecheck__(cls, instance):
+            return any(issubclass(instance, typ) for typ in types)
+
+        def __subclasscheck__(cls, subclass):
+            return issubclass(subclass, cls)
+
+    class_name = f"SUBTYPES({_names(*types)})"
+    return _SUBTYPES_(class_name, (), {
+        "__display__": class_name,
+        "__null__": Nill
+    })
+SUB = SUBTYPES

@@ -4,11 +4,45 @@ from typed.helper.poly import (
     _append,
     _join,
     _split,
-    Checker
 )
 
-some = Checker(any)
-every = Checker(all)
+def null(obj: object) -> object:
+    """
+    The 'null' parametric polymorphism.
+    """
+    from typed.mods.err import NotDefined
+    return getattr(obj, "__null__", NotDefined)
+
+def display(obj: object) -> str:
+    """
+    The 'display' parametric polymorphism.
+    """
+    from typed.mods.err import NotDefined
+    return getattr(obj, "__display__", NotDefined)
+
+def builtin(type: type) -> type:
+    """
+    The 'builtin' parametric polymorphism.
+    """
+    from typed.mods.err import NotDefined
+    return getattr(type, "__builtin__", NotDefined)
+
+def terms(t: type) -> set:
+    """
+    The 'terms' polymorphism.
+    """
+    __terms__ = getattr(t, "__terms__", None)
+    if __terms__ is not None:
+        return set(__terms__)
+    return
+
+def extends(typ: type, *others: tuple[type]) -> bool:
+    for other in others:
+        mro = getattr(other, "__mro__", None)
+        if mro is not None:
+            if any(base is typ for base in mro):
+                return True
+    return False
 
 def append(container, *args, **kwargs):
     if any(
