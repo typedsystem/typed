@@ -1,49 +1,28 @@
 class __CONF__(type): pass
 
 class ErrConf(metaclass=__CONF__):
-    def __init__(
-        self,
-        multiline: bool=True
-    ):
+    def __init__(self, multiline: bool=True):
         from typed.mods.check import check
         check.isinstance(multiline, bool)
-
         self.multiline=multiline
 
 class TypeSystemConf(metaclass=__CONF__):
-    def __init__(
-        self,
-        entity:      type=None,
-        universe:    type=None,
-        abstract:    type=None,
-        quantifiers: type=None,
-        typemap:     dict=None,
-        is_strict:   bool=True
-    ):
-        if entity      is None:
+    def __init__(self, entity: type=None, sameness: type=None):
+        if entity is None:
             from typed.mods.init import TYPESYSTEM
             entity = TYPESYSTEM
-        if universe    is None: universe    = entity.__universe__
-        if abstract    is None: abstract    = entity.__abstract__
-        if quantifiers is None: quantifiers = entity.__members__.get("quantifiers", set())
-        if typemap     is None: typemap     = entity.__typemap__
+        if sameness is None:
+            from typed.mods.init import SAMENESS
+            sameness = SAMENESS
 
-        from typed.mods.typesystem import __TYPESYSTEM__, __UNIVERSE__, __ABSTRACT__
+        from typed.mods.typesystem import __TYPESYSTEM__, __SAMENESS__
         from typed.mods.check import check
 
-        check.isinstance(entity,   __TYPESYSTEM__)
-        check.isinstance(universe, __UNIVERSE__)
-        check.isinstance(abstract, __ABSTRACT__)
-        check.isinstance(quantifiers, set)
-        check.isinstance(typemap, dict)
-        check.isinstance(is_strict, bool)
+        check.isinstance(entity, __TYPESYSTEM__)
+        check.isinstance(entity, __SAMENESS__)
 
         self.entity = entity
-        self.universe = universe
-        self.abstract = abstract
-        self.quantifiers = quantifiers
-        self.typemap = typemap
-        self.is_strict = is_strict
+        self.sameness = sameness
 
 class Conf(metaclass=__CONF__):
     def __init__(

@@ -1,4 +1,4 @@
-def notify(message, notifier=None, __multiline__=False, **kwargs):
+def notify(message, __notifier__=None, __multiline__=False, **kwargs) -> None:
     full_message = str(message)
 
     filtered_kwargs = {k: str(v) for k, v in kwargs.items() if v is not NotDefined}
@@ -13,34 +13,53 @@ def notify(message, notifier=None, __multiline__=False, **kwargs):
             parts = [f"{k}={v!r}" for k, v in filtered_kwargs.items()]
             full_message += " " + ", ".join(parts) + "."
 
-    if notifier is NotDefined:
+    if __notifier__ is None:
         return full_message
 
-    if isinstance(notifier, type) and issubclass(notifier, BaseException):
-        raise notifier(full_message)
-
-    notifier(full_message)
+    __notifier__(full_message)
     return None
 
-class Err(BaseException):
+class ERR(type):
+    def __isterm__(typ, trm):
+        from typed.mods.typesystem import issub, typeof
+        return issub(typeof(trm), ERR) and issub(trm, Err)
+
+class Err(BaseException, metaclass=ERR):
     __display__ = "Err"
 
     def __init__(self, message, **kwargs):
-        __message__ = notify(message=message, **kwargs)
+        __message__ = notify(message=message,  **kwargs)
         super().__init__(__message__)
 
-class NotDefined(Err):
+def iserr(*errs: tuple, quantifier=None) -> bool:
+    if quantifier is None:
+        from typed.mods.init import some
+        quantifier = some
+    from typed.mods.logic import Quantifier
+    if not isinstance(quantifier, Quantifier):
+        raise TypeErr(
+            term=quantifier,
+            expected=Quantifier,
+        )
+    from typed.mods.typesystem import isterm
+    return quantifier(isterm(err, ERR) for err in errs)
+
+class NotDefined(Err, metaclass=ERR):
     __display__ = "NotDefined"
 
-class Anonymous(Err):
+def explode(err: ERR, message=NotDefined, **kwargs: dict) -> None:
+    return notify(message=message, __notifier__=err, **kwargs)
+
+class Anonymous(Err, metaclass=ERR):
     __display__ = "Anonymous"
 
-class MissingErr(Err):
+class MissingErr(Err, metaclass=ERR):
     __display__ = "MissingErr"
 
     def __init__(
         self,
-        message='Missing something.',
+        message='Missing something',
+        details=NotDefined,
         where=NotDefined,
         what=NotDefined,
         __multiline__=True,
@@ -52,22 +71,51 @@ class MissingErr(Err):
         if what is NotDefined:
             raise MissingErr("Missing 'what' in 'MissingErr'.")
 
-        from typed.mods.core import name
+        from typed.mods.typesystem import nameof
 
         if isinstance(what, (tuple, list, set)):
-            what = tuple(name(x) for x in what)
+            what = tuple(nameof(x) for x in what)
         else:
-            what = name(what)
+            what = nameof(what)
 
         super().__init__(
             message=message,
-            where=name(where),
+            details=details,
+            where=nameof(where),
             what=what,
             **kwargs
         )
 
-class FuncErr(Err):
+class NotSatisfied(Err, metaclass=ERR):
+    __display__ = "NotSatisfied"
 
+    def __init__(
+        self,
+        message="Condition not safiesfied",
+        details=NotDefined,
+        condition=NotDefined,
+        args=NotDefined,
+        __multiline__=True,
+        **kwargs
+    ):
+        if condition is NotDefined:
+            raise MissingErr("Missing 'condition' in 'MissingErr'.")
+
+        if args is NotDefined:
+            raise MissingErr("Missing 'args' in 'MissingErr'.")
+
+        from typed.mods.typesystem import nameof
+
+        super().__init__(
+            message=message,
+            details=details,
+            condition=nameof(condition),
+            args=tuple(nameof(arg) for arg in args) if isinstance(args, tuple) else nameof(args),
+            __multiline__=__multiline__,
+            **kwargs
+        )
+
+class FuncErr(Err, metaclass=ERR):
     __display__ = "FuncErr"
 
     def __init__(
@@ -84,17 +132,16 @@ class FuncErr(Err):
                 what=func
             )
 
-        from typed.mods.core import name
-        func = name(func)
+        from typed.mods.typesystem import nameof
 
         super().__init__(
             message=message,
             details=details,
-            func=func,
+            func=nameof(func),
             **kwargs
         )
 
-class HintErr(Err):
+class HintErr(Err, metaclass=ERR):
     __display__ = "HintErr"
 
     def __init__(
@@ -103,22 +150,36 @@ class HintErr(Err):
         details=NotDefined,
         func=NotDefined,
         term=NotDefined,
+        arg=NotDefined,
         args=NotDefined,
         __multiline__=True,
         **kwargs
     ):
-        if term is NotDefined:
-            raise ValueError("Missing 'term' in 'HintErr'.")
+        if all(x is NotDefined for x in (term, func)):
+            raise MissingErr(
+                where=HintErr,
+                what=(term, func)
+            )
 
-        from typed.mods.core import name
-        term = name(term)
+        from typed.mods.typesystem import nameof
+
+        if term is not NotDefined:
+            term = nameof(term)
+
+        if func is not NotDefined:
+            func = nameof(func)
 
         if args is not NotDefined:
             if isinstance(args, tuple):
-                args = tuple(name(a) for a in args)
+                args = tuple(nameof(a) for a in args)
             else:
-                args = name(args)
+                args = nameof(args)
             kwargs["args"] = args
+        else:
+            args = []
+
+        if arg is not NotDefined:
+            args.append(arg)
 
         super().__init__(
             message=message,
@@ -130,7 +191,7 @@ class HintErr(Err):
             **kwargs
         )
 
-class TypeErr(Err):
+class TypeErr(Err, metaclass=ERR):
     __display__ = "TypeErr"
 
     def __init__(
@@ -142,141 +203,179 @@ class TypeErr(Err):
         args=NotDefined,
         received=NotDefined,
         expected=NotDefined,
+        quantifier=NotDefined,
+        __multiline__=True,
         **kwargs
     ):
         if term is NotDefined:
-            raise ValueError("Missing 'term' in 'TypeErr'.")
-        if received is NotDefined:
-            raise ValueError("Missing 'received' in 'TypeErr'")
+            raise MissingErr(
+                where=TypeErr,
+                what=term
+            )
         if expected is NotDefined:
-            raise ValueError("Missing 'expected' in 'TypeErr'")
+            raise MissingErr(
+                where=TypeErr,
+                what=expected
+            )
 
-        from typed.mods.core import name, type
+        from typed.mods.typesystem import nameof, typeof
 
-        term_type = type(term)
+        term_type = typeof(term)
         term_typesystems = getattr(term_type, "__typesystems__", [])
 
+        if received is NotDefined:
+            received = term_type
+
         if not term_typesystems:
-            raise AttributeError(f"The term '{name(term)}' has a type '{name(term_type)}' with no defined typesystem.")
+            raise MissingErr(
+                where=term_type,
+                what="__typesystems__"
+            )
 
         if args or arg is not NotDefined:
             message = "Wrong argument type identified"
-            args = [name(x) for x in args]
+            args = [nameof(x) for x in args]
             if arg is not NotDefined:
-                args.extend(name(arg))
+                args.extend(nameof(arg))
 
             if not isinstance(received, (tuple, set, list)) or len(received) != len(args):
                 raise ValueError("'received' must be an iterable of the same length as 'args'.")
             if not isinstance(expected, (tuple, set, list)) or len(expected) != len(args):
                 raise ValueError("'expected' must be an iterable of the same length as 'args'.")
 
-            received = tuple(name(r) for r in received)
-            expected = tuple(name(e) for e in expected)
+            received = tuple(nameof(r) for r in received)
+            expected = tuple(nameof(e) for e in expected)
 
             if len(args) == 1:
                 args = args[0]
                 received = received[0]
                 expected = expected[0]
 
-        term = name(term)
-        typesystems = ", ".join(name(t) for t in term_typesystems)
-
-        kwargs.setdefault("__multiline__", True)
+        term = nameof(term)
+        typesystems = ", ".join(nameof(t) for t in term_typesystems)
 
         super().__init__(
             message=message,
+            details=details,
             term=term,
             args=args,
             received=received,
             expected=expected,
+            quantifier=quantifier,
+            __multiline__=__multiline__,
             **kwargs
         )
 
-class DomErr(TypeErr):
+class DomErr(FuncErr, metaclass=ERR):
     __display__ = "DomErr"
 
     def __init__(
         self,
         message="Wrong domain type identified",
-        term=NotDefined,
+        details=NotDefined,
+        func=NotDefined,
         arg=NotDefined,
         args=NotDefined,
         received=NotDefined,
         expected=NotDefined,
+        quantifier=NotDefined,
+        __multiline__=True,
         **kwargs
     ):
         super().__init__(
             message=message,
-            term=term,
+            details=details,
+            func=func,
             arg=arg,
             args=args,
             received=received,
             expected=expected,
+            quantifier=quantifier,
+            __multiline__=__multiline__,
             **kwargs
         )
 
-class CodErr(TypeErr):
+class CodErr(FuncErr, metaclass=ERR):
     __display__ = "CodErr"
     def __init__(
         self,
         message="Wrong codomain type identified",
-        term=NotDefined,
+        details=NotDefined,
+        func=NotDefined,
         arg=NotDefined,
         args=NotDefined,
         received=NotDefined,
         expected=NotDefined,
+        quantifier=NotDefined,
+        __multiline__=True,
         **kwargs
     ):
         super().__init__(
             message=message, 
-            term=term, 
+            details=details,
+            func=func, 
             arg=arg,
             args=args, 
             received=received, 
-            expected=expected, 
+            expected=expected,
+            quantifier=quantifier,
+            __multiline__=__multiline__,
             **kwargs
         )
 
-class TypeSystemErr(Err):
+class TypeSystemErr(Err, metaclass=ERR):
     __display__ = "TypeSystemErr"
 
     def __init__(
         self,
         message="Type is not in typesystem",
+        details=NotDefined,
         type=NotDefined,
         types=NotDefined,
-        typesystem=NotDefined
+        typesystem=NotDefined,
+        typesystems=NotDefined,
+        quantifier=NotDefined,
+        __multiline__=True,
     ):
-        if typesystem is NotDefined:
-            from typed.mods.init import TYPESYSTEM
-            typesystem = TYPESYSTEM
+        if all(x is NotDefined for x in (typesystem, typesystems)):
+            raise MissingErr(
+                where=TypeSystemErr,
+                what=(typesystem, typesystems)
+            )
 
-        if type is NotDefined and types is NotDefined:
-            raise ValueError("Missing 'type' in 'TypeSystemErr'.")
+        if all(x is NotDefined for x in (type, types)):
+            raise MissingErr(
+                where=TypeSystemErr,
+                what=(type, types)
+            )
 
-        from typed.mods.core import name
+        from typed.mods.typesystem import nameof
+
         if types is not NotDefined:
             if not isinstance(types, (tuple, list, set)):
                 raise ValueError("'types' must be an iterable.")
-
-            types = [name(t) for t in types]
+            types = [nameof(t) for t in types]
         else:
             types = []
 
         if type is not NotDefined:
-            types.append(name(type))
+            types.append(nameof(type))
 
         super().__init__(
             message=message,
+            details=details,
             types=types,
-            typesystem=typesystem            
+            typesystems=typesystems,
+            quantifier=quantifier,
+            __multiline__=__multiline__
         )
 
-class ConfErr(Err):
+class ConfErr(Err, metaclass=ERR):
     __display__ = "ConfErr"
     def __init__(
         self,
         message='Wrong type in config',
+        details=NotDefined,
         conf=NotDefined,
         arg=NotDefined,
         received=NotDefined,
@@ -293,6 +392,7 @@ class ConfErr(Err):
 
         super().__init__(
             message=message,
+            details=details,
             conf=conf,
             arg=arg,
             received=received,

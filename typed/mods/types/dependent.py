@@ -1,6 +1,90 @@
-from functools import lru_cache as cache
+from typed.mods.meta.dependent import TUPLE, LIST, SET, DICT
 
-@cache
+class Tuple(metaclass=TUPLE):
+    """
+    The dependent type of tuples.
+
+    : kindof(Tuple)    is  dependent
+    : typeof(Tuple)    is  TUPLE
+    : isterm(x, Tuple) iff issub(typeof(x), Tuple)
+    : nullof(Tuple)    is  tuple()
+    : builtin(Tuple)   is  tuple
+    """
+    from typed.mods.init import TYPESYSTEM
+
+    is_type         = True
+    is_dependent    = True
+    __typesystems__ = [TYPESYSTEM]
+    __display__     = "Tuple"
+    __null__        = tuple()
+    __builtin__     = tuple
+
+
+class List(metaclass=LIST):
+    """
+    The dependent type of lists.
+
+    : kindof(List)    is  dependent
+    : typeof(List)    is  LIST
+    : isterm(x, List) iff issub(typeof(x), List)
+    : nullof(List)    is  []
+    : builtin(List)   is  list
+    """
+    from typed.mods.init import TYPESYSTEM
+
+    is_type         = True
+    is_dependent    = True
+    __typesystems__ = [TYPESYSTEM]
+    __display__     = "List"
+    __null__        = []
+    __builtin__     = list
+
+
+class Set(metaclass=SET):
+    """
+    The dependent type of sets.
+
+    : kindof(Set)    is  dependent
+    : typeof(Set)    is  SET
+    : isterm(x, Set) iff issub(typeof(x), Set)
+    : nullof(Set)    is  set()
+    : builtin(Set)   is  set
+    """
+    from typed.mods.init import TYPESYSTEM
+
+    is_type         = True
+    is_dependent    = True
+    __typesystems__ = [TYPESYSTEM]
+    __display__     = "Set"
+    __null__        = set()
+    __builtin__     = set
+
+class Dict(metaclass=DICT):
+    """
+    The dependent type of dicts.
+
+    : kindof(Dict)    is dependent
+    : typeof(Dict)    is DICT
+    : isterm(x, Dict) iff issub(typeof(x), Dict)
+    : nullof(Dict)    is {}
+    : builtin(Dict)   is dict
+    """
+    from typed.mods.init import TYPESYSTEM
+
+    is_type         = True
+    is_dependent   = True
+    __typesystems__ = [TYPESYSTEM]
+    __display__     = "Dict"
+    __null__        = {}
+    __builtin__     = dict
+
+    def __getitem__(trm, key):
+        return trm.__dict__[key]
+    def __setitem__(trm, key, value):
+        trm.__dict__[key] = value
+    def __contains__(trm, key):
+        return key in trm.__dict__
+
 def Union(*types, typesystem=None):
     """
     Build the 'union' type.
@@ -13,7 +97,6 @@ def Union(*types, typesystem=None):
     : builtin(Union(*types))
     """
 
-@cache
 def Prod(*args):
     """
     Build the 'product' of types:
@@ -94,106 +177,6 @@ def Prod(*args):
         '__types__': types,
         '__new__': prod_new,
         "__null__": tuple(_null(t) for t in types)
-    })
-
-@cache
-def Unprod(*args):
-    ###
-    # NEED TO BE REVIEWED
-    ###
-    """
-    Build the 'unordered product' of types:
-        > the objects of 'Unprod(X, Y, ...)'
-        > are the tuples '(x, y, ...)' such that:
-            1. 'len(x, y, ...) == len(X, Y, ...)'
-            2. 'x, y, ... are in Union(X, Y, ...)'
-    Can be applied to typed functions:
-        > 'Unprod(f, g, ...): Unprod(f.domain, g.domain, ...) -> Unprod(f.codomain, g.codomain, ...)'
-    """
-    from typed.mods.types.base import TYPE, ABSTRACT, Tuple
-    from typed.mods.types.func import Typed
-    T = (Typed, TYPE, ABSTRACT)
-    if not args:
-        from typed.mods.types.base import Nill
-        return Nill
-    if all((not isinstance(f, (TYPE, ABSTRACT))) and isinstance(f, Typed) for f in args):
-        dom_types = [Prod(*f.domain) if len(f.domain) > 1 else f.domain[0] for f in args]
-        cod_types = [f.codomain for f in args]
-        domain_type = Unprod(*dom_types)
-        codomain_type = Unprod(*cod_types)
-
-        def uprod_mapper(*xs):
-            if len(xs) == 1 and isinstance(xs[0], Tuple):
-                xs = xs[0]
-            outs = []
-            for f, x in zip(args, xs):
-                if len(f.domain) > 1:
-                    outs.append(f(*x))
-                else:
-                    outs.append(f(x))
-            return codomain_type(*outs)
-
-        uprod_mapper.__annotations__ = {'xs': domain_type, 'return': codomain_type}
-        uprod_mapper._composed_domain_hint = (domain_type,)
-        uprod_mapper._composed_codomain_hint = codomain_type
-        uprod_mapper.__name__ = f"UProd({_name_list(*args)})"
-        return Typed(uprod_mapper)
-
-    elif all(isinstance(t, T) for t in args):
-        for t in args:
-            if isinstance(t, Typed):
-                raise TypeError(
-                    "Mixed types in Unprod factory:\n"
-                    f" ==> '{_name(t)}': it is a typed function."
-                     "     [received_type] subtype of Typed\n"
-                     "     [expected_type] subtype of TYPE or __UNIVERSE__"
-                )
-    else:
-        for t in args:
-            if not isinstance(t, T):
-                raise TypeError(
-                    "Wrong type in Unprod factory: \n"
-                    f" ==> {_name(t)}: has unexpected type\n"
-                     "     [expected_type] TYPE, __UNIVERSE__ or Typed\n"
-                    f"     [received_type] {_name(TYPE(t))}"
-                )
-
-    from typed.mods.meta.base import _TYPE_
-    class UNPROD(_TYPE_):
-        def __instancecheck__(cls, instance):
-            if not isinstance(instance, Tuple):
-                return False
-            if len(instance) != len(cls.__types__):
-                return False
-            type_counts = {typ: cls.__types__.count(typ) for typ in cls.__types__}
-            for elem in instance:
-                for typ in type_counts:
-                    if isinstance(elem, typ) and type_counts[typ] > 0:
-                        type_counts[typ] -= 1
-                        break
-                else:
-                    return False
-            return all(count == 0 for count in type_counts.values())
-
-        def check(self, instance):
-            from typed.mods.types.base import Set
-            if not isinstance(instance, Set):
-                return False
-            return all(any(isinstance(elem, typ) for typ in self.__types__) for elem in instance)
-
-        def __subclasscheck__(cls, subclass):
-            from typed.mods.types.base import Any, Tuple
-            if subclass is cls or subclass is Any or issubclass(subclass, Tuple):
-                return True
-            if hasattr(subclass, '__bases__') and Tuple in subclass.__bases__ and hasattr(subclass, '__types__') and len(subclass.__types__) == len(cls.__types__):
-                return all(any(issubclass(st, ct) for ct in cls.__types__) for st in subclass.__types__)
-            return False
-
-    class_name = f"Unprod({_name_list(*args)})"
-    return UNPROD(class_name, (Tuple,), {
-        "__display__": class_name,
-        '__types__': args,
-        "__null__": tuple(_null(t) for t in args)
     })
 
 @cache

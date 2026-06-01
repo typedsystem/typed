@@ -1,31 +1,12 @@
-from builtins import callable as __Callable__
-from typed.mods.err import NotDefined
-from typed.mods.core import type, TYPESYSTEM
-from typed.helper.func  import (
-    _unwrap,
-    _is_composable,
-    _is_domain_hinted,
-    _is_codomain_hinted,
-    _hinted_domain,
-    _hinted_codomain,
-    _check_domain,
-    _check_codomain,
-    
-)
-from typed.mods.helper.general import _name
 from typed.mods.meta.func import (
     CALLABLE,
-    GENERATOR,
     LAMBDA,
     CLASS,
-    BOUND_METHOD,
-    UNBOUND_METHOD,
     METHOD,
     FUNC,
     DOM_FUNC,
     COD_FUNC,
     COMP_FUNC,
-    PARTIAL,
     DOM_HINTED,
     COD_HINTED,
     HINTED,
@@ -41,17 +22,22 @@ from typed.mods.meta.func import (
 
 class Callable(metaclass=CALLABLE):
     """
+    The type of callables.
+
+    : typeof(Callable)    is  CALLABLE
+    : isterm(f, Callable) iff issub(typeof(f), Callable)
+    : nullof(Callable)    is  nill
+
     """
     def __init__(self, func):
+        from typed.mods.check import check
+        check.isinstance(func, callable)
 
-        if not callable(func):
-            raise TypeError(f"Func wrapper expects a callable, got {type(func)}")
-
-        self.func        = func
+        self.__func__    = func
         self.__wrapped__ = func
 
     def __call__(self, *a, **kw):
-        return self.func(*a, **kw)
+        return self.__func__(*a, **kw)
 
     @property
     def args(self):
@@ -75,39 +61,42 @@ class Callable(metaclass=CALLABLE):
 
     @property
     def __name__(self):
-        return getattr(self.unwrap(), "__name__", type(self).__name__)
+        return getattr(self.unwrap(), "__name__")
 
     @property
     def __display__(self):
         return self.__name__
 
-    __typesystem__ = TYPESYSTEM
+    from typed.mods.init import TYPESYSTEM
+
+    __typesystems__ = [TYPESYSTEM]
     __type__       = CALLABLE
     __display__    = "Callable"
     __name__       = "Callable"
-    __builtin__    = __Callable__
+    __builtin__    = callable
 
-Generator     = GENERATOR('Generator', (), {"__display__": "Generator"})
-Lambda        = LAMBDA('Lambda', (Callable,), {"__display__": "Lambda"})
-Class         = CLASS('Class', (Callable,), {"__display__": "Class"})
-BoundMethod   = BOUND_METHOD('BoundMethod', (Callable,), {"__display__": "BoundMethod"})
-UnboundMethod = UNBOUND_METHOD('UnboundMethod', (Callable,), {"__display__": "UnboundMethod"})
-Method        = METHOD('Method', (Callable,), {"__display__": "Method"})
+class Lambda(metaclass=LAMBDA):
+
+
+Lambda  = LAMBDA('Lambda', (Callable,), {"__display__": "Lambda", "__flags__": {**Callable.__flags__, "is_lambda": True}})
+Class         = CLASS('Class', (Callable,), {"__display__": "Class", "__flags__": {**Callable.__flags__, "is_class": True}})
+Method        = METHOD('Method', (Callable,), {"__display__": "Method", "__flags__": {**Callable.__flags__, "is_method": True}})
 
 class Func(Callable, metaclass=FUNC):
     """
     The type of functions.
-
-    : type(Func)    is FUNC
-    : isterm(f, Func) iff isterm(f, Callable), not isterm(f, Lambda, Class, Builtin)
-    : builtin(Func) is NotDefined
-    : null(Func)    is nill
     """
+    __flags__ = {**Callable.__flags__, "is_func": True}
 
-DomFunc  = DOM_FUNC('DomFunc', (Func,), {"__display__": "DomFunc"})
-CodFunc  = COD_FUNC('CodFunc', (Func,), {"__display__": "CodFunc"})
+class DomFunc(Func, metaclass=DOM_FUNC):
+    __flags__ = {**Func.__flags__, "is_dom": True}
+
+class CodFunc(Func, metaclass=COD_FUNC):
+    __flags__ = {**Func.__flags__, "is_cod": True}
 
 class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
+    __flags__ = {**DomFunc.__flags__, **CodFunc.__flags__, "is_comp": True}
+
     def __rlshift__(self, other):
         """
         Support 'other << self' when 'other' does not
@@ -126,6 +115,8 @@ class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
         """
         (f << g)(*args, **kwargs) == f(g(*args, **kwargs)).
         """
+        from inspect import signature
+        from typing import get_type_hints
         if not _is_composable(other, self):
             dom_f, cod_f = _get_dom_cod(self)
             dom_g, cod_g = _get_dom_cod(other)
@@ -158,8 +149,12 @@ class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
         orig_f = _unwrap(self)
         orig_g = _unwrap(other)
 
-        sig_g = signature(orig_g)
-        ann_g = get_type_hints(orig_g)
+        try:
+            sig_g = signature(orig_g)
+            ann_g = get_type_hints(orig_g)
+        except Exception:
+            sig_g = None
+            ann_g = {}
 
         composite_anns = dict(ann_g)
         composite_anns["return"] = cod_f
@@ -174,10 +169,11 @@ class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
             f"{getattr(outer, '__name__', 'f')}∘{getattr(inner, '__name__', 'g')}"
         )
         composed_orig.__annotations__ = composite_anns
-        composed_orig.__signature__ = sig_g
+        if sig_g:
+            composed_orig.__signature__ = sig_g
 
         from typed.mods.types.func import Lazy
-        if isinstance(self, Lazy) and isinstance(other, Lazy):
+        if getattr(self, "is_lazy", False) and getattr(other, "is_lazy", False):
             return Lazy(composed_orig)
 
         return composed_orig
@@ -186,6 +182,8 @@ class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
         """
         (f >> g)(*args, **kwargs) == g(f(*args, **kwargs)).
         """
+        from inspect import signature
+        from typing import get_type_hints
         if not _is_composable(self, other):
             dom_f, cod_f = _get_dom_cod(self)
             dom_g, cod_g = _get_dom_cod(other)
@@ -218,8 +216,12 @@ class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
         orig_f = _unwrap(self)
         orig_g = _unwrap(other)
 
-        sig_f = signature(orig_f)
-        ann_f = get_type_hints(orig_f)
+        try:
+            sig_f = signature(orig_f)
+            ann_f = get_type_hints(orig_f)
+        except Exception:
+            sig_f = None
+            ann_f = {}
 
         composite_anns = dict(ann_f)
         composite_anns["return"] = cod_g
@@ -234,13 +236,156 @@ class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
             f"{getattr(outer, '__name__', 'g')}∘{getattr(inner, '__name__', 'f')}"
         )
         composed_orig.__annotations__ = composite_anns
-        composed_orig.__signature__ = sig_f
+        if sig_f:
+            composed_orig.__signature__ = sig_f
 
         from typed.mods.types.func import Lazy
-        if isinstance(self, Lazy) and isinstance(other, Lazy):
+        if getattr(self, "is_lazy", False) and getattr(other, "is_lazy", False):
             return Lazy(composed_orig)
 
         return composed_orig
+
+
+class DomHinted(DomFunc, metaclass=DOM_HINTED):
+    __flags__ = {**DomFunc.__flags__, "is_dom_hinted": True}
+
+    def __init__(self, func):
+        _is_domain_hinted(func)
+        self.__func__ = func
+        self._hinted_domain = _hinted_domain(self.__func__)
+
+    @property
+    def domain(self):
+        return self._hinted_domain
+
+    @property
+    def dom(self):
+        return self.domain
+
+class CodHinted(CodFunc, metaclass=COD_HINTED):
+    __flags__ = {**CodFunc.__flags__, "is_cod_hinted": True}
+
+    def __init__(self, func):
+        _is_codomain_hinted(func)
+        self.__func__ = func
+        self._hinted_codomain = _hinted_codomain(self.__func__)
+
+    @property
+    def codomain(self):
+        return self._hinted_codomain
+
+    @property
+    def cod(self):
+        return self.codomain
+
+class Hinted(CompFunc, DomHinted, CodHinted, metaclass=HINTED):
+    __flags__ = {**CompFunc.__flags__, **DomHinted.__flags__, **CodHinted.__flags__, "is_hinted": True}
+
+    def __init__(self, func):
+        _is_domain_hinted(func)
+        _is_codomain_hinted(func)
+        DomHinted.__init__(self, func)
+        CodHinted.__init__(self, func)
+
+    @property
+    def domain(self):
+        return self._hinted_domain
+    @property
+    def dom(self):
+        return self.domain
+    @property
+    def codomain(self):
+        return self._hinted_codomain
+    @property
+    def cod(self):
+        return self.codomain
+
+class DomTyped(DomHinted, metaclass=DOM_TYPED):
+    __flags__ = {**DomHinted.__flags__, "is_dom_typed": True}
+
+    def __call__(self, *args, **kwargs):
+        from inspect import signature
+        from typed.mods.check import check
+        sig = signature(self.__func__)
+        b = sig.bind(*args, **kwargs); b.apply_defaults()
+        check.dom(self.__func__, list(b.arguments.keys()), list(b.arguments.values()), self.domain)
+        return self.__func__(*b.args, **b.kwargs)
+
+class CodTyped(CodHinted, metaclass=COD_TYPED):
+    __flags__ = {**CodHinted.__flags__, "is_cod_typed": True}
+
+    def __call__(self, *args, **kwargs):
+        from inspect import signature
+        from typed.mods.check import check
+        sig = signature(self.__func__)
+        b = sig.bind(*args, **kwargs); b.apply_defaults()
+        r = self.__func__(*b.args, **b.kwargs)
+        check.cod(self.__func__, r, self.codomain)
+        return r
+
+class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
+    __flags__ = {**Hinted.__flags__, **DomTyped.__flags__, **CodTyped.__flags__, "is_typed": True}
+
+    def __call__(self, *args, **kwargs):
+        from inspect import signature
+        from typed.mods.check import check
+        sig = signature(self.__func__)
+        b = sig.bind(*args, **kwargs)
+        b.apply_defaults()
+        return check.issafe(self.__func__, b, self.domain, self.codomain)
+
+class Condition(Typed, metaclass=CONDITION):
+    __flags__ = {**Typed.__flags__, "is_condition": True}
+
+class Factory(Typed, metaclass=FACTORY):
+    __flags__ = {**Typed.__flags__, "is_factory": True}
+
+class Operation(Factory, metaclass=OPERATION):
+    __flags__ = {**Factory.__flags__, "is_operation": True}
+
+class Dependent(Factory, metaclass=DEPENDENT):
+    __flags__ = {**Factory.__flags__, "is_dependent": True}
+
+class Lazy(Hinted, metaclass=LAZY):
+    __flags__ = {**Hinted.__flags__, "is_lazy": True}
+
+    def __init__(self, f):
+        self.__func__ = f
+        self.__wrapped__ = f
+
+        self._wrapped = None
+
+        self._lazy_domain = tuple(_hinted_domain(self.__func__))
+        self._lazy_codomain = _hinted_codomain(self.__func__)
+
+    @property
+    def domain(self):
+        return self._lazy_domain
+
+    @property
+    def dom(self):
+        return self.domain
+
+    @property
+    def codomain(self):
+        return self._lazy_codomain
+
+    @property
+    def cod(self):
+        return self.codomain
+
+    def materialize(self):
+        if self._wrapped is None:
+            self._wrapped = Typed(self.__func__)
+        return self._wrapped
+
+    def __call__(self, *a, **kw):
+        return self.materialize()(*a, **kw)
+
+    def __getattr__(self, name):
+        if name in ('__flags__', '__func__', '__wrapped__', '_wrapped', 'is_lazy', '_lazy_domain', '_lazy_codomain'):
+            return super().__getattribute__(name)
+        return getattr(self.materialize(), name)
 
 class Partial(Func, metaclass=PARTIAL):
     def __init__(self, func, bound_args, bound_kwargs):
@@ -433,194 +578,3 @@ class Partial(Func, metaclass=PARTIAL):
     @property
     def cod(self):
         return self.codomain
-
-
-class DomHinted(DomFunc, Partial, metaclass=DOM_HINTED):
-    def __init__(self, func):
-        _is_domain_hinted(func)
-        self.func = func
-        self.is_partial = False
-        self._hinted_domain = _hinted_domain(self.func)
-
-    @property
-    def domain(self):
-        return self._hinted_domain
-
-    @property
-    def dom(self):
-        return self.domain
-
-    def __repr__(self):
-        ds = ', '.join(t.__name__ for t in self.domain)
-        return f"<DomHinted: {self.__name__}({ds})>"
-
-    def __str__(self):
-        ds = ', '.join(t.__name__ for t in self.domain)
-        return f"{self.__name__}({ds})"
-
-class CodHinted(CodFunc, Partial, metaclass=COD_HINTED):
-    def __init__(self, func):
-        _is_codomain_hinted(func)
-        self.func = func
-        self.is_partial = False
-        self._hinted_codomain = _hinted_codomain(self.func)
-
-    @property
-    def codomain(self):
-        return self._hinted_codomain
-
-    @property
-    def cod(self):
-        return self.codomain
-
-    def __repr__(self):
-        c = self.codomain.__name__
-        return f"<CodHinted: {self.__name__} -> {c}>"
-
-    def __str__(self):
-        c = self.codomain.__name__
-        return f"{self.__name__} -> {c}"
-
-class Hinted(CompFunc, DomHinted, CodHinted, metaclass=HINTED):
-    def __init__(self, func):
-        _is_domain_hinted(func)
-        _is_codomain_hinted(func)
-        DomHinted.__init__(self, func)
-        CodHinted.__init__(self, func)
-
-    @property
-    def domain(self):
-        return self._hinted_domain
-    @property
-    def dom(self):
-        return self.domain
-    @property
-    def codomain(self):
-        return self._hinted_codomain
-    @property
-    def cod(self):
-        return self.codomain
-
-class DomTyped(DomHinted, metaclass=DOM_TYPED):
-    def __call__(self, *args, **kwargs):
-        sig = signature(self.func)
-        b = sig.bind(*args, **kwargs); b.apply_defaults()
-        _check_domain(self.func, list(b.arguments.keys()), self.domain, None, list(b.arguments.values()))
-        return self.func(*b.args, **b.kwargs)
-    def __repr__(self):
-        ds = ', '.join(t.__name__ for t in self.domain)
-        return f"<DomTyped: {self.__name__}({ds}) runtime-checked>"
-    def __str__(self):
-        ds = ', '.join(t.__name__ for t in self.domain)
-        return f"{self.__name__}({ds})!!"
-
-class CodTyped(CodHinted, metaclass=COD_TYPED):
-    def __call__(self, *args, **kwargs):
-        sig = signature(self.func)
-        b = sig.bind(*args, **kwargs); b.apply_defaults()
-        r = self.func(*b.args, **b.kwargs)
-        from typed.mods.types.base import TYPE
-        _check_codomain(self.func, _hinted_codomain(self.func), TYPE(r), r)
-        return r
-    def __repr__(self):
-        c = self.codomain.__name__
-        return f"<CodTyped: {self.__name__} -> {c} runtime-checked>"
-    def __str__(self):
-        c = self.codomain.__name__
-        return f"{self.__name__} -> {c}!"
-
-class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
-    def __call__(self, *args, **kwargs):
-        from typed.mods.general import _
-        has_underscore = (_ in args) or any(v is _ for v in kwargs.values())
-        if has_underscore:
-            partial_instance = object.__new__(Partial)
-            partial_instance.__init__(self, args, kwargs)
-            return partial_instance
-        sig = signature(self.func)
-        b = sig.bind(*args, **kwargs)
-        b.apply_defaults()
-        _check_domain(
-            self.func,
-            list(b.arguments.keys()),
-            self.domain,
-            None,
-            list(b.arguments.values()),
-        )
-        result = self.func(*b.args, **b.kwargs)
-        from typed.mods.types.base import TYPE
-        _check_codomain(self.func, _hinted_codomain(self.func), TYPE(result), result)
-        return result
-    def __repr__(self):
-        ds = ', '.join(t.__name__ for t in self.domain)
-        cs = self.codomain.__name__
-        return f"<Typed: {self.__name__}({ds}) -> {cs} runtime-checked>"
-
-    def __str__(self):
-        ds = ', '.join(t.__name__ for t in self.domain)
-        cs = self.codomain.__name__
-        return f"{self.__name__}({ds})! -> {cs}!"
-
-Condition = CONDITION("Condition", (Typed,), {
-    "__display__": "Condition"
-})
-
-Factory = FACTORY("Factory", (Typed,), {
-    "__display__": "Factory"
-})
-
-Operation = OPERATION("Operation", (Factory,), {
-    "__display__": "Operation"
-})
-
-Dependent = DEPENDENT("Dependent", (Factory,), {
-    "__display__": "Dependent"
-})
-
-class Lazy(Hinted, metaclass=LAZY):
-    def __init__(self, f):
-        self.func = f
-        self.__wrapped__ = f
-
-        self._wrapped = None
-        self.is_lazy = True
-
-        self._lazy_domain = tuple(_hinted_domain(self.func))
-        self._lazy_codomain = _hinted_codomain(self.func)
-
-    @property
-    def domain(self):
-        return self._lazy_domain
-
-    @property
-    def dom(self):
-        return self.domain
-
-    @property
-    def codomain(self):
-        return self._lazy_codomain
-
-    @property
-    def cod(self):
-        return self.codomain
-
-    def materialize(self):
-        if self._wrapped is None:
-            self._wrapped = Typed(self.func)
-        return self._wrapped
-
-    def __call__(self, *a, **kw):
-        from typed.mods.general import _
-        has_underscore = (_ in a) or any(v is _ for v in kw.values())
-        if has_underscore:
-            p = object.__new__(Partial)
-            p.__init__(self, a, kw)
-            return p
-
-        return self.materialize()(*a, **kw)
-
-    def __getattr__(self, name):
-        return getattr(self.materialize(), name)
-
-    def __repr__(self):
-        return f"<Lazy for {getattr(self.func, '__name__', 'anonymous')}>"

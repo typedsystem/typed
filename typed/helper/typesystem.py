@@ -1,7 +1,21 @@
+def weaklyextends(t1, t2):
+    for base in t1.__mro__:
+        if _name(base) == _name(t2) and base.__module__ == t2.__module__:
+            return True
+    return False
+
 class STATEFUL:
+    EXTENDS = set()
     SUBS  = set()
     SUPS  = set()
     TERMS = set()
+    EQUIVS = set()
+
+    @staticmethod
+    def __issup__(typ, other):
+        key = (id(typ), id(other))
+        if key in STATEFUL.SUPS:
+            return False
 
     @staticmethod
     def __issup__(typ, other):
@@ -11,7 +25,6 @@ class STATEFUL:
 
         STATEFUL.SUPS.add(key)
         try:
-            from typed.mods.core import extends
             if extends(typ, other):
                 return True
 
@@ -64,7 +77,6 @@ class STATEFUL:
             return False
         STATEFUL.SUBS.add(key)
         try:
-            from typed.mods.core import extends
             if extends(other, typ):
                 return True
 
@@ -162,6 +174,57 @@ class STATEFUL:
         finally:
             STATEFUL.TERMS.remove(key)
 
+    @staticmethod
+    def __isequiv__(typ, other):
+        key = (id(typ), id(other))
+        if key in STATEFUL.EQUIVS:
+            return False
+        STATEFUL.EQUIVS.add(key)
+        try:
+            if "__isequiv__" in getattr(typ, "__equiv__", {}):
+                isequiv = typ.__dict__["__isequiv__"]
+                if isequiv is not STATEFUL.__isequiv__:
+                    try:
+                        res = isequiv(typ, other)
+                        if res is not NotImplemented: return res
+                    except TypeError:
+                        pass
+
+            meta = type(typ)
+            if hasattr(meta, "__isequiv__"):
+                isequiv = getattr(meta, "__isequiv__")
+                if isequiv is not STATEFUL.__isequiv__:
+                    try:
+                        res = isequiv(typ, other)
+                        if res is not NotImplemented: return res
+                    except TypeError:
+                        pass
+
+            if STATEFUL.__issub__(typ, other) and STATEFUL.__issub__(other, typ):
+                return True
+
+            if STATEFUL.__issup__(typ, other) and STATEFUL.__issup__(other, typ):
+                return True
+
+            if isinstance(typ, type) and isinstance(other, type):
+                if type is other:
+                    return True
+
+                typ_typesystems = set(getattr(typ, "__typesystems__", []))
+                other_typesystems = set(getattr(other, "__typesystems__", []))
+
+                common_typesystems = typ_typesystems.intersection(other_typesystems)
+
+                if not common_typesystems:
+                    return False
+
+                for typesystem in common_typesystems:
+                    if not STATEFUL.__isequiv__(type(typ), type(other)):
+                        return False
+            return False
+        finally:
+            STATEFUL.EQUIVS.remove(key)
+
 class MAGIC:
     def __in__(typ, trm):
         return STATEFUL.__isterm__(typ, trm)
@@ -179,7 +242,7 @@ class MAGIC:
         return STATEFUL.__issub__(other, typ) and not STATEFUL.__issub__(typ, other)
 
     def __eq__(typ, other):
-        return STATEFUL.__issub__(typ, other) and STATEFUL.__issub__(other, typ)
+        return STATEFUL.__isequiv__(typ, other)
 
     def __ne__(typ, other):
         return not MAGIC.__eq__(typ, other)
@@ -191,20 +254,13 @@ class MAGIC:
 
         systems = getattr(cls, "__typesystems__", [])
         if systems:
-            from typed.mods.core import isterm
+            from typed.mods.typesystem import isterm
             for x in systems[0]:
                 if isterm(x, cls):
                     yield x
             return
 
         raise TypeError(f"Cannot iterate over {getattr(cls, '__name__', str(cls))}")
-
-def _weaksubtype(t1, t2):
-    from typed.mods.helper.general import _name
-    for base in t1.__mro__:
-        if _name(base) == _name(t2) and base.__module__ == t2.__module__:
-            return True
-    return False
 
 class _Placeholder:
     def __init__(self, base, transform):

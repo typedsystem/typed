@@ -2,7 +2,7 @@ from typed.mods.typesystem import new
 
 def __typemap__():
     from typed.mods.types.base import (
-        Int, Float, Bool, Str, Bytes,
+        Int, Float, Bool, Str, Byte,
         List, Tuple, Set, Dict
     )
     return {
@@ -10,26 +10,28 @@ def __typemap__():
         float:     Float,
         bool:      Bool,
         str:       Str,
-        bytes:     Bytes,
-        bytearray: Bytes,
+        bytes:     Byte,
+        bytearray: Byte,
         list:      List,
         tuple:     Tuple,
         set:       Set,
         dict:      Dict
     }
 
-some  = new.quantifier(new.reducer(any))
-every = new.quantifier(new.reducer(all))
-none  = new.quantifier(new.reducer(lambda iter: not any(iter)))
-true  = new.quantifier(new.reducer(lambda iter: True))
-false = new.quantifier(new.reducer(lambda iter: False))
+some  = new.quantifier(new.reducer(any), order=1)
+every = new.quantifier(new.reducer(all), order=1)
+none  = new.quantifier(new.reducer(lambda iter: not any(iter)), order=1)
+true  = new.quantifier(new.reducer(lambda iter: True), order=1)
+false = new.quantifier(new.reducer(lambda iter: False), order=1)
+only  = new.quantifier(reducer=new.reducer(lambda n: lambda iter: sum(bool(x) for x in iter) == n), order=1)
 
-UNIVERSE   = new.universe()
-ABSTRACT   = new.abstract()
+SAMENESS = new.sameness()
+UNIVERSE = new.universe()
+ABSTRACT = new.abstract()
 TYPESYSTEM = new.typesystem(
     universe=UNIVERSE,
     abstract=ABSTRACT,
-    quantifiers={some, every, none, true, false},
+    quantifiers={some, every, none, true, false, only},
     typemap={},
     is_strict=False,
     kinds=set()

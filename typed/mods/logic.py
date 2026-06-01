@@ -108,11 +108,62 @@ class Evaluator(metaclass=__EVALUATOR__):
 
         return self.reducer(__eval__())
 
-class Quantifier:
+class __QUANTIFIER__(type):
+    """
+    The independent metaclass for Quantifiers.
+    """
+    def __new__(mcls, name, bases, dct, order=None, count=None, **kwargs):
+        cls = super().__new__(mcls, name, bases, dct, **kwargs)
+        cls.__order__ = order
+        cls.__count__ = count
+        cls.is_quantifier_type = True
+        return cls
+
+    def __instancecheck__(cls, instance):
+        if not getattr(instance, 'is_quantifier', False):
+            return False
+
+        expected_order = getattr(cls, "__order__", None)
+        expected_count = getattr(cls, "__count__", None)
+
+        if expected_order is not None and getattr(instance, "order", 1) != expected_order:
+            return False
+        if expected_count is not None and getattr(instance, "count", None) != expected_count:
+            return False
+
+        return True
+
+    def __call__(cls, *args, **kwargs):
+        is_parametric_call = (
+            cls.__name__ == "Quantifier" and 
+            not args and 
+            ("order" in kwargs or "count" in kwargs) and
+            "reducer" not in kwargs
+        )
+
+        if is_parametric_call:
+            order = kwargs.get("order", 1)
+            count = kwargs.get("count", None)
+
+            name_parts = [f"order={order}"]
+            if count is not None:
+                name_parts.append(f"count={count}")
+
+            name = f"Quantifier({', '.join(name_parts)})"
+
+            return __QUANTIFIER__(name, (cls,), {
+                "__display__": name,
+            }, order=order, count=count)
+
+        return super().__call__(*args, **kwargs)
+
+
+class Quantifier(metaclass=__QUANTIFIER__):
     __display__ = "Quantifier"
     is_quantifier = True
 
-    def __init__(self, reducer: Reducer, evaluator: __EVALUATOR__=None):
+    def __init__(self, reducer: 'Reducer', evaluator=None, order: int = None, count: int = None):
+        from typed.mods.logic import Reducer, Evaluator
         if not isinstance(reducer, Reducer):
             from typed.mods.err import TypeErr
             raise TypeErr(
@@ -122,7 +173,8 @@ class Quantifier:
                 received=type(reducer)
             )
 
-        if evaluator is None: evaluator = Evaluator
+        if evaluator is None:
+            evaluator = Evaluator
 
         if not issubclass(type(evaluator), __EVALUATOR__):
             from typed.mods.err import TypeErr
@@ -135,8 +187,23 @@ class Quantifier:
 
         self.reducer = reducer
         self.evaluator = evaluator
+        self.order = order if order is not None else getattr(type(self), "__order__", 1)
+        self.count = count if count is not None else getattr(type(self), "__count__", None)
 
     def __call__(self, *args):
+        if len(args) == 1 and isinstance(args[0], int) and not isinstance(args[0], bool):
+            n = args[0]
+            try:
+                res = self.reducer.func(n)
+                if callable(res):
+                    return type(self)(
+                        reducer=type(self.reducer)(res),
+                        order=self.order,
+                        count=n
+                    )
+            except Exception:
+                pass
+
         def __flatten__(items):
             for item in items:
                 if hasattr(item, '__iter__') and not isinstance(item, (str, bytes)):

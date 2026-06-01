@@ -1,30 +1,4 @@
-from functools import lru_cache
 from typed.mods.err import Err, TypeErr, HintErr, DomErr, CodErr
-
-@lru_cache(maxsize=512)
-def signature(func):
-    from inspect import signature as _signature
-    return _signature(func)
-
-@lru_cache(maxsize=512)
-def hints(func):
-    from typing import get_type_hints
-    return get_type_hints(func)
-
-def _unwrap(obj):
-    seen = set()
-    while True:
-        obj_id = id(obj)
-        if obj_id in seen:
-            break
-        seen.add(obj_id)
-
-        if hasattr(obj, "__wrapped__"): obj = obj.__wrapped__
-        elif hasattr(obj, "original_func"): obj = obj.original_func
-        elif hasattr(obj, "func") and callable(getattr(obj, "func")): obj = obj.func
-        elif hasattr(obj, "_orig"): obj = obj._orig
-        else: break
-    return obj
 
 def _get_args(self):
     func = getattr(self, 'func', self)

@@ -5,7 +5,7 @@ __imports__ = {
         "__TYPESYSTEM__", "__ABSTRACT__", "__UNIVERSE__",
         "isterm", "issub", "issup",
         "nameof", "typeof", "typemap",
-        "term", "track"
+        "term", "trackof"
 
     ]
 }
@@ -15,5 +15,5 @@ if lazy(__imports__):
         __TYPESYSTEM__, __ABSTRACT__, __UNIVERSE__,
         isterm, issub, issup,
         nameof, typeof, typemap,
-        term, track
+        term, trackof
     )
