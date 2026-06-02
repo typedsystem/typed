@@ -1,3 +1,15 @@
+class __SAMENESS__:
+    def __init__(self, *conditions: tuple[callable], use_name: bool=True, use_duck: bool=False, use_id: bool=True):
+        if conditions:
+            from typed.mods.check import check
+            for condition in conditions:
+                check.isinstance(condition, callable)
+
+        self.conditions = conditions
+        self.use_name = use_name
+        self.use_duck = use_duck
+        self.use_id   = use_id
+
 class ___UNIVERSE___(type):
     """
     The universal metaclass of universes
@@ -24,14 +36,14 @@ class ___UNIVERSE___(type):
 
         cls_type = getattr(cls, "__type__", None)
         if cls_type is not None:
-            for typesystem in getattr(cls, "__typesystems__", []):
+            for typesystem in getattr(cls, "__typesystems__", set()):
                 if cls_type in typesystem:
                     typesystem.add(cls)
 
         return cls
 
     def __iter__(cls):
-        systems = getattr(cls, "__typesystems__", [])
+        systems = getattr(cls, "__typesystems__", set())
         for typesystem in systems:
             yield from typesystem.__members__["universe"]
 
@@ -62,14 +74,14 @@ class ___ABSTRACT___(___UNIVERSE___):
 
         cls_type = getattr(cls, "__type__", None)
         if cls_type is not None:
-            for typesystem in getattr(cls, "__typesystems__", []):
+            for typesystem in getattr(cls, "__typesystems__", set()):
                 if cls_type in typesystem:
                     typesystem.add(cls)
 
         return cls
 
     def __iter__(cls):
-        systems = getattr(cls, "__typesystems__", [])
+        systems = getattr(cls, "__typesystems__", set())
         for typesystem in systems:
             yield from typesystem.__members__["abstract"]
 
@@ -119,7 +131,6 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
 
         attrs = {
             "is_universe": True,
-            "is_parametric": True,
             "level": -1,
             "__isterm__": __isterm__,
             "__issub__": __issub__,
@@ -154,7 +165,7 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
 
         cls_type = getattr(cls, "__type__", None)
         if cls_type is not None:
-            for typesystem in getattr(cls, "__typesystems__", []):
+            for typesystem in getattr(cls, "__typesystems__", set()):
                 if cls_type in typesystem:
                     typesystem.add(cls)
 
@@ -171,15 +182,14 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
         if len(args) == 3 and isinstance(args[0], str) and isinstance(args[1], tuple) and isinstance(args[2], dict):
             return super().__call__(*args, **kwargs)
 
-        if typesystem is None:
-            from typed.mods.init import conf
-            typesystem = conf.typesystem.entity
+        from typed.mods.check import resolve
+        typesystem = resolve.typesystem(typesystem)
 
         from typed.mods.err import NotDefined
         if len(args) == 1 and isinstance(args[0], int):
             n = args[0]
             if n < 0:
-                return typesystem.universe
+                return typesystem.__universe__
 
             typesystem.enrich(level=n+1)
             UNI = typesystem.__members__["universe"][n]
@@ -190,8 +200,7 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
             return UNI
 
         if len(args) == 0 and typesystem is not NotDefined:
-            return typesystem.universe
-
+            return typesystem.__universe__
         return super().__call__(*args, **kwargs)
 
 
@@ -241,7 +250,6 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
 
         attrs = {
             "is_abstract": True,
-            "is_parametric": True,
             "level": -1,
             "__isterm__": __isterm__,
             "__issub__": __issub__,
@@ -276,7 +284,7 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
 
         cls_type = getattr(cls, "__type__", None)
         if cls_type is not None:
-            for typesystem in getattr(cls, "__typesystems__", []):
+            for typesystem in getattr(cls, "__typesystems__", set()):
                 if cls_type in typesystem:
                     typesystem.add(cls)
 
@@ -293,9 +301,8 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
         if len(args) == 3 and isinstance(args[0], str) and isinstance(args[1], tuple) and isinstance(args[2], dict):
             return super().__call__(*args, **kwargs)
 
-        if typesystem is None:
-            from typed.mods.init import conf
-            typesystem = conf.typesystem.entity
+        from typed.mods.check import resolve
+        typesystem = resolve.typesystem(typesystem)
 
         if len(args) == 1 and isinstance(args[0], int):
             n = args[0]
@@ -312,53 +319,46 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
             return ABS
 
         if len(args) == 0 and typesystem is not NotDefined:
-            return typesystem.abstract
+            return typesystem.__abstract__
 
         return super().__call__(*args, **kwargs)
 
 class __TYPESYSTEM__:
     def __init__(
         self,
-        name:        str="TYPESYSTEM",
-        universe:    __UNIVERSE__=None,
-        abstract:    __ABSTRACT__=None,
+        name: str="TYPESYSTEM",
+        universe: __UNIVERSE__=None,
+        abstract: __ABSTRACT__=None,
         quantifiers: set=None,
-        kinds:       set=None,
-        typemap:     dict=None,
-        is_strict:   bool=None,
-        __isterm__:  callable=None,
-        __issub__:   callable=None,
-        __in__:      callable=None,
-        __eq__:      callable=None,
-        __le__:      callable=None,
-        __lt__:      callable=None,
-        __ge__:      callable=None,
-        __gt__:      callable=None,
-        __ne__:      callable=None
+        kinds: set=None,
+        typemap: dict=None,
+        sameness: __SAMENESS__=None,
+        is_strict: bool=None,
+        __isterm__: callable=None,
+        __issub__: callable=None,
+        __in__: callable=None,
+        __eq__: callable=None,
+        __le__: callable=None,
+        __lt__: callable=None,
+        __ge__: callable=None,
+        __gt__: callable=None,
+        __ne__: callable=None
     ):
-        if universe is None:
-            from typed.mods.init import conf
-            universe = conf.typesystem.universe
-        if abstract is None:
-            from typed.mods.init import conf
-            abstract = conf.typesystem.abstract
-        if quantifiers is None:
-            from typed.mods.init import conf
-            quantifiers = conf.typesystem.quantifiers
-        if typemap is None:
-            typemap = conf.typesystem.typemap
-        if is_strict is None:
-            from typed.mods.init import conf
-            is_strict = conf.typesystem.is_strict
+        from typed.mods.check import resolve
 
-        __kinds__ = {"universe", "abstract", "meta", "type", "quantifier"}
-        __kinds__ = kinds.union(__kinds__)
+        universe = resolve.typesystem.universe(universe)
+        abstract = resolve.typesystem.abstract(abstract)
+        quantifiers = resolve.typesystem.quantifiers(quantifiers)
+        typemap  = resolve.typesystem.typemap(typemap)
+        sameness = resolve.typesystem.sameness(sameness)
+        is_strict = resolve.typesystem.is_strict(is_strict)
+        kinds = resolve.typesystem.kinds(kinds)
 
         self.__name__ = name
         self.__display__ = name
         self.__universe__ = universe
         self.__universe__.__typesystems__ = [self]
-        self.__kinds__ = __kinds__
+        self.__kinds__ = kinds
         self.__typemap__ = typemap
         self.__abstract__ = abstract
         self.__abstract__.__typesystems__ = [self]
@@ -718,18 +718,6 @@ def iscognate(type, *others: tuple[type], quantifier=None) -> bool:
         not set(getattr(type, "__typesystems__", [])).isdisjoint(getattr(other, "__typesystems__", []))
         for other in others
     )
-
-class __SAMENESS__:
-    def __init__(self, *conditions: tuple[callable], use_name: bool=True, use_duck: bool=False, use_id: bool=True):
-        if conditions:
-            from typed.mods.check import check
-            for condition in conditions:
-                check.isinstance(condition, callable)
-
-        self.conditions = conditions
-        self.use_name = use_name
-        self.use_duck = use_duck
-        self.use_id   = use_id
 
 def issame(typ, *others, quantifier=None, sameness: __SAMENESS__=None) -> bool:
 

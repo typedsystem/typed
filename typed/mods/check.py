@@ -7,43 +7,45 @@ class Checker:
     def __call__(self, *args, **kwargs):
         return self.__func__(*args, **kwargs)
 
-
 def checker(func: callable, name: str = None) -> staticmethod: 
     return staticmethod(Checker(func=func, name=name))
 
 class QuantifiedCheck:
-    def __init__(self, quantifier_name: str, n: int = None):
-        self.quantifier_name = quantifier_name
-        self.n = n
+    def __init__(self, quantifier: str, count: int = None):
+        self._quantifier = quantifier
+        self.count = count
 
     @property
     def quantifier(self):
         from typed.mods.init import some, every, none, only
-        if self.quantifier_name == 'some':
+        if self._quantifier == 'some':
             return some
-        elif self.quantifier_name == 'every':
+        elif self._quantifier == 'every':
             return every
-        elif self.quantifier_name == 'none':
+        elif self._quantifier == 'none':
             return none
-        elif self.quantifier_name == 'only':
-            return only(self.n)
-        raise ValueError(f"Unknown quantifier {self.quantifier_name}")
+        elif self._quantifier == 'only':
+            return only(self.count)
+        raise ValueError(f"Unknown quantifier {self._quantifier}")
 
     def istype(self, objs) -> bool:
-        from typed.mods.typesystem import istype
-        from typed.mods.err import IsNotType
-        q = self.quantifier
+        quantifier = self.quantifier
 
-        if not q(istype(obj) for obj in objs):
+        from typed.mods.typesystem import istype
+
+        if not quantifier(istype(obj) for obj in objs):
+            from typed.mods.err import IsNotType
             raise IsNotType(object=objs)
         return True
 
     def iscognate(self, types, *others, quantifier=None) -> bool:
-        from typed.mods.typesystem import iscognate
-        from typed.mods.err import TypeSystemErr
+        quantifier = resolve.quantifier(quantifier)
         q = self.quantifier
 
+        from typed.mods.typesystem import iscognate
+
         if not q(iscognate(t, *others, quantifier=quantifier) for t in types):
+            from typed.mods.err import TypeSystemErr
             raise TypeSystemErr(
                 details="Types do not share a common typesystem",
                 types=(types, *others)
@@ -51,13 +53,11 @@ class QuantifiedCheck:
         return True
 
     def isinstance(self, objs, *classes, quantifier=None) -> bool:
-        from typed.mods.err import TypeErr
-        if quantifier is None:
-            from typed.mods.init import some
-            quantifier = some
+        quantifier = resolve.quantifier(quantifier)
         q = self.quantifier
 
         if not q(quantifier(isinstance(obj, cls) for cls in classes) for obj in objs):
+            from typed.mods.err import TypeErr
             raise TypeErr(
                 term=objs,
                 expected=classes,
@@ -67,14 +67,13 @@ class QuantifiedCheck:
         return True
 
     def isterm(self, objs, *types, quantifier=None) -> bool:
-        from typed.mods.err import TypeErr
-        from typed.mods.typesystem import isterm
-        if quantifier is None:
-            from typed.mods.init import some
-            quantifier = some
+        quantifier = resolve.quantifier(quantifier)
         q = self.quantifier
 
+        from typed.mods.typesystem import isterm
+
         if not q(quantifier(isterm(obj, t) for t in types) for obj in objs):
+            from typed.mods.err import TypeErr
             raise TypeErr(
                 term=objs,
                 expected=types,
@@ -83,14 +82,13 @@ class QuantifiedCheck:
         return True
 
     def ismember(self, types, *typesystems, quantifier=None) -> bool:
-        from typed.mods.err import TypeSystemErr, NotDefined
-        from typed.mods.typesystem import ismember
-        if quantifier is None:
-            from typed.mods.init import some
-            quantifier = some
+        quantifier = resolve.quantifier(quantifier)
         q = self.quantifier
 
+        from typed.mods.typesystem import ismember
+
         if not q(quantifier(ismember(t, *typesystems) for t in types)):
+            from typed.mods.err import TypeSystemErr, NotDefined
             raise TypeSystemErr(
                 type=types,
                 typesystems=typesystems,
@@ -110,19 +108,14 @@ class QuantifiedCheck:
             )
         return True
 
-
 class check:
     some  = QuantifiedCheck("some")
     every = QuantifiedCheck("every")
     none  = QuantifiedCheck("none")
 
     @staticmethod
-    def only(n: int) -> QuantifiedCheck:
-        """
-        Dynamically initializes a QuantifiedCheck for exactly `n` occurrences.
-        Example: check.only(2).isinstance(objs, int, str)
-        """
-        return QuantifiedCheck("only", n=n)
+    def only(count: int) -> QuantifiedCheck:
+        return QuantifiedCheck("only", count=count)
 
     @checker
     def istype(obj: type) -> bool:
@@ -134,6 +127,7 @@ class check:
 
     @checker
     def iscognate(type: type, *others: tuple[type], quantifier=None) -> bool:
+        quantifier = resolve.quantifier(quantifier)
         from typed.mods.typesystem import iscognate
         if not iscognate(type, *others, quantifier=quantifier):
             from typed.mods.err import TypeSystemErr
@@ -146,10 +140,7 @@ class check:
 
     @checker
     def isinstance(obj: object, *classes: tuple[type], quantifier=None) -> bool:
-        if quantifier is None:
-            from typed.mods.init import some
-            quantifier = some
-
+        quantifier = resolve.quantifier(quantifier)
         if not quantifier(isinstance(obj, cls) for cls in classes):
             from typed.mods.err import TypeErr
             raise TypeErr(
@@ -162,11 +153,8 @@ class check:
 
     @checker
     def isterm(term: object, *types: tuple[type], quantifier=None) -> bool:
+        quantifier = resolve.quantifier(quantifier)
         from typed.mods.typesystem import isterm
-        if quantifier is None:
-            from typed.mods.init import some
-            quantifier = some
-
         if not isterm(term, *types, quantifier=quantifier):
             from typed.mods.err import TypeErr
             raise TypeErr(
@@ -178,10 +166,8 @@ class check:
 
     @checker
     def ismember(type: type, *typesystems: tuple[type], quantifier=None) -> bool:
+        quantifier = resolve.quantifier(quantifier)
         from typed.mods.typesystem import ismember
-        if quantifier is None:
-            from typed.mods.init import some
-            quantifier = some
 
         if not ismember(type, *typesystems, quantifier=quantifier):
             from typed.mods.err import NotDefined
@@ -225,13 +211,14 @@ class resolve:
             default=_conf
         )
 
-    @staticmethod
-    def quantifier(quantifier=None, conf=None):
-        conf = resolve.conf(conf)
-        return _resolve(
-            provided=quantifier,
-            default=conf.logic.quantifier
-        )
+    class logic:
+        @staticmethod
+        def quantifier(quantifier=None, conf=None):
+            conf = resolve.conf(conf)
+            return _resolve(
+                provided=quantifier,
+                default=conf.logic.quantifier
+            )
 
     @staticmethod
     def sameness(sameness=None, conf=None):
@@ -247,4 +234,20 @@ class resolve:
         return _resolve(
             provided=typesystem,
             default=conf.typesystem.entity
+        )
+
+    @staticmethod
+    def universe(universe=None, conf=None):
+        conf = resolve.conf(conf)
+        return _resolve(
+            provided=universe,
+            default=conf.typesystem.universe
+        )
+
+    @staticmethod
+    def abstract(abstract=None, conf=None):
+        conf = resolve.conf(conf)
+        return _resolve(
+            provided=abstract,
+            default=conf.typesystem.abstract
         )

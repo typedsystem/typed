@@ -18,12 +18,16 @@ def __typemap__():
         dict:      Dict
     }
 
+__kinds__ = {"universe", "abstract", "meta", "type", "quantifier", "dependent"}
+
 some  = new.quantifier(new.reducer(any), order=1)
 every = new.quantifier(new.reducer(all), order=1)
 none  = new.quantifier(new.reducer(lambda iter: not any(iter)), order=1)
 true  = new.quantifier(new.reducer(lambda iter: True), order=1)
 false = new.quantifier(new.reducer(lambda iter: False), order=1)
 only  = new.quantifier(reducer=new.reducer(lambda n: lambda iter: sum(bool(x) for x in iter) == n), order=1)
+
+__quantifiers__ = { some, every, none, true, false, only }
 
 SAMENESS = new.sameness()
 UNIVERSE = new.universe()
