@@ -1,15 +1,15 @@
 from typed.mods.init import TYPESYSTEM, UNIVERSE, ABSTRACT
 from typed.mods.err import NotDefined
 
-UNIVERSE_1 = UNIVERSE(1)
+UNIVERSE_1 = UNIVERSE(1, typesystem=TYPESYSTEM)
 
-TYPE = UNIVERSE(0)
+TYPE = UNIVERSE(0, typesystem=TYPESYSTEM)
 TYPE.__name__ = "TYPE"
 TYPE.__display__ = TYPE.__name__
 TYPE.__null__ = NotDefined
 TYPE.__builtin__ = NotDefined
 
-META = ABSTRACT(0)
+META = ABSTRACT(0, typesystem=TYPESYSTEM)
 META.__name__ = "META"
 META.__display__ = META.__name__
 META.__null__ = NotDefined

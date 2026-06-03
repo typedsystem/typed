@@ -1,226 +1,197 @@
-def weaklyextends(t1, t2):
-    for base in t1.__mro__:
-        if _name(base) == _name(t2) and base.__module__ == t2.__module__:
-            return True
-    return False
-
 class STATEFUL:
     EXTENDS = set()
     SUBS  = set()
     SUPS  = set()
     TERMS = set()
     EQUIVS = set()
+    SAME = {}
 
     @staticmethod
-    def __issup__(typ, other):
-        key = (id(typ), id(other))
-        if key in STATEFUL.SUPS:
+    def __issame__(X, Y, typesystem=None):
+        if typesystem is None:
+            from typed.mods.check import resolve
+            typesystem = resolve.typesystem.entity(typesystem)
+
+        if not STATEFUL.__issame__(typesystem.typeof(X), typesystem.typeof(Y), typesystem=typesystem):
             return False
 
+        sameness = typesystem.__sameness__
+
+        if getattr(sameness, 'use_name', False):
+            if typesystem.nameof(X) == typesystem.nameof(Y):
+                return True
+
+        if getattr(sameness, 'use_id', False):
+            if X is Y:
+                return True
+
+        if getattr(sameness, 'use_duck', False):
+            if getattr(X, '__dict__', None) == getattr(Y, '__dict__', None):
+                return True
+
+        for condition in getattr(sameness, 'needed', ()):
+            if not condition(X, Y):
+                return False
+
+        for condition in getattr(sameness, 'suffices', ()):
+            if condition(X, Y):
+                return True
+
+        return False
+
+    def __extends__(t1, t2, typesystem=None):
+        if not STATEFUL.__issame__(typesystem.typeof(t1), typesystem.typeof(t2), typesystem=typesystem):
+            return False
+        return any(STATEFUL.__issame__(base, t2, typesystem=typesystem) for base in t1.__mro__)
+
     @staticmethod
-    def __issup__(typ, other):
+    def __issup__(typ, other, typesystem=None):
         key = (id(typ), id(other))
         if key in STATEFUL.SUPS:
             return False
 
         STATEFUL.SUPS.add(key)
         try:
-            if extends(typ, other):
+            if typesystem is None:
+                from typed.mods.check import resolve
+                typesystem = resolve.typesystem.entity(typesystem)
+
+            meta_typ = typesystem.typeof(typ)
+            meta_other = typesystem.typeof(other)
+            if not STATEFUL.__issame__(meta_typ, meta_other, typesystem=typesystem):
+                return False
+
+            if "__issup__" in getattr(meta_typ, "__dict__", {}):
+                issup = meta_typ.__dict__["__issup__"]
+                if issup is not STATEFUL.__issup__:
+                    try:
+                        return issup(typ, other)
+                    except TypeError:
+                        pass
+
+            if "__issub__" in getattr(meta_other, "__dict__", {}):
+                issub = meta_other.__dict__["__issub__"]
+                if issub is not STATEFUL.__issub__:
+                    try:
+                        return issub(other, typ)
+                    except TypeError:
+                        pass
+
+            if STATEFUL.__extends__(typ, other, typesystem=typesystem):
                 return True
 
-            if "__issup__" in getattr(typ, "__dict__", {}):
-                issup_func = typ.__dict__["__issup__"]
-                if issup_func is not STATEFUL.__issup__:
-                    try:
-                        res = issup_func(typ, other)
-                        if res is not NotImplemented: return res
-                    except TypeError:
-                        pass
-
-            meta_typ = type(typ)
-            if hasattr(meta_typ, "__issup__"):
-                issup_func = getattr(meta_typ, "__issup__")
-                if issup_func is not STATEFUL.__issup__:
-                    try:
-                        res = issup_func(typ, other)
-                        if res is not NotImplemented: return res
-                    except TypeError:
-                        pass
-
-            if "__issub__" in getattr(other, "__dict__", {}):
-                issub_func = other.__dict__["__issub__"]
-                if issub_func is not STATEFUL.__issub__:
-                    try:
-                        res = issub_func(other, typ)
-                        if res is not NotImplemented: return res
-                    except TypeError:
-                        pass
-
-            meta_other = type(other)
-            if hasattr(meta_other, "__issub__"):
-                issub_func = getattr(meta_other, "__issub__")
-                if issub_func is not STATEFUL.__issub__:
-                    try:
-                        res = issub_func(other, typ)
-                        if res is not NotImplemented: return res
-                    except TypeError:
-                        pass
-
-            return False
+            from typed.mods.err import NotDefined
+            return NotDefined
         finally:
             STATEFUL.SUPS.remove(key)
 
     @staticmethod
-    def __issub__(typ, other):
+    def __issub__(typ, other, typesystem=None):
         key = (id(typ), id(other))
         if key in STATEFUL.SUBS:
             return False
         STATEFUL.SUBS.add(key)
         try:
-            if extends(other, typ):
-                return True
+            if typesystem is None:
+                from typed.mods.check import resolve
+                typesystem = resolve.typesystem.entity(typesystem)
 
-            if "__issub__" in getattr(typ, "__dict__", {}):
-                issub_func = typ.__dict__["__issub__"]
-                if issub_func is not STATEFUL.__issub__:
+            meta_typ = typesystem.typeof(typ)
+            meta_other = typesystem.typeof(other)
+            if not STATEFUL.__issame__(meta_typ, meta_other, typesystem=typesystem):
+                return False
+
+            if "__issub__" in getattr(meta_typ, "__dict__", {}):
+                issub = meta_typ.__dict__["__issub__"]
+                if issub is not STATEFUL.__issub__:
                     try:
-                        res = issub_func(typ, other)
-                        if res is not NotImplemented: return res
+                        return issub(typ, other)
                     except TypeError:
                         pass
 
-            meta_typ = type(typ)
-            if hasattr(meta_typ, "__issub__"):
-                issub_func = getattr(meta_typ, "__issub__")
-                if issub_func is not STATEFUL.__issub__:
+            if "__issup__" in getattr(meta_other, "__dict__", {}):
+                issup = meta_other.__dict__["__issup__"]
+                if issup is not STATEFUL.__issup__:
                     try:
-                        res = issub_func(typ, other)
-                        if res is not NotImplemented: return res
+                        return issup(other, typ)
                     except TypeError:
                         pass
 
-            if "__issup__" in getattr(other, "__dict__", {}):
-                issup_func = other.__dict__["__issup__"]
-                if issup_func is not STATEFUL.__issup__:
-                    try:
-                        res = issup_func(other, typ)
-                        if res is not NotImplemented: return res
-                    except TypeError:
-                        pass
-
-            meta_other = type(other)
-            if hasattr(meta_other, "__issup__"):
-                issup_func = getattr(meta_other, "__issup__")
-                if issup_func is not STATEFUL.__issup__:
-                    try:
-                        res = issup_func(other, typ)
-                        if res is not NotImplemented: return res
-                    except TypeError:
-                        pass
-
-            return False
+            return STATEFUL.__issup__(other, typ, typesystem=typesystem)
         finally:
             STATEFUL.SUBS.remove(key)
 
     @staticmethod
-    def __isterm__(typ, trm):
+    def __isterm__(typ, trm, typesystem=None):
         key = (id(typ), id(trm))
         if key in STATEFUL.TERMS:
             return False
         STATEFUL.TERMS.add(key)
         try:
-            if "__isterm__" in getattr(typ, "__dict__", {}):
-                isterm_func = typ.__dict__["__isterm__"]
-                if isterm_func is not STATEFUL.__isterm__:
+            if typesystem is None:
+                from typed.mods.check import resolve
+                typesystem = resolve.typesystem.entity(typesystem)
+
+            meta_typ = typesystem.typeof(typ)
+            if "__isterm__" in getattr(meta_typ, "__dict__", {}):
+                isterm = meta_typ.__dict__["__isterm__"]
+                if isterm is not STATEFUL.__isterm__:
                     try:
-                        res = isterm_func(typ, trm)
-                        if res is not NotImplemented: return res
+                        res = isterm(typ, trm)
                     except TypeError:
                         pass
 
-            meta = type(typ)
-            if hasattr(meta, "__isterm__"):
-                isterm_func = getattr(meta, "__isterm__")
-                if isterm_func is not STATEFUL.__isterm__:
+            type_trm = typesystem.typeof(trm)
+            if "__issub__" in getattr(type_trm, "__dict__", {}):
+                issub = type_trm.__dict__["__issub__"]
+                if issub is not STATEFUL.__issub__:
                     try:
-                        res = isterm_func(typ, trm)
-                        if res is not NotImplemented: return res
+                        return issub(type_trm, typ)
                     except TypeError:
                         pass
 
-            if "__issub__" in getattr(type(trm), "__dict__", {}):
-                issub_func = type(trm).__dict__["__issub__"]
-                if issub_func is not STATEFUL.__issub__:
-                    try:
-                        res = issub_func(type(trm), typ)
-                        if res: return True
-                    except TypeError:
-                        pass
-
-            if hasattr(type(type(trm)), "__issub__"):
-                issub_func = getattr(type(type(trm)), "__issub__")
-                if issub_func is not STATEFUL.__issub__:
-                    try:
-                        res = issub_func(type(trm), typ)
-                        if res: return True
-                    except TypeError:
-                        pass
-
-            if isinstance(trm, type) and isinstance(typ, type):
-                if issubclass(trm, typ):
-                    return True
-
-            return isinstance(trm, typ)
+            return STATEFUL.__issub__(typ, type_trm, typesystem=typesystem)
         finally:
             STATEFUL.TERMS.remove(key)
 
     @staticmethod
-    def __isequiv__(typ, other):
+    def __isequiv__(typ, other, typesystem=None):
         key = (id(typ), id(other))
         if key in STATEFUL.EQUIVS:
             return False
         STATEFUL.EQUIVS.add(key)
         try:
-            if "__isequiv__" in getattr(typ, "__equiv__", {}):
-                isequiv = typ.__dict__["__isequiv__"]
+            if typesystem is None:
+                from typed.mods.check import resolve
+                typesystem = resolve.typesystem.entity(typesystem)
+
+            meta_typ = typesystem.typeof(typ)
+            if "__isequiv__" in getattr(meta_typ, "__dict__", {}):
+                isequiv = meta_typ.__isequiv__
                 if isequiv is not STATEFUL.__isequiv__:
                     try:
-                        res = isequiv(typ, other)
-                        if res is not NotImplemented: return res
+                        return isequiv(typ, other)
                     except TypeError:
                         pass
 
-            meta = type(typ)
-            if hasattr(meta, "__isequiv__"):
-                isequiv = getattr(meta, "__isequiv__")
+            meta_other = typesystem.typeof(other)
+            if "__isequiv__" in getattr(meta_other, "__dict__", {}):
+                isequiv = meta_other.__isequiv__
                 if isequiv is not STATEFUL.__isequiv__:
                     try:
-                        res = isequiv(typ, other)
-                        if res is not NotImplemented: return res
+                        return isequiv(other, typ)
                     except TypeError:
                         pass
 
-            if STATEFUL.__issub__(typ, other) and STATEFUL.__issub__(other, typ):
+            if STATEFUL.__issame__(typ, other, typesystem=typesystem):
                 return True
 
-            if STATEFUL.__issup__(typ, other) and STATEFUL.__issup__(other, typ):
+            if STATEFUL.__issub__(typ, other, typesystem=typesystem) and STATEFUL.__issub__(other, typ, typesystem=typesystem):
                 return True
 
-            if isinstance(typ, type) and isinstance(other, type):
-                if type is other:
-                    return True
+            if STATEFUL.__issup__(typ, other, typesystem=typesystem) and STATEFUL.__issup__(other, typ, typesystem=typesystem):
+                return True
 
-                typ_typesystems = set(getattr(typ, "__typesystems__", []))
-                other_typesystems = set(getattr(other, "__typesystems__", []))
-
-                common_typesystems = typ_typesystems.intersection(other_typesystems)
-
-                if not common_typesystems:
-                    return False
-
-                for typesystem in common_typesystems:
-                    if not STATEFUL.__isequiv__(type(typ), type(other)):
-                        return False
             return False
         finally:
             STATEFUL.EQUIVS.remove(key)
@@ -261,6 +232,21 @@ class MAGIC:
             return
 
         raise TypeError(f"Cannot iterate over {getattr(cls, '__name__', str(cls))}")
+
+def _abstract_isterm(univ, stateful, typesystem):
+    def __isterm__(typ, trm):
+        return stateful.__issub__(trm, univ, typesystem=typesystem)
+    return __isterm__
+
+def _universe_issub(univ, other, stateful):
+    if "is_universe" in getattr(other, "__dict__", {}) and "is_universe" in getattr(univ, "__dict__", {}):
+        return getattr(other, "level", -1) <= getattr(univ, "level", -1)
+    return stateful.__issub__(univ, other)
+
+def _abstract_issub(abs, other, stateful):
+    if "is_abstract" in getattr(other, "__dict__", {}) and "is_abstract" in getattr(abs, "__dict__", {}):
+        return getattr(other, "level", -1) <= getattr(abs, "level", -1)
+    return stateful.__issub__(abs, other)
 
 class _Placeholder:
     def __init__(self, base, transform):

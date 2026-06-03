@@ -30,15 +30,18 @@ only  = new.quantifier(reducer=new.reducer(lambda n: lambda iter: sum(bool(x) fo
 __quantifiers__ = { some, every, none, true, false, only }
 
 SAMENESS = new.sameness()
-UNIVERSE = new.universe()
-ABSTRACT = new.abstract()
+STATEFUL = new.stateful()
+MAGIC = new.magic()
+UNIVERSE = new.universe(stateful=STATEFUL, magic=MAGIC)
+ABSTRACT = new.abstract(stateful=STATEFUL, magic=MAGIC)
 TYPESYSTEM = new.typesystem(
+    stateful=STATEFUL,
+    magic=MAGIC,
     universe=UNIVERSE,
     abstract=ABSTRACT,
-    quantifiers={some, every, none, true, false, only},
-    typemap={},
-    is_strict=False,
-    kinds=set()
+    quantifiers=__quantifiers__,
+    kinds=__kinds__,
+    typemap={}
 )
 
 conf = new.conf()

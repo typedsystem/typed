@@ -49,6 +49,7 @@ def lazy(target):
             current_globals = current_module.__dict__
             lazy_map = current_globals.get("__lazy__", {})
             wildcards = current_globals.get("__wildcards__", [])
+
             if name_str in lazy_map:
                 module_name, attr_name = lazy_map[name_str]
                 module = import_module(module_name)
@@ -63,8 +64,10 @@ def lazy(target):
                         obj = getattr(module, name_str)
                         current_globals[name_str] = obj
                         return obj
-                except ImportError:
-                    continue
+                except ImportError as e:
+                    if getattr(e, "name", None) == mod_name:
+                        continue
+                    raise
 
             raise AttributeError(
                 f"module {caller_name!r} has no attribute {name_str!r}"

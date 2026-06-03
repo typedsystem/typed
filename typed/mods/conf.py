@@ -22,16 +22,25 @@ class TypeSystemConf(metaclass=__CONF__):
     def __init__(
         self,
         entity:      type=None,
+        stateful:    type=None,
+        magic:       type=None,
         universe:    type=None,
         abstract:    type=None,
         kinds:       set=None,
         typemap:     dict=None,
         quantifiers: set=None,
-        sameness:    type=None
     ):
         if entity is None:
             from typed.mods.init import TYPESYSTEM
             entity = TYPESYSTEM
+
+        if stateful is None:
+            from typed.mods.init import STATEFUL
+            stateful = STATEFUL
+
+        if magic is None:
+            from typed.mods.init import MAGIC
+            magic = MAGIC
 
         if universe is None:
             from typed.mods.init import UNIVERSE
@@ -39,6 +48,7 @@ class TypeSystemConf(metaclass=__CONF__):
 
         if abstract is None:
             from typed.mods.init import ABSTRACT
+            abstract = ABSTRACT
 
         if kinds is None:
             from typed.mods.init import __kinds__
@@ -46,41 +56,39 @@ class TypeSystemConf(metaclass=__CONF__):
 
         if typemap is None:
             from typed.mods.init import __typemap__
-            typemap = __typemap__
+            typemap = __typemap__()
 
         if quantifiers is None:
             from typed.mods.init import __quantifiers__
             quantifiers = __quantifiers__
 
-        if sameness is None:
-            from typed.mods.init import SAMENESS
-            sameness = SAMENESS
-
-        from typed.mods.typesystem import __UNIVERSE__, __ABSTRACT__, __TYPESYSTEM__, __SAMENESS__
+        from typed.mods.typesystem import __STATEFUL__, __MAGIC__, __UNIVERSE__, __ABSTRACT__, __TYPESYSTEM__
         from typed.mods.check import check
 
         check.isinstance(entity, __TYPESYSTEM__)
+        check.isinstance(stateful, __STATEFUL__)
+        check.isinstance(magic, __MAGIC__)
         check.isinstance(universe, __UNIVERSE__)
         check.isinstance(abstract, __ABSTRACT__)
         check.isinstance(typemap, dict)
         check.isinstance(kinds, set)
         check.isinstance(quantifiers, set)
-        check.isinstance(sameness, __SAMENESS__)
 
         self.entity = entity
+        self.stateful = stateful
+        self.magic = magic
         self.universe = universe
         self.abstract = abstract
         self.typemap = typemap
         self.kinds = kinds
         self.quantifiers = quantifiers
-        self.sameness = sameness
 
 class Conf(metaclass=__CONF__):
     def __init__(
         self,
+        logic:      LogicConf=None,
         typesystem: TypeSystemConf=None,
         err:        ErrConf=None,
-        logic:      LogicConf=None,
     ):
         if typesystem is None:
             typesystem = TypeSystemConf()
@@ -90,9 +98,9 @@ class Conf(metaclass=__CONF__):
             logic = LogicConf()
 
         from typed.mods.check import check
+        check.isinstance(logic, LogicConf)
         check.isinstance(typesystem, TypeSystemConf)
         check.isinstance(err, ErrConf)
-        check.isinstance(logic, LogicConf)
 
         self.typesystem=typesystem
         self.err=err
