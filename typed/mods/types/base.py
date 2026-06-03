@@ -1,8 +1,7 @@
 from typed.mods.meta.base import (
     EMPTY, NILL, ANY,
-    TYPE, PARAMETRIC,
-    STR, INT, FLOAT, BOOL, BYTE,
-    TUPLE, LIST, SET, DICT,
+    TYPE,
+    STR, INT, FLOAT, BOOL, BYTE
 )
 from typed.mods.init import TYPESYSTEM
 from typed.mods.err import NotDefined
@@ -14,12 +13,11 @@ class Empty(metaclass=EMPTY):
     : kindof(Empty)    is  type
     : typeof(Empty)    is  EMPTY
     : isterm(x, Empty) :=  False
-    : issub(T, Empty)  iff issub(typeof(T), EMPTY)
     : nullof(Empty)    is  NotDefined
     : builtin(Empty)   is  NotDefined
     """
-    is_type        = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__       = "type"
+    __typesystems__ = {TYPESYSTEM,}
     __type__       = EMPTY
     __display__    = "Empty"
     __null__       = NotDefined
@@ -32,12 +30,11 @@ class Nill(metaclass=NILL):
     : kindof(Empty)   is  type
     : typeof(Nill)    is  NILL
     : isterm(x, Nill) iff x is None
-    : issub(T, Nill)  iff issub(typeof(T), NILL)
     : nullof(Nill)    is  None
     : builtin(Nill)   is  NotDefined
     """
-    is_type         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "type"
+    __typesystems__ = {TYPESYSTEM,}
     __type__        = NILL
     __display__     = "Nill"
     __null__        = None
@@ -53,8 +50,8 @@ class Any(metaclass=ANY):
     : nullof(Any)    is None
     : builtin(Any)   is NotDefined
     """
-    is_type         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "type"
+    __typesystems__ = {TYPESYSTEM,}
     __type__        = ANY
     __display__     = "Any"
     __null__        = None
@@ -67,34 +64,15 @@ class Type(metaclass=TYPE):
     : kindof(Empty)   is  type
     : typeof(Type)    is  TYPE := UNIVERSE(0)
     : isterm(x, Type) iff issub(typeof(x), Type)
-    : issub(T, Type)  iff issub(typeof(T), TYPE)
     : nullof(Type)    is  Nill
     : builtin(Type)   is  type
     """
-    is_type         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "type"
+    __typesystems__ = {TYPESYSTEM,}
     __type__        = TYPE
     __display__     = "Type"
     __null__        = Nill
     __builtin__     = type
-
-class Parametric(metaclass=PARAMETRIC):
-    """
-    The type of parametric types.
-
-    : kindof(Parametric)    is  type
-    : typeof(Parametric)    is  PARAMETRIC
-    : isterm(x, Parametric) iff issub(typeof(x), Parametric)
-    : issub(T, Parametric)  iff issub(typeof(T), PARAMETRIC)
-    : nullof(Parametric)    is  NotDefined
-    : builtin(Parametric)   is  NotDefined
-    """
-    is_type         = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__        = PARAMETRIC
-    __display__     = "Parametric"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
 
 class Int(metaclass=INT):
     """
@@ -103,12 +81,11 @@ class Int(metaclass=INT):
     : kindof(Int)    is  type
     : typeof(Int)    is  INT
     : isterm(x, Int) iff issub(typeof(x), Int)
-    : issub(T, Int)  iff issub(typeof(T), INT)
     : null(Int)      is  0
     : builtin(Int)   is  int
     """
-    is_type         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "type"
+    __typesystems__ = {TYPESYSTEM,}
     __type__        = INT
     __display__     = "Int"
     __null__        = 0
@@ -121,12 +98,11 @@ class Float(metaclass=FLOAT):
     : kindof(Float)    is  type
     : typeof(Float)    is  FLOAT
     : isterm(x, Float) iff issub(typeof(x), Float)
-    : issub(T, Float)  iff issub(typeof(T), FLOAT)
     : nullof(Float)    is  0.0
     : builtin(Float)   is  float
     """
-    is_type         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "type"
+    __typesystems__ = {TYPESYSTEM,}
     __type__        = FLOAT
     __display__     = "Float"
     __null__        = 0.0
@@ -139,12 +115,11 @@ class Bool(metaclass=BOOL):
     : kindof(Bool)    is type
     : typeof(Bool)    is BOOL
     : isterm(x, Bool) iff issub(typeof(x), Bool)
-    : issub(T, Bool)  iff issub(typeof(T), BOOL)
     : nullof(Bool)    is False
     : builtin(Bool)   is bool
     """
-    is_type         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "type"
+    __typesystems__ = {TYPESYSTEM,}
     __type__        = BOOL
     __display__     = "Bool"
     __null__        = False
@@ -157,15 +132,14 @@ class Str(metaclass=STR):
     : kindof(Str)    is type
     : typeof(Str)    is STR
     : isterm(x, Str) iff issub(typeof(x), Str)
-    : issub(T, Str)  iff issub(typeof(T), STR)
     : nullof(Str)    is ""
     : builtin(Str)   is str
     """
     def __len__(self, obj):
         return len(obj)
 
-    is_type         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "type"
+    __typesystems__ = {TYPESYSTEM,}
     __type__        = STR
     __display__     = "Str"
     __null__        = ""
@@ -178,12 +152,11 @@ class Byte(metaclass=BYTE):
     : kindof(Byte)    is type
     : typeof(Byte)    is BYTE
     : isterm(x, Byte) iff issub(typeof(x), Byte)
-    : issub(T, Byte)  iff issub(typeof(T), BYTE)
     : nullof(Byte)    is bytes()
     : builtin(Byte)   is bytes
     """
-    is_type         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "type"
+    __typesystems__ = {TYPESYSTEM,}
     __type__        = BYTE
     __display__     = "Byte"
     __null__        = bytes()

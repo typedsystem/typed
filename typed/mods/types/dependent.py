@@ -12,13 +12,12 @@ class Tuple(metaclass=TUPLE):
     """
     from typed.mods.init import TYPESYSTEM
 
-    is_type         = True
+    __kind__        = "type"
     is_dependent    = True
-    __typesystems__ = [TYPESYSTEM]
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "Tuple"
     __null__        = tuple()
     __builtin__     = tuple
-
 
 class List(metaclass=LIST):
     """
@@ -32,13 +31,12 @@ class List(metaclass=LIST):
     """
     from typed.mods.init import TYPESYSTEM
 
-    is_type         = True
+    __kind__        = "type"
     is_dependent    = True
-    __typesystems__ = [TYPESYSTEM]
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "List"
     __null__        = []
     __builtin__     = list
-
 
 class Set(metaclass=SET):
     """
@@ -52,9 +50,9 @@ class Set(metaclass=SET):
     """
     from typed.mods.init import TYPESYSTEM
 
-    is_type         = True
+    __kind__        = "type"
     is_dependent    = True
-    __typesystems__ = [TYPESYSTEM]
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "Set"
     __null__        = set()
     __builtin__     = set
@@ -71,9 +69,9 @@ class Dict(metaclass=DICT):
     """
     from typed.mods.init import TYPESYSTEM
 
-    is_type         = True
-    is_dependent   = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "type"
+    is_dependent    = True
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "Dict"
     __null__        = {}
     __builtin__     = dict

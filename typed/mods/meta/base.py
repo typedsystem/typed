@@ -36,8 +36,8 @@ class EMPTY(TYPE):
     def __issup__(typ, other):
         return True
 
-    is_meta         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "meta"
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "EMPTY"
     __null__        = NotDefined
     __builtin__     = NotDefined
@@ -61,8 +61,8 @@ class ANY(TYPE):
     def __issup__(typ, other):
         return False
 
-    is_meta         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "meta"
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "ANY"
     __null__        = NotDefined
     __builtin__     = NotDefined
@@ -80,32 +80,9 @@ class NILL(TYPE):
     def __isterm__(typ, trm):
         return trm is None
 
-    is_meta         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "meta"
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "NILL"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
-
-class PARAMETRIC(TYPE):
-    """
-    The metatype of parametric types.
-
-    : kindof(PARAMETRIC)    is  meta
-    : typeof(PARAMETRIC)    is  UNIVERSE(1)
-    : isterm(T, PARAMETRIC) iff issub(typeof(T), PARAMETRIC)
-    : nullof(PARAMETRIC)    is  NotDefined
-    : builtin(PARAMETRIC)   is  NotDefined
-    """
-    def __isterm__(typ, trm):
-        from typed.mods.types.func import Factory
-        from typed.mods.typesystem import type
-        if hasattr(type(trm), "__call__"):
-            return type(trm).__iter__ in Factory
-        return False
-
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __display__     = "PARAMETRIC"
     __null__        = NotDefined
     __builtin__     = NotDefined
 
@@ -124,8 +101,8 @@ class INT(TYPE):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, int) or issub(typeof(typeof(trm)), INT)
 
-    is_meta         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "meta"
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "INT"
     __null__        = NotDefined
     __builtin__     = NotDefined
@@ -146,8 +123,8 @@ class FLOAT(TYPE):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, float) or issub(typeof(typeof(trm)), FLOAT)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "meta"
+    __typesystems__ = {TYPESYSTEM,} 
     __display__     = "FLOAT"
     __null__        = NotDefined
     __builtin__     = NotDefined
@@ -168,8 +145,8 @@ class STR(TYPE):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, str) or issub(typeof(typeof(trm)), STR)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "meta"
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "STR"
     __null__        = NotDefined
     __builtin__     = NotDefined
@@ -196,8 +173,8 @@ class BOOL(TYPE):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, bool) or issub(typeof(typeof(trm)), BOOL)
 
-    is_meta         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "meta"
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "BOOL"
     __null__        = NotDefined
     __builtin__     = NotDefined
@@ -219,8 +196,8 @@ class BYTE(TYPE):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, (bytes, bytearray)) or issub(typeof(typeof(trm)), BYTE)
 
-    is_meta         = True
-    __typesystems__ = [TYPESYSTEM]
+    __kind__        = "meta"
+    __typesystems__ = {TYPESYSTEM,}
     __display__     = "BYTE"
     __null__        = NotDefined
     __builtin__     = NotDefined
