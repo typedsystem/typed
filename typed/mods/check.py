@@ -1,42 +1,50 @@
 class Checker:
-    def __init__(self, func: callable, name: str = None):
+    def __init__(self, func: callable = None, name: str = None, quantifier: str = None, count: int = None):
         self.__func__ = func
+        self._quantifier = quantifier
+        self.count = count
         self.__name__ = name if name is not None else getattr(func, '__name__', 'checker')
         self.__display__ = self.__name__
 
     def __call__(self, *args, **kwargs):
-        return self.__func__(*args, **kwargs)
+        if self.__func__ is not None:
+            return self.__func__(*args, **kwargs)
+        if self._quantifier == 'only' and len(args) == 1 and isinstance(args[0], int):
+            return Checker(quantifier=self._quantifier, count=args[0])
 
-def checker(arg, name: str = None):
-    if isinstance(arg, str):
-        return QuantifiedChecker(quantifier=arg)
-    return staticmethod(Checker(func=arg, name=name))
-
-class QuantifiedChecker:
-    def __init__(self, quantifier: str, count: int = None):
-        self._quantifier = quantifier
-        self.count = count
-
-    def __call__(self, count: int):
-        return QuantifiedCheck(self._quantifier, count=count)
+        raise TypeError("This Checker is not callable in this context.")
 
     @property
     def quantifier(self):
-        from typed.mods.init import some, every, none, only
+        if self._quantifier is None:
+            return None
         if self._quantifier == 'some':
+            from typed.mods.init import some
             return some
         elif self._quantifier == 'every':
+            from typed.mods.init import every
             return every
         elif self._quantifier == 'none':
+            from typed.mods.init import none
             return none
         elif self._quantifier == 'only':
+            from typed.mods.init import only
             return only(self.count)
         raise ValueError(f"Unknown quantifier {self._quantifier}")
 
     def istype(self, entities, *typesystems, quantifier=None) -> bool:
+        from typed.mods.typesystem import istype
         q = self.quantifier
 
-        from typed.mods.typesystem import istype
+        if q is None:
+            if not istype(entities, *typesystems, quantifier=quantifier):
+                from typed.mods.err import TypeSystemErr
+                raise TypeSystemErr(
+                    entity=entities,
+                    expected="type",
+                    typesystems=typesystems
+                )
+            return True
 
         if not q(istype(entity, *typesystems) for entity in entities):
             from typed.mods.err import TypeSystemErr
@@ -49,9 +57,18 @@ class QuantifiedChecker:
         return True
 
     def ismeta(self, entities, *typesystems, quantifier=None) -> bool:
+        from typed.mods.typesystem import ismeta
         q = self.quantifier
 
-        from typed.mods.typesystem import ismeta
+        if q is None:
+            if not ismeta(entities, *typesystems, quantifier=quantifier):
+                from typed.mods.err import TypeSystemErr
+                raise TypeSystemErr(
+                    entity=entities,
+                    expected="meta",
+                    typesystems=typesystems
+                )
+            return True
 
         if not q(ismeta(entity, *typesystems) for entity in entities):
             from typed.mods.err import TypeSystemErr
@@ -64,9 +81,18 @@ class QuantifiedChecker:
         return True
 
     def isabstract(self, entities, *typesystems, quantifier=None) -> bool:
+        from typed.mods.typesystem import isabstract
         q = self.quantifier
 
-        from typed.mods.typesystem import isabstract
+        if q is None:
+            if not isabstract(entities, *typesystems, quantifier=quantifier):
+                from typed.mods.err import TypeSystemErr
+                raise TypeSystemErr(
+                    entity=entities,
+                    expected="abstract",
+                    typesystems=typesystems
+                )
+            return True
 
         if not q(isabstract(entity, *typesystems) for entity in entities):
             from typed.mods.err import TypeSystemErr
@@ -79,9 +105,18 @@ class QuantifiedChecker:
         return True
 
     def isuniverse(self, entities, *typesystems, quantifier=None) -> bool:
+        from typed.mods.typesystem import isuniverse
         q = self.quantifier
 
-        from typed.mods.typesystem import isuniverse
+        if q is None:
+            if not isuniverse(entities, *typesystems, quantifier=quantifier):
+                from typed.mods.err import TypeSystemErr
+                raise TypeSystemErr(
+                    entity=entities,
+                    expected="universe",
+                    typesystems=typesystems
+                )
+            return True
 
         if not q(isuniverse(entity, *typesystems) for entity in entities):
             from typed.mods.err import TypeSystemErr
@@ -93,26 +128,113 @@ class QuantifiedChecker:
             )
         return True
 
-    def iscognate(self, types, *others, quantifier=None) -> bool:
+    def isstruc(self, objs) -> bool:
+        from typed.mods.typesystem import isstruc
         q = self.quantifier
 
-        from typed.mods.typesystem import iscognate
+        if q is None:
+            if not isstruc(objs):
+                from typed.mods.err import TypeSystemErr
+                raise TypeSystemErr(
+                    entity=objs,
+                    expected="struc"
+                )
+            return True
 
-        if not q(iscognate(t, *others, quantifier=quantifier) for t in types):
+        if not q(isstruc(obj) for obj in objs):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entities=objs,
+                expected="struc",
+                quantifier=q
+            )
+        return True
+
+    def iscognate(self, strucs, *others, quantifier=None) -> bool:
+        from typed.mods.typesystem import iscognate
+        q = self.quantifier
+
+        if q is None:
+            if not iscognate(strucs, *others, quantifier=quantifier):
+                from typed.mods.err import TypeSystemErr
+                raise TypeSystemErr(
+                    details="Types do not share a common typesystem",
+                    types=(strucs, *others)
+                )
+            return True
+
+        if not q(iscognate(s, *others, quantifier=quantifier) for s in strucs):
             from typed.mods.err import TypeSystemErr
             raise TypeSystemErr(
                 details="Types do not share a common typesystem",
-                types=(types, *others)
+                types=(strucs, *others),
+                quantifier=q
+            )
+        return True
+
+    def iscongruent(self, strucs, *others, quantifier=None) -> bool:
+        from typed.mods.typesystem import iscongruent
+        q = self.quantifier
+
+        if q is None:
+            if not iscongruent(strucs, *others, quantifier=quantifier):
+                from typed.mods.err import TypeSystemErr
+                raise TypeSystemErr(
+                    details="Structures are not congruent",
+                    types=(strucs, *others)
+                )
+            return True
+
+        if not q(iscongruent(s, *others, quantifier=quantifier) for s in strucs):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                details="Structures are not congruent",
+                types=(strucs, *others),
+                quantifier=q
+            )
+        return True
+
+    def isentity(self, strucs, *typesystems, quantifier=None) -> bool:
+        from typed.mods.typesystem import isentity
+        q = self.quantifier
+
+        if q is None:
+            if not isentity(strucs, *typesystems, quantifier=quantifier):
+                from typed.mods.err import TypeSystemErr
+                raise TypeSystemErr(
+                    entity=strucs,
+                    typesystems=typesystems,
+                    expected="entity"
+                )
+            return True
+
+        if not q(isentity(s, *typesystems, quantifier=quantifier) for s in strucs):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entities=strucs,
+                typesystems=typesystems,
+                expected="entity",
+                quantifier=q
             )
         return True
 
     def isinstance(self, objs, *classes, quantifier=None) -> bool:
         from typed.mods.resolve import resolve
-
-        quantifier = resolve.logic.quantifier(quantifier)
+        logic_q = resolve.logic.quantifier(quantifier)
         q = self.quantifier
 
-        if not q(quantifier(isinstance(obj, cls) for cls in classes) for obj in objs):
+        if q is None:
+            if not logic_q(isinstance(objs, cls) for cls in classes):
+                from typed.mods.err import TypeErr
+                raise TypeErr(
+                    term=objs,
+                    expected=classes,
+                    quantifier=logic_q,
+                    received=type(objs)
+                )
+            return True
+
+        if not q(logic_q(isinstance(obj, cls) for cls in classes) for obj in objs):
             from typed.mods.err import TypeErr
             raise TypeErr(
                 term=objs,
@@ -122,15 +244,23 @@ class QuantifiedChecker:
             )
         return True
 
-    def isterm(self, objs, *types, quantifier=None) -> bool:
+    def isterm(self, objs, *types, quantifier=None, typesystem=None) -> bool:
+        from typed.mods.typesystem import isterm
         from typed.mods.resolve import resolve
-
-        quantifier = resolve.logic.quantifier(quantifier)
+        logic_q = resolve.logic.quantifier(quantifier)
         q = self.quantifier
 
-        from typed.mods.typesystem import isterm
+        if q is None:
+            if not isterm(objs, *types, quantifier=quantifier, typesystem=typesystem):
+                from typed.mods.err import TypeErr
+                raise TypeErr(
+                    term=objs,
+                    expected=types,
+                    quantifier=quantifier
+                )
+            return True
 
-        if not q(quantifier(isterm(obj, t) for t in types) for obj in objs):
+        if not q(logic_q(isterm(obj, t) for t in types) for obj in objs):
             from typed.mods.err import TypeErr
             raise TypeErr(
                 term=objs,
@@ -140,13 +270,23 @@ class QuantifiedChecker:
         return True
 
     def ismember(self, types, *typesystems, quantifier=None) -> bool:
+        from typed.mods.typesystem import ismember
         from typed.mods.resolve import resolve
-        quantifier = resolve.logic.quantifier(quantifier)
+        logic_q = resolve.logic.quantifier(quantifier)
         q = self.quantifier
 
-        from typed.mods.typesystem import ismember
+        if q is None:
+            if not ismember(types, *typesystems, quantifier=quantifier):
+                from typed.mods.err import NotDefined, TypeSystemErr
+                raise TypeSystemErr(
+                    type=types,
+                    typesystems=typesystems,
+                    quantifier=quantifier,
+                    received=getattr(types, "__typesystems__", NotDefined)
+                )
+            return True
 
-        if not q(quantifier(ismember(t, *typesystems) for t in types)):
+        if not q(logic_q(ismember(t, *typesystems) for t in types)):
             from typed.mods.err import TypeSystemErr, NotDefined
             raise TypeSystemErr(
                 type=types,
@@ -160,6 +300,15 @@ class QuantifiedChecker:
         from typed.mods.err import NotSatisfied
         q = self.quantifier
 
+        if q is None:
+            self.isinstance(conditions, callable)
+            if conditions(*args) is not True:
+                raise NotSatisfied(
+                    condition=conditions,
+                    args=args
+                )
+            return True
+
         if not q(cond(*args) is True for cond in conditions):
             raise NotSatisfied(
                 condition=q,
@@ -167,118 +316,31 @@ class QuantifiedChecker:
             )
         return True
 
+def checker(arg=None, name: str = None, quantifier: str = None, count: int = None):
+    if isinstance(arg, str):
+        return Checker(quantifier=arg)
+    if callable(arg):
+        return staticmethod(Checker(func=arg, name=name))
+    return Checker(quantifier=quantifier, count=count)
+
+
+_base_checker = Checker(quantifier=None)
+
 class check:
     some = checker("some")
     every = checker("every")
     none = checker("none")
     only = checker("only")
 
-    @checker
-    def istype(entity: type, *typesystems, quantifier=None) -> bool:
-        from typed.mods.typesystem import istype
-        if not istype(entity, *typesystems, quantifier=quantifier):
-            from typed.mods.err import TypeSystemErr
-            raise TypeSystemErr(
-                entity=entity,
-                expcted="type",
-                typesystems=typesystems             
-            )
-        return True
-
-    @checker
-    def ismeta(entity: type, *typesystems, quantifier=None) -> bool:
-        from typed.mods.typesystem import ismeta
-        if not ismeta(entity, *typesystems, quantifier=quantifier):
-            from typed.mods.err import TypeSystemErr
-            raise TypeSystemErr(
-                entity=entity,
-                expected="meta",
-                typesystems=typesystems
-            )
-        return True
-
-    @checker
-    def isabstract(entity: type, *typesystems, quantifier=None) -> bool:
-        from typed.mods.typesystem import isabstract
-        if not isabstract(entity, *typesystems, quantifier=quantifier):
-            from typed.mods.err import TypeSystemErr
-            raise TypeSystemErr(
-                entity=entity,
-                expected="abstract",
-                typesystems=typesystems
-            )
-        return True
-
-    @checker
-    def isuniverse(entity: type, *typesystems, quantifier=None) -> bool:
-        from typed.mods.typesystem import isuniverse
-        if not isuniverse(entity, *typesystems, quantifier=quantifier):
-            from typed.mods.err import TypeSystemErr
-            raise TypeSystemErr(
-                entity=entity,
-                expected="universe",
-                typesystems=typesystems
-            )
-        return True
-
-    @checker
-    def iscognate(type: type, *others: tuple[type], quantifier=None) -> bool:
-        from typed.mods.typesystem import iscognate
-        if not iscognate(type, *others, quantifier=quantifier):
-            from typed.mods.err import TypeSystemErr
-            raise TypeSystemErr(
-                details="Types do not share a common typesystem",
-                types=(type, *others),
-                typesystems=(*(getattr(type, "__typesystems__", ())), *(getattr(other, "__typesystems__", ()) for other in others))
-            )
-        return True
-
-    @checker
-    def isinstance(obj: object, *classes: tuple[type], quantifier=None) -> bool:
-        if not quantifier(isinstance(obj, cls) for cls in classes):
-            from typed.mods.err import TypeErr
-            raise TypeErr(
-                term=obj,
-                expected=classes,
-                quantifier=quantifier,
-                received=type(obj)
-            )
-        return True
-
-    @checker
-    def isterm(term: object, *types: tuple[type], quantifier=None, typesystem=None) -> bool:
-        from typed.mods.typesystem import isterm
-        if not isterm(term, *types, quantifier=quantifier, typesystem=typesystem):
-            from typed.mods.err import TypeErr
-            raise TypeErr(
-                term=term,
-                expected=types,
-                quantifier=quantifier
-            )
-        return True
-
-    @checker
-    def ismember(type: type, *typesystems: tuple[type], quantifier=None) -> bool:
-        from typed.mods.typesystem import ismember
-        if not ismember(type, *typesystems, quantifier=quantifier):
-            from typed.mods.err import NotDefined
-            from typed.mods.err import TypeSystemErr
-            raise TypeSystemErr(
-                type=type,
-                typesystems=typesystems,
-                quantifier=quantifier,
-                received=getattr(type, "__typesystems__", NotDefined)
-            )
-        return True
-
-    @checker
-    def satisfy(condition: callable, *args: tuple) -> bool:
-        check.isinstance(condition, callable)
-        if condition(*args) is not True:
-            from typed.mods.err import NotSatisfied
-            raise NotSatisfied(
-                condition=condition,
-                args=args
-            )
-        return True
-
+    istype = _base_checker.istype
+    ismeta = _base_checker.ismeta
+    isabstract = _base_checker.isabstract
+    isuniverse = _base_checker.isuniverse
+    isstruc = _base_checker.isstruc
+    iscognate = _base_checker.iscognate
+    iscongruent = _base_checker.iscongruent
+    isentity = _base_checker.isentity
+    isinstance = _base_checker.isinstance
+    isterm = _base_checker.isterm
+    ismember = _base_checker.ismember
+    satisfy = _base_checker.satisfy
