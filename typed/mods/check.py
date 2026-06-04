@@ -9,22 +9,10 @@ class Checker:
 
 def checker(arg, name: str = None):
     if isinstance(arg, str):
-        return QuantifiedCheck(quantifier=arg)
+        return QuantifiedChecker(quantifier=arg)
     return staticmethod(Checker(func=arg, name=name))
 
-class Resolver:
-    def __init__(self, func: callable, name: str = None):
-        self.__func__ = func
-        self.__name__ = name if name is not None else getattr(func, '__name__', 'resolver')
-        self.__display__ = self.__name__
-
-    def __call__(self, *args, **kwargs):
-        return self.__func__(*args, **kwargs)
-
-def resolver(func: callable, name: str = None):
-    return staticmethod(Resolver(func=func, name=name))
-
-class QuantifiedCheck:
+class QuantifiedChecker:
     def __init__(self, quantifier: str, count: int = None):
         self._quantifier = quantifier
         self.count = count
@@ -45,18 +33,67 @@ class QuantifiedCheck:
             return only(self.count)
         raise ValueError(f"Unknown quantifier {self._quantifier}")
 
-    def istype(self, objs) -> bool:
-        quantifier = self.quantifier
+    def istype(self, entities, *typesystems, quantifier=None) -> bool:
+        q = self.quantifier
 
         from typed.mods.typesystem import istype
 
-        if not quantifier(istype(obj) for obj in objs):
-            from typed.mods.err import IsNotType
-            raise IsNotType(object=objs)
+        if not q(istype(entity, *typesystems) for entity in entities):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entities=entities,
+                typesystems=typesystems,
+                expected="type",
+                quantifier=quantifier
+            )
+        return True
+
+    def ismeta(self, entities, *typesystems, quantifier=None) -> bool:
+        q = self.quantifier
+
+        from typed.mods.typesystem import ismeta
+
+        if not q(ismeta(entity, *typesystems) for entity in entities):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entities=entities,
+                typesystems=typesystems,
+                expected="meta",
+                quantifier=quantifier
+            )
+        return True
+
+    def isabstract(self, entities, *typesystems, quantifier=None) -> bool:
+        q = self.quantifier
+
+        from typed.mods.typesystem import isabstract
+
+        if not q(isabstract(entity, *typesystems) for entity in entities):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entities=entities,
+                typesystems=typesystems,
+                expected="abstract",
+                quantifier=quantifier
+            )
+        return True
+
+    def isuniverse(self, entities, *typesystems, quantifier=None) -> bool:
+        q = self.quantifier
+
+        from typed.mods.typesystem import isuniverse
+
+        if not q(isuniverse(entity, *typesystems) for entity in entities):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entities=entities,
+                typesystems=typesystems,
+                expected="universe",
+                quantifier=quantifier
+            )
         return True
 
     def iscognate(self, types, *others, quantifier=None) -> bool:
-        quantifier = resolve.logic.quantifier(quantifier)
         q = self.quantifier
 
         from typed.mods.typesystem import iscognate
@@ -70,6 +107,8 @@ class QuantifiedCheck:
         return True
 
     def isinstance(self, objs, *classes, quantifier=None) -> bool:
+        from typed.mods.resolve import resolve
+
         quantifier = resolve.logic.quantifier(quantifier)
         q = self.quantifier
 
@@ -84,6 +123,8 @@ class QuantifiedCheck:
         return True
 
     def isterm(self, objs, *types, quantifier=None) -> bool:
+        from typed.mods.resolve import resolve
+
         quantifier = resolve.logic.quantifier(quantifier)
         q = self.quantifier
 
@@ -99,6 +140,7 @@ class QuantifiedCheck:
         return True
 
     def ismember(self, types, *typesystems, quantifier=None) -> bool:
+        from typed.mods.resolve import resolve
         quantifier = resolve.logic.quantifier(quantifier)
         q = self.quantifier
 
@@ -132,16 +174,55 @@ class check:
     only = checker("only")
 
     @checker
-    def istype(obj: type) -> bool:
+    def istype(entity: type, *typesystems, quantifier=None) -> bool:
         from typed.mods.typesystem import istype
-        if not istype(obj):
-            from typed.mods.err import IsNotType
-            raise IsNotType(object=obj)
+        if not istype(entity, *typesystems, quantifier=quantifier):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entity=entity,
+                expcted="type",
+                typesystems=typesystems             
+            )
+        return True
+
+    @checker
+    def ismeta(entity: type, *typesystems, quantifier=None) -> bool:
+        from typed.mods.typesystem import ismeta
+        if not ismeta(entity, *typesystems, quantifier=quantifier):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entity=entity,
+                expected="meta",
+                typesystems=typesystems
+            )
+        return True
+
+    @checker
+    def isabstract(entity: type, *typesystems, quantifier=None) -> bool:
+        from typed.mods.typesystem import isabstract
+        if not isabstract(entity, *typesystems, quantifier=quantifier):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entity=entity,
+                expected="abstract",
+                typesystems=typesystems
+            )
+        return True
+
+    @checker
+    def isuniverse(entity: type, *typesystems, quantifier=None) -> bool:
+        from typed.mods.typesystem import isuniverse
+        if not isuniverse(entity, *typesystems, quantifier=quantifier):
+            from typed.mods.err import TypeSystemErr
+            raise TypeSystemErr(
+                entity=entity,
+                expected="universe",
+                typesystems=typesystems
+            )
         return True
 
     @checker
     def iscognate(type: type, *others: tuple[type], quantifier=None) -> bool:
-        quantifier = resolve.logic.quantifier(quantifier)
         from typed.mods.typesystem import iscognate
         if not iscognate(type, *others, quantifier=quantifier):
             from typed.mods.err import TypeSystemErr
@@ -154,7 +235,6 @@ class check:
 
     @checker
     def isinstance(obj: object, *classes: tuple[type], quantifier=None) -> bool:
-        quantifier = resolve.logic.quantifier(quantifier)
         if not quantifier(isinstance(obj, cls) for cls in classes):
             from typed.mods.err import TypeErr
             raise TypeErr(
@@ -167,8 +247,6 @@ class check:
 
     @checker
     def isterm(term: object, *types: tuple[type], quantifier=None, typesystem=None) -> bool:
-        quantifier = resolve.logic.quantifier(quantifier)
-        typesystem = resolve.typesystem.entity(typesystem)
         from typed.mods.typesystem import isterm
         if not isterm(term, *types, quantifier=quantifier, typesystem=typesystem):
             from typed.mods.err import TypeErr
@@ -181,9 +259,7 @@ class check:
 
     @checker
     def ismember(type: type, *typesystems: tuple[type], quantifier=None) -> bool:
-        quantifier = resolve.logic.quantifier(quantifier)
         from typed.mods.typesystem import ismember
-
         if not ismember(type, *typesystems, quantifier=quantifier):
             from typed.mods.err import NotDefined
             from typed.mods.err import TypeSystemErr
@@ -206,134 +282,3 @@ class check:
             )
         return True
 
-def _resolve(provided: object, default: object) -> object:
-    from typed.mods.err import NotDefined
-    val = default if provided is None or provided is NotDefined else provided
-
-    check.isinstance(val, type(default))
-    return val
-
-class resolve:
-    @resolver
-    def conf(conf=None):
-        from typed.mods.err import NotDefined
-        if conf is not None and conf is not NotDefined: 
-            return conf
-        try:
-            from typed.mods.init import conf as _conf
-            return _resolve(provided=conf, default=_conf)
-        except ImportError:
-            # Short-circuit during module bootstrap to avoid circular imports
-            return None
-
-    class err:
-        @resolver
-        def multiline(multiline=None, conf=None):
-            from typed.mods.err import NotDefined
-            if multiline is not None and multiline is not NotDefined: 
-                return multiline
-            c = resolve.conf(conf)
-            if c is None: 
-                return True
-            return _resolve(provided=multiline, default=c.err.multiline)
-
-    class logic:
-        @resolver
-        def quantifier(quantifier=None, conf=None):
-            from typed.mods.err import NotDefined
-            if quantifier is not None and quantifier is not NotDefined: 
-                return quantifier
-            c = resolve.conf(conf)
-            if c is None:
-                from typed.mods.init import some
-                return some
-            return _resolve(provided=quantifier, default=c.logic.quantifier)
-
-    class typesystem:
-        @resolver
-        def entity(typesystem=None, conf=None):
-            from typed.mods.err import NotDefined
-            if typesystem is not None and typesystem is not NotDefined: 
-                return typesystem
-            c = resolve.conf(conf)
-            if c is None:
-                from typed.mods.init import TYPESYSTEM
-                return TYPESYSTEM
-            return _resolve(provided=typesystem, default=c.typesystem.entity)
-
-        @resolver
-        def stateful(stateful=None, conf=None):
-            from typed.mods.err import NotDefined
-            if stateful is not None and stateful is not NotDefined: 
-                return stateful
-            c = resolve.conf(conf)
-            if c is None:
-                from typed.mods.init import STATEFUL
-                return STATEFUL
-            return _resolve(provided=stateful, default=c.typesystem.stateful)
-
-        @resolver
-        def magic(magic=None, conf=None):
-            from typed.mods.err import NotDefined
-            if magic is not None and magic is not NotDefined: 
-                return magic
-            c = resolve.conf(conf)
-            if c is None:
-                from typed.mods.init import MAGIC
-                return MAGIC
-            return _resolve(provided=magic, default=c.typesystem.magic)
-
-        @resolver
-        def universe(universe=None, conf=None):
-            from typed.mods.err import NotDefined
-            if universe is not None and universe is not NotDefined: 
-                return universe
-            c = resolve.conf(conf)
-            if c is None:
-                from typed.mods.init import UNIVERSE
-                return UNIVERSE
-            return _resolve(provided=universe, default=c.typesystem.universe)
-
-        @resolver
-        def abstract(abstract=None, conf=None):
-            from typed.mods.err import NotDefined
-            if abstract is not None and abstract is not NotDefined: 
-                return abstract
-            c = resolve.conf(conf)
-            if c is None:
-                from typed.mods.init import ABSTRACT
-                return ABSTRACT
-            return _resolve(provided=abstract, default=c.typesystem.abstract)
-
-        @resolver
-        def typemap(typemap=None, conf=None):
-            from typed.mods.err import NotDefined
-            if typemap is not None and typemap is not NotDefined: 
-                return typemap
-            c = resolve.conf(conf)
-            if c is None:
-                from typed.mods.init import __typemap__
-                return __typemap__()
-            return _resolve(provided=typemap, default=c.typesystem.typemap)
-
-        @resolver
-        def quantifiers(quantifiers=None, conf=None):
-            from typed.mods.err import NotDefined
-            if quantifiers is not None and quantifiers is not NotDefined: 
-                return quantifiers
-            c = resolve.conf(conf)
-            if c is None:
-                from typed.mods.init import __quantifiers__
-                return __quantifiers__
-            return _resolve(provided=quantifiers, default=c.typesystem.quantifiers)
-
-        @resolver
-        def kinds(kinds=None, conf=None):
-            from typed.mods.err import NotDefined
-            if kinds is not None and kinds is not NotDefined: 
-                return kinds
-            c = resolve.conf(conf)
-            if c is None:
-                from typed.mods.init import __kinds__
-                return __kinds__
-            return _resolve(provided=kinds, default=c.typesystem.kinds)

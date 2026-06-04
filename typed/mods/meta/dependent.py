@@ -361,12 +361,13 @@ class NOT_IN(EXTENSIONAL):
 
 class PROD(TYPE):
     def __isterm__(typ, trm):
-        from typed.mods.core import isterm
+        from typed.mods.typesystem import isterm
+        from typed.mods.init import every
         if not isterm(trm, tuple):
             return False
         if len(trm) != len(typ.__types__):
             return False
-        return all(isterm(x, t) for x, t in zip(trm, typ.__types__))
+        return every(isterm(x, t) for x, t in zip(trm, typ.__types__))
 
     def __issub__(typ, other):
         from typed.mods.core import issub
@@ -387,11 +388,9 @@ class PROD(TYPE):
             from typed.mods.types.base import Tuple
             return Tuple
 
-        if typesystem is None:
-            from typed.mods.core import TYPESYSTEM
-            typesystem = TYPESYSTEM
-
-        typesystem.check(*tuple(types))
+        from typed.mods.check import check, resolve
+        typesystem = resolve.typesystem.entity(typesystem)
+        check(*tuple(types))
 
         if len(types) == 1:
             return types[0]
@@ -411,4 +410,5 @@ class PROD(TYPE):
             '__null__': nulls if len(nulls) == len(types) else NotDefined
         })
 
+class COPROD(TYPE):
 
