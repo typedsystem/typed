@@ -218,6 +218,29 @@ class Checker:
             )
         return True
 
+    def iscallable(self, objs) -> bool:
+        q = self.quantifier
+
+        if q is None:
+            if not callable(objs):
+                from typed.mods.err import TypeErr
+                raise TypeErr(
+                    term=objs,
+                    expected=("callable",),
+                    received=type(objs)
+                )
+            return True
+
+        if not q(callable(obj) for obj in objs):
+            from typed.mods.err import TypeErr
+            raise TypeErr(
+                term=objs,
+                expected=("callable",),
+                quantifier=q,
+                received=tuple(type(obj) for obj in objs)
+            )
+        return True
+
     def isinstance(self, objs, *classes, quantifier=None) -> bool:
         from typed.mods.resolve import resolve
         logic_q = resolve.logic.quantifier(quantifier)
@@ -324,7 +347,7 @@ def checker(arg=None, name: str = None, quantifier: str = None, count: int = Non
     return Checker(quantifier=quantifier, count=count)
 
 
-_base_checker = Checker(quantifier=None)
+__checker__ = Checker(quantifier=None)
 
 class check:
     some = checker("some")
@@ -332,15 +355,16 @@ class check:
     none = checker("none")
     only = checker("only")
 
-    istype = _base_checker.istype
-    ismeta = _base_checker.ismeta
-    isabstract = _base_checker.isabstract
-    isuniverse = _base_checker.isuniverse
-    isstruc = _base_checker.isstruc
-    iscognate = _base_checker.iscognate
-    iscongruent = _base_checker.iscongruent
-    isentity = _base_checker.isentity
-    isinstance = _base_checker.isinstance
-    isterm = _base_checker.isterm
-    ismember = _base_checker.ismember
-    satisfy = _base_checker.satisfy
+    istype = __checker__.istype
+    ismeta = __checker__.ismeta
+    isabstract = __checker__.isabstract
+    isuniverse = __checker__.isuniverse
+    isstruc = __checker__.isstruc
+    iscognate = __checker__.iscognate
+    iscongruent = __checker__.iscongruent
+    isentity = __checker__.isentity
+    isinstance = __checker__.isinstance
+    iscallable = __checker__.iscallable
+    isterm = __checker__.isterm
+    ismember = __checker__.ismember
+    satisfy = __checker__.satisfy

@@ -1,44 +1,57 @@
-def _from_typing(obj):
-    try:
-        from typing import Any as Any_, NoReturn, Final
-        if obj is Any_ or obj is NoReturn or obj is Final:
-            return True
-    except Exception:
-        pass
-    if hasattr(obj, "__module__") and obj.__module__ == "typing":
-        return True
-    if getattr(type(obj), "__module__", None) == "typing":
-        return True
-    return False
+def names(*terms: tuple[object], typesystem=None) -> str:
+    from typed.mods.typesystem import nameof
+    return ', '.join(nameof(t, typesystem=typesystem) for t in terms)
 
+def prod(*discourses, limit: int = -1):
+    from typed.mods.logic import Discourse
+    from typed.mods.check import check
+    from itertools import islice
 
-def _inner_union(*types):
-    class _union_meta(type):
-        def __instancecheck__(cls, instance):
-            return isinstance(instance, tuple(cls.__types__))
+    check.every.isinstance(discourses, Discourse)
 
-    return _union_meta("Inner Union", (), {'__types__': types})
+    zipped_iterator = zip(*discourses, strict=True)
 
-def _inner_dict_union(*types):
-    class _union_meta(type):
-        def __instancecheck__(cls, instance):
-            from typed.mods.types.base import TYPE
-            for t in cls.__types__:
-                if isinstance(t, TYPE) and hasattr(t, '__instancecheck__'):
-                    result = t.__instancecheck__(instance)
-                    if result:
-                        return True
-                else:
-                    result = isinstance(instance, t)
-                    if result:
-                        return True
-            return False
-    return _union_meta("Inner Union", (), {'__types__': types})
+    if limit > 0:
+        yield from islice(zipped_iterator, limit)
+    else:
+        yield from zipped_iterator
 
+def diag(*discourses, limit: int = -1):
+    from typed.mods.logic import Discourse
+    from typed.mods.check import check
+    from itertools import islice
 
-def _META(name, bases, instancecheck, subclasscheck=None, **attrs):
-    dct = {'__instancecheck__': staticmethod(instancecheck)}
-    if subclasscheck:
-        dct['__subclasscheck__'] = staticmethod(subclasscheck)
-    dct.update(attrs)
-    return type(name, bases, dct)
+    check.every.isinstance(discourses, Discourse)
+
+    yielded_count = 0
+
+    for i, discourse in enumerate(discourses):
+        if 0 < limit <= yielded_count:
+            break
+
+        iterator = iter(discourse)
+
+        diagonal_element = list(islice(iterator, i, i + 1))
+
+        if not diagonal_element:
+            raise ValueError(f"Discourse at index {i} is too short to form a complete diagonal.")
+
+        yield diagonal_element[0]
+        yielded_count += 1
+
+def coprod(*discourses, limit: int = -1):
+    from typed.mods.logic import Discourse
+    from typed.mods.check import check
+    from itertools import islice
+
+    check.every.isinstance(discourses, Discourse)
+
+    def _coprod_generator():
+        for i, discourse in enumerate(discourses):
+            for x in discourse:
+                yield (i, x)
+
+    if limit > 0:
+        yield from islice(_coprod_generator(), limit)
+    else:
+        yield from _coprod_generator()

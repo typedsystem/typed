@@ -50,8 +50,11 @@ class resolve:
                 return quantifier
             c = resolve.conf(conf)
             if c is None:
-                from typed.mods.init import some
-                return some
+                try:
+                    from typed.mods.init import some
+                    return some
+                except ImportError:
+                    return any
             return _resolve(provided=quantifier, default=c.logic.quantifier)
 
     class typesystem:

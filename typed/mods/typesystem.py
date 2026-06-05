@@ -3,11 +3,11 @@ class __SAMENESS__:
         if suffices:
             from typed.mods.check import check
             for condition in suffices:
-                check.isinstance(condition, callable)
+                check.iscallable(condition)
         if needed:
             from typed.mods.check import check
             for condition in needed:
-                check.isinstance(condition, callable)
+                check.iscallable(condition)
 
         self.suffices = suffices
         self.needed = needed
@@ -665,9 +665,6 @@ def nameof(entity: object, typesystem: __TYPESYSTEM__=None):
     type = typemap(entity, typesystem=typesystem)
 
     return getattr(term, '__name__', NotDefined)
-
-def names(*terms: tuple[object], typesystem=None) -> str:
-    return ', '.join(nameof(t) for t in terms)
 
 def trackof(type: type, typesystem: __TYPESYSTEM__=None) -> type:
     from typed.mods.resolve import resolve

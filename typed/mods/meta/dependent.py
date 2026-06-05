@@ -37,7 +37,7 @@ class TUPLE(TYPE):
         return False
 
     def __call__(typ, *types, typesystem=None):
-        from typed.mods.typesystem import names
+        from typed.helper.helper import names
         from typed.mods.check import resolve
 
         typesystem = resolve.typesystem.entity(typesystem)
@@ -103,7 +103,7 @@ class LIST(TYPE):
 
     def __call__(typ, *types, typesystem=None):
         from typed.mods.check import check, resolve
-        from typed.mods.typesystem import names
+        from typed.helper.helper import names
         typesystem = resolve.typesystem.entity(typesystem)
 
         types = set(types)
@@ -168,7 +168,7 @@ class SET(TYPE):
 
     def __call__(typ, *types, typesystem=None):
         from typed.mods.check import check, resolve
-        from typed.mods.typesystem import names
+        from typed.helper.helper import names
         typesystem = resolve.typesystem.entity(typesystem)
 
         types = set(types)
@@ -252,7 +252,7 @@ class DICT(TYPE):
 
     def __call__(typ, *types, key=None, typesystem=None):
         from typed.mods.check import check, resolve
-        from typed.mods.typesystem import names
+        from typed.helper.helper import names
         typesystem = resolve.typesystem.entity(typesystem)
 
         types = set(types)
@@ -317,7 +317,7 @@ class EXTENSIONAL(TYPE):
             return types[0]
 
         from typed.mods.init import TYPESYSTEM
-        from typed.mods.typesystem import names
+        from typed.helper.helper import names
         from typed.mods.err import NotDefined
 
         name = f"{name}({names(*types)})"
@@ -410,5 +410,5 @@ class PROD(TYPE):
             '__null__': nulls if len(nulls) == len(types) else NotDefined
         })
 
-class COPROD(TYPE):
+class COPROD(TYPE): pass
 

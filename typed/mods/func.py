@@ -39,7 +39,7 @@ __wrap_attrs__ = ["wrapped", "__wrapped__", "_wrapped", "func", "__func__", "_fu
 def unwrap(func: callable, attrs: list[str]=__wrap_attrs__) -> callable:
     from typed.mods.check import check
 
-    check.isinstance(func, callable)
+    check.iscallable(func)
 
     seen = set()
     for attr in attrs:

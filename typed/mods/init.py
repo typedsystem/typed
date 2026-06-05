@@ -2,8 +2,10 @@ from typed.mods.typesystem import new
 
 def __typemap__():
     from typed.mods.types.base import (
-        Int, Float, Bool, Str, Byte,
-        List, Tuple, Set, Dict
+        Int, Float, Bool, Str, Byte
+    )
+    from typed.mods.types.dependent import (
+        Tuple, List, Set, Dict
     )
     return {
         int:       Int,
