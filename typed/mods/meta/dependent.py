@@ -250,7 +250,7 @@ class DICT(TYPE):
         typesystem = resolve.typesystem.entity(typesystem)
 
         types = set(types)
-        
+
         if key is not None:
             display_name = f"Dict({typesystem.nameof(*types)}, key={typesystem.nameof(key)})" if types else f"Dict(key={typesystem.nameof(key)})"
         else:
@@ -357,7 +357,7 @@ class ALGEBRAIC(TYPE):
     def __call__(met, name_prefix, *types, typesystem=None):
         from typed.mods.check import check, resolve
         typesystem = resolve.typesystem.entity(typesystem)
-        
+
         if not types:
             from typed.mods.types.base import Tuple
             return Tuple

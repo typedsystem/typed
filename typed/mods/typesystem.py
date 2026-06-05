@@ -108,7 +108,7 @@ class ___UNIVERSE___(type):
     def __iter__(cls):
         systems = getattr(cls, "__typesystems__", set())
         for typesystem in systems:
-            yield from typesystem.__entities__["universe"]
+            yield from typesystem.__members__["universe"]
 
 class ___ABSTRACT___(___UNIVERSE___):
     """
@@ -166,7 +166,7 @@ class ___ABSTRACT___(___UNIVERSE___):
     def __iter__(cls):
         systems = getattr(cls, "__typesystems__", set())
         for typesystem in systems:
-            yield from typesystem.__entities__["abstract"]
+            yield from typesystem.__members__["abstract"]
 
 class __UNIVERSE__(type, metaclass=___UNIVERSE___):
     """
@@ -269,9 +269,9 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
                 return typesystem.__universe__
 
             typesystem.enrich(level=n+1)
-            UNI = typesystem.__entities__["universe"][n]
+            UNI = typesystem.__members__["universe"][n]
             UNI.__typesystems__ = [typesystem]
-            UNI.__type__ = typesystem.__entities__["universe"][n+1]
+            UNI.__type__ = typesystem.__members__["universe"][n+1]
             UNI.__builtin__ = NotDefined
             UNI.__null__ = NotDefined
             return UNI
@@ -382,9 +382,9 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
 
             from typed.mods.err import NotDefined
             typesystem.enrich(level=n+1)
-            ABS = typesystem.__entities__["abstract"][n]
+            ABS = typesystem.__members__["abstract"][n]
             ABS.__typesystems__ = [typesystem]
-            ABS.__type__ = typesystem.__entities__["universe"][n+1]
+            ABS.__type__ = typesystem.__members__["universe"][n+1]
             ABS.__builtin__ = NotDefined
             ABS.__null__ = NotDefined
             return ABS
@@ -428,13 +428,13 @@ class __TYPESYSTEM__:
 
         self.is_typesystem = True
 
-        self.__entities__ = {}
+        self.__members__ = {}
         for kind in self.__kinds__:
-            self.__entities__[kind] = set() if kind not in ["universe", "abstract"] else {}
+            self.__members__[kind] = set() if kind not in ["universe", "abstract"] else {}
 
-        self.__entities__["universe"][-1] = self.__universe__
-        self.__entities__["abstract"][-1] = self.__abstract__
-        self.__entities__["quantifier"]=quantifiers
+        self.__members__["universe"][-1] = self.__universe__
+        self.__members__["abstract"][-1] = self.__abstract__
+        self.__members__["quantifier"]=quantifiers
 
         def __new__(univ, typ, bases, namespace, **kwds):
             from typed.mods.err import NotDefined
@@ -536,14 +536,14 @@ class __TYPESYSTEM__:
         self.__enricher__ = __enricher__()
 
     def enrich(self, level):
-        while len(self.__entities__["universe"]) <= level + 1:
+        while len(self.__members__["universe"]) <= level + 1:
             u, a = next(self.__enricher__)
             u_level = getattr(u, "level", -1)
 
-            if u_level not in self.__entities__["universe"]:
-                self.__entities__["universe"][u_level] = u
-            if u_level not in self.__entities__["abstract"]:
-                self.__entities__["abstract"][u_level] = a
+            if u_level not in self.__members__["universe"]:
+                self.__members__["universe"][u_level] = u
+            if u_level not in self.__members__["abstract"]:
+                self.__members__["abstract"][u_level] = a
 
     def add(self, *T):
         for t in T:
@@ -557,9 +557,9 @@ class __TYPESYSTEM__:
 
                 if is_k:
                     if kind in ["universe", "abstract"]:
-                        self.__entities__[kind][getattr(t, "level", -1)] = t
+                        self.__members__[kind][getattr(t, "level", -1)] = t
                     else:
-                        self.__entities__[kind].add(t)
+                        self.__members__[kind].add(t)
 
     def rm(self, *T):
         for t in T:
@@ -573,22 +573,22 @@ class __TYPESYSTEM__:
 
                 if is_k:
                     if kind in ["universe", "abstract"]:
-                        self.__entities__[kind].pop(getattr(t, "level", -1), None)
+                        self.__members__[kind].pop(getattr(t, "level", -1), None)
                     else:
-                        self.__entities__[kind].discard(t)
+                        self.__members__[kind].discard(t)
 
     def prune(self):
         for kind in self.__kinds__:
-            self.__entities__[kind].clear()
+            self.__members__[kind].clear()
 
     def __contains__(self, T):
         for kind in self.__kinds__:
             if kind in ["universe", "abstract"]:
-                for v in self.__entities__[kind].values():
+                for v in self.__members__[kind].values():
                     if T is v:
                         return True
             else:
-                for v in self.__entities__[kind]:
+                for v in self.__members__[kind]:
                     if T is v:
                         return True
         return False
@@ -596,9 +596,9 @@ class __TYPESYSTEM__:
     def __iter__(self):
         for kind in self.__kinds__:
             if kind in ["universe", "abstract"]:
-                yield from self.__entities__[kind].values()
+                yield from self.__members__[kind].values()
             else:
-                yield from self.__entities__[kind]
+                yield from self.__members__[kind]
 
     def typemap(self, type):
         return typemap(type, typesystem=self)
@@ -624,8 +624,8 @@ class __TYPESYSTEM__:
     def isterm(self, term, *types, quantifier=None):
         return isterm(term, *types, quantifier=None, typesystem=self)
 
-    def isentity(self, entity):
-        return isentity(entity, self)
+    def ismember(self, entity):
+        return ismember(entity, self)
 
     def issame(self, type, *others, quantifier=None):
         return issame(type, *others, quantifier=None, typesystem=self)
@@ -651,7 +651,7 @@ def typemap(type, typesystem: __TYPESYSTEM__=None):
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
     try:
-        for univ in typesystem.__entities__["universe"].values():
+        for univ in typesystem.__members__["universe"].values():
             if __type__(type) is univ:
                 return type
     except TypeError:
@@ -691,11 +691,11 @@ def kindof(entity, typesystem: __TYPESYSTEM__=None):
 
     kind = getattr(entity, "__kind__", None)
     if kind in ["universe", "abstract"]:
-        if entity in typesystem.__entities__[kind].values():
+        if entity in typesystem.__members__[kind].values():
             return kind
     else:
         if kind in typesystem.__kinds__:
-            if entity in typesystem.__entities__[kind]:
+            if entity in typesystem.__members__[kind]:
                 return kind
 
     from typed.mods.err import NotDefined
@@ -736,7 +736,7 @@ def trackof(type: type, typesystem: __TYPESYSTEM__=None) -> type:
 
     return NotDefined
 
-def isstruc(obj: type) -> bool:
+def isentity(obj: type) -> bool:
     from typed.mods.check import check
     check.isinstance(obj, type)
 
@@ -752,26 +752,26 @@ def isstruc(obj: type) -> bool:
     from typed.mods.init import every
     return every(kind in ts.__kinds__ for ts in typesystems)
 
-def iscognate(struc: type, *others: tuple[type], quantifier=None) -> bool:
+def iscognate(entity: type, *others: tuple[type], quantifier=None) -> bool:
     from typed.mods.check import check
-    check.isstruc(struc)
-    check.every.isstruc(others)
+    check.isentity(entity)
+    check.every.isentity(others)
     from typed.mods.resolve import resolve
     quantifier = resolve.logic.quantifier(quantifier)
 
     return quantifier(
-        not set(getattr(struc, "__typesystems__", [])).isdisjoint(getattr(other, "__typesystems__", []))
+        not set(getattr(entity, "__typesystems__", [])).isdisjoint(getattr(other, "__typesystems__", []))
         for other in others
     )
 
-def iscongruent(struc: type, *others: tuple[type], quantifier=None) -> bool:
+def iscongruent(entity: type, *others: tuple[type], quantifier=None) -> bool:
     from typed.mods.check import check
-    check.iscognate(struc, *others, quantifier=quantifier)
-    return quantifier(struc.__kind__ == other.kind for other in others)
+    check.iscognate(entity, *others, quantifier=quantifier)
+    return quantifier(entity.__kind__ == other.kind for other in others)
 
-def isentity(struc: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
+def ismember(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     from typed.mods.check import check
-    check.isstruc(struc)
+    check.isentity(entity)
 
     if not typesystems:
         typesystems = {None}
@@ -780,11 +780,11 @@ def isentity(struc: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) 
     typesystems = {resolve.typesystem.entity(t) for t in typesystems}
     quantifier = resolve.logic.quantifier(quantifier)
 
-    return quantifier(struc in typesystem for typesystem in typesystems)
+    return quantifier(entity in typesystem for typesystem in typesystems)
 
 def istype(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     from typed.mods.check import check
-    check.isistruc(entity)
+    check.isientity(entity)
 
     if not entity.__kind__ == "type":
         return False
@@ -796,11 +796,11 @@ def istype(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -
     typesystems = { resolve.typesystem.entity(t) for t in typesystems }
     quantifier = resolve.logic.quantifier(quantifier)
 
-    return quantifier(any(entity is t for t in ts.__entities__["type"]) for ts in typesystems)
+    return quantifier(any(entity is t for t in ts.__members__["type"]) for ts in typesystems)
 
 def ismeta(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     from typed.mods.check import check
-    check.isstruc(entity)
+    check.isentity(entity)
 
     if not entity.__kind__  == "meta":
         return False
@@ -812,7 +812,7 @@ def ismeta(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -
     typesystems = { resolve.typesystem.entity(t) for t in typesystems}
     quantifier = resolve.logic.quantifier(quantifier)
 
-    return quantifier(any(entity is t for t in ts.__entities__["meta"]) for ts in typesystems)
+    return quantifier(any(entity is t for t in ts.__members__["meta"]) for ts in typesystems)
 
 def isabstract(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     from typed.mods.check import check
@@ -827,11 +827,11 @@ def isabstract(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=Non
     from typed.mods.resolve import resolve
     typesystems = {resolve.typesystem.entity(t) for t in typesystems}
     quantifier = resolve.logic.quantifier(quantifier)
-    return quantifier(any(entity is t for t in ts.__entities__["abstract"].values()) for ts in typesystems)
+    return quantifier(any(entity is t for t in ts.__members__["abstract"].values()) for ts in typesystems)
 
 def isuniverse(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     from typed.mods.check import check
-    check.isstruc(entity)
+    check.isentity(entity)
 
     if not entity.__kind__ == "universe":
         return False
@@ -843,7 +843,7 @@ def isuniverse(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=Non
 
     typesystems = {resolve.typesystem.entity(t) for t in typesystems}
     quantifier = resolve.logic.quantifier(quantifier)
-    return quantifier(any(entity is t for t in ts.__entities__["universe"].values()) for ts in typesystems)
+    return quantifier(any(entity is t for t in ts.__members__["universe"].values()) for ts in typesystems)
 
 def issame(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
     from typed.mods.resolve import resolve
@@ -1024,11 +1024,11 @@ class new:
             typesystem = conf.typesystem.entity
 
         for sup in sups:
-            if sup not in typesystem.__entities__["meta"]:
-                raise TypeError(f"sup {sup} not in typesystem.__entities__['meta']")
+            if sup not in typesystem.__members__["meta"]:
+                raise TypeError(f"sup {sup} not in typesystem.__members__['meta']")
 
         typesystem.enrich(0)
-        base_meta = typesystem.__entities__["abstract"][0]
+        base_meta = typesystem.__members__["abstract"][0]
 
         attrs["__display__"] = name
         attrs["is_meta"] = True
@@ -1046,14 +1046,14 @@ class new:
             from typed.mods.init import conf
             typesystem = conf.typesystem.entity
 
-        if meta not in typesystem.__entities__["meta"]:
-            raise TypeError(f"meta {meta} not in typesystem.__entities__['meta']")
+        if meta not in typesystem.__members__["meta"]:
+            raise TypeError(f"meta {meta} not in typesystem.__members__['meta']")
 
         for s in sups:
-            if s not in typesystem.__entities__["type"]:
-                raise TypeError(f"sup {s} not in typesystem.__entities__['type']")
-            if type(s, typesystem) not in typesystem.__entities__["meta"]:
-                raise TypeError(f"type(s) not in typesystem.__entities__['meta']")
+            if s not in typesystem.__members__["type"]:
+                raise TypeError(f"sup {s} not in typesystem.__members__['type']")
+            if type(s, typesystem) not in typesystem.__members__["meta"]:
+                raise TypeError(f"type(s) not in typesystem.__members__['meta']")
 
         attrs["__display__"] = name
         attrs["is_type"] = True
