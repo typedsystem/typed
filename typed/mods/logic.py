@@ -51,8 +51,14 @@ class Discourse(metaclass=__DISCOURSE__):
             return len(self.individuals)
         return NotDefined
 
-    def prod(self, *discourses, limit: int = -1):
+    def prod(self, *discourses, limit: int=-1):
         return prod(self, *discourses, limit=limit)
+
+    def diag(self, *discourses, limit: int=-1):
+        return diag(self, *discourses, limit=limit)
+
+    def coprod(self, *discourses, limit: int=-1):
+        return coprod(self, *discourses, limit=limit)
 
 def prod(*discourses, limit: int = -1):
     from typed.mods.logic import Discourse
