@@ -61,8 +61,28 @@ class ___UNIVERSE___(type):
     __display__ = __name__
 
     def __new__(mcls, name, bases, dct, **kwds):
+        from typed.mods.err import NotDefined
+        dct.setdefault("__null__", NotDefined)
+        dct.setdefault("__builtin__", NotDefined)
+        dct.setdefault("__display__", name if name else NotDefined)
+
+        is_subtype_of_level_0 = any(getattr(b, "level", None) == 0 and getattr(b, "is_universe", False) for b in bases)
+        is_subtype_of_level_n = any(isinstance(getattr(b, "level", None), int) and getattr(b, "level", 0) > 0 and getattr(b, "is_universe", False) for b in bases)
+
+        if is_subtype_of_level_0:
+            dct.setdefault("__kind__", "meta")
+        elif is_subtype_of_level_n:
+            dct.setdefault("__kind__", "abstract")
+
+        if "__typesystems__" not in dct:
+            ts = set()
+            for b in bases:
+                if hasattr(b, "__typesystems__"):
+                    ts.update(getattr(b, "__typesystems__"))
+            if ts:
+                dct["__typesystems__"] = ts
+
         cls = super().__new__(mcls, name, bases, dct, **kwds)
-        cls.__display__ = name
 
         if "__terms__" not in mcls.__dict__:
             from weakref import WeakSet
@@ -99,8 +119,28 @@ class ___ABSTRACT___(___UNIVERSE___):
     __display__ = __name__
 
     def __new__(mcls, name, bases, dct, **kwds):
+        from typed.mods.err import NotDefined
+        dct.setdefault("__null__", NotDefined)
+        dct.setdefault("__builtin__", NotDefined)
+        dct.setdefault("__display__", name if name else NotDefined)
+
+        is_subtype_of_level_0 = any(getattr(b, "level", None) == 0 and getattr(b, "is_abstract", False) for b in bases)
+        is_subtype_of_level_n = any(isinstance(getattr(b, "level", None), int) and getattr(b, "level", 0) > 0 and getattr(b, "is_abstract", False) for b in bases)
+
+        if is_subtype_of_level_0:
+            dct.setdefault("__kind__", "meta")
+        elif is_subtype_of_level_n:
+            dct.setdefault("__kind__", "abstract")
+
+        if "__typesystems__" not in dct:
+            ts = set()
+            for b in bases:
+                if hasattr(b, "__typesystems__"):
+                    ts.update(getattr(b, "__typesystems__"))
+            if ts:
+                dct["__typesystems__"] = ts
+
         cls = super().__new__(mcls, name, bases, dct, **kwds)
-        cls.__display__ = name
 
         if "__terms__" not in mcls.__dict__:
             from weakref import WeakSet
@@ -397,6 +437,18 @@ class __TYPESYSTEM__:
         self.__entities__["quantifier"]=quantifiers
 
         def __new__(univ, typ, bases, namespace, **kwds):
+            from typed.mods.err import NotDefined
+            namespace.setdefault("__null__", NotDefined)
+            namespace.setdefault("__builtin__", NotDefined)
+            namespace.setdefault("__display__", typ if isinstance(typ, str) else NotDefined)
+            namespace.setdefault("__typesystems__", getattr(univ, "__typesystems__", set()))
+
+            univ_level = getattr(univ, "level", None)
+            if univ_level == 0:
+                namespace.setdefault("__kind__", "type")
+            elif isinstance(univ_level, int) and univ_level > 0:
+                namespace.setdefault("__kind__", "universe")
+
             cls = type.__new__(univ, typ, bases, namespace, **kwds)
 
             if "__terms__" not in cls.__dict__:

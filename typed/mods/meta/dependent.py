@@ -1,4 +1,7 @@
 from typed.mods.meta.base import TYPE, UNIVERSE_1
+from typed.mods.init import TYPESYSTEM
+from typed.mods.err import NotDefined
+from typed.mods.flags import Flags
 
 class TUPLE(TYPE):
     """
@@ -14,7 +17,7 @@ class TUPLE(TYPE):
     def __isterm__(typ, trm):
         from typed.mods.typesystem import typeof, issub, isterm
 
-        if  not isinstance(trm, tuple) and not issub(typeof(trm, level=2), TUPLE):
+        if not isinstance(trm, tuple) and not issub(typeof(trm, level=2), TUPLE):
             return False
 
         types = getattr(typ, '__types__', None)
@@ -37,26 +40,23 @@ class TUPLE(TYPE):
         return False
 
     def __call__(typ, *types, typesystem=None):
-        from typed.helper.helper import names
-        from typed.mods.check import resolve
+        from typed.mods.check import resolve, check
 
         typesystem = resolve.typesystem.entity(typesystem)
-        from typed.mods.check import check
         check.every.ismember(types, typesystem)
 
-        name = f"Tuple({names(*types)})" if types else "Tuple"
+        display_name = f"Tuple({typesystem.nameof(*types)})" if types else "Tuple"
 
-        from typed.mods.init import TYPESYSTEM
-        return TUPLE(name, (typ,), {
-            "__kind__": "type",
-            "is_dependent": True,
-            "__typesystems__": {TYPESYSTEM, typesystem},
-            "__display__": name,
-            "__types__": types,
-        })
+        class DependentTuple(typ, metaclass=TUPLE):
+            __kind__ = "type"
+            __flags__ = Flags(is_dependent=True)
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __display__ = display_name
+            __types__ = types
+            __null__ = NotDefined
 
-    from typed.mods.err import NotDefined
-    from typed.mods.init import TYPESYSTEM
+        DependentTuple.__name__ = display_name
+        return DependentTuple
 
     __kind__ = "meta"
     __typesystems__ = {TYPESYSTEM, }
@@ -103,25 +103,23 @@ class LIST(TYPE):
 
     def __call__(typ, *types, typesystem=None):
         from typed.mods.check import check, resolve
-        from typed.helper.helper import names
         typesystem = resolve.typesystem.entity(typesystem)
 
         types = set(types)
         check.every.ismember(types, typesystem)
 
-        name = f"List({names(*types)})" if types else "List"
+        display_name = f"List({typesystem.nameof(*types)})" if types else "List"
 
-        from typed.mods.init import TYPESYSTEM
-        return LIST(name, (typ,), {
-            "__kind__": "type",
-            "is_dependent": True,
-            "__typesystems__": {TYPESYSTEM, typesystem},
-            "__display__": name,
-            "__types__": types,
-        })
+        class DependentList(typ, metaclass=LIST):
+            __kind__ = "type"
+            __flags__ = Flags(is_dependent=True)
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __display__ = display_name
+            __types__ = types
+            __null__ = NotDefined
 
-    from typed.mods.init import TYPESYSTEM
-    from typed.mods.err import NotDefined
+        DependentList.__name__ = display_name
+        return DependentList
 
     __kind__ = "meta"
     __typesystems__ = {TYPESYSTEM, }
@@ -165,29 +163,26 @@ class SET(TYPE):
             return every(issub(t, *others) for t in types)
         return False
 
-
     def __call__(typ, *types, typesystem=None):
         from typed.mods.check import check, resolve
-        from typed.helper.helper import names
         typesystem = resolve.typesystem.entity(typesystem)
 
         types = set(types)
         check.every.ismember(types, typesystem)
 
-        name = f"Set({names(*types)})" if types else "Set"
+        display_name = f"Set({typesystem.nameof(*types)})" if types else "Set"
 
-        from typed.mods.init import TYPESYSTEM
+        class DependentSet(typ, metaclass=SET):
+            __kind__ = "type"
+            __flags__ = Flags(is_dependent=True)
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __display__ = display_name
+            __types__ = types
+            __null__ = NotDefined
 
-        return SET(name, (typ,), {
-            "__kind__": "type",
-            "is_dependent": True,
-            "__typesystems__": {TYPESYSTEM, typesystem},
-            "__display__": name,
-            "__types__": types,
-        })
+        DependentSet.__name__ = display_name
+        return DependentSet
 
-    from typed.mods.init import TYPESYSTEM
-    from typed.mods.err import NotDefined
     __kind__ = "meta"
     __typesystems__ = {TYPESYSTEM,}
     __type__ = UNIVERSE_1
@@ -252,30 +247,29 @@ class DICT(TYPE):
 
     def __call__(typ, *types, key=None, typesystem=None):
         from typed.mods.check import check, resolve
-        from typed.helper.helper import names
         typesystem = resolve.typesystem.entity(typesystem)
 
         types = set(types)
+        
         if key is not None:
-            name = f"Dict({names(*types)}, key={typesystem.nameof(key)})" if types else f"Dict(key={typesystem.nameof(key)})"
+            display_name = f"Dict({typesystem.nameof(*types)}, key={typesystem.nameof(key)})" if types else f"Dict(key={typesystem.nameof(key)})"
         else:
-            name = f"Dict({names(*types)})" if types else "Dict"
+            display_name = f"Dict({typesystem.nameof(*types)})" if types else "Dict"
 
         check.ismember(key, typesystem)
         check.every.ismember(types, typesystem)
-        from typed.mods.init import TYPESYSTEM
 
-        return DICT(name, (typ,), {
-            "__kind__": "type",
-            "is_dependent": True,
-            "__typesystems__": {TYPESYSTEM, typesystem},
-            "__display__": name,
-            "__types__": types,
-            "__key_type__": key,
-        })
+        class DependentDict(typ, metaclass=DICT):
+            __kind__ = "type"
+            __flags__ = Flags(is_dependent=True)
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __display__ = display_name
+            __types__ = types
+            __key_type__ = key
+            __null__ = NotDefined
 
-    from typed.mods.init import TYPESYSTEM
-    from typed.mods.err import NotDefined
+        DependentDict.__name__ = display_name
+        return DependentDict
 
     __kind__ = "meta"
     __typesystems__ = {TYPESYSTEM,}
@@ -296,13 +290,14 @@ class EXTENSIONAL(TYPE):
         types = (t for t in getattr(typ, "__types__", (typ,)))
         others = (o for o in getattr(other, "__types__", (other,)))
         from typed.mods.typesystem import issub
-        if getattr(other, "is_extensional", False):
+
+        if other.__flags__.is_extensional:
             return quantifier(issub(o, *types, quantifier=quantifier) for o in others)
+
         return issub(other, *types, quantifier=quantifier)
 
     def __call__(met, name, *types, base=None, quantifier=None, typesystem=None):
         from typed.mods.check import check, resolve
-
         typesystem = resolve.typesystem.entity(typesystem)
 
         check.ismember(base, typesystem)
@@ -316,25 +311,19 @@ class EXTENSIONAL(TYPE):
         if len(types) == 1:
             return types[0]
 
-        from typed.mods.init import TYPESYSTEM
-        from typed.helper.helper import names
-        from typed.mods.err import NotDefined
+        display_name = f"{name}({typesystem.nameof(*types)})"
 
-        name = f"{name}({names(*types)})"
+        class Extensional(*types, metaclass=EXTENSIONAL):
+            __kind__ = "type"
+            __flags__ = Flags(is_dependent=True, is_extensional=True)
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __quantifier__ = quantifier
+            __display__ = display_name
+            __types__ = types
+            __null__ = NotDefined
 
-        return EXTENSIONAL(name, types, {
-            '__kind__': "type",
-            'is_dependent': True,
-            'is_extensional': True,
-            '__typesystems__': {TYPESYSTEM, typesystem},
-            '__quantifier__': quantifier,
-            '__display__': name,
-            '__types__': types,
-            '__null__': NotDefined
-        })
-
-    from typed.mods.init import TYPESYSTEM
-    from typed.mods.err import NotDefined
+        Extensional.__name__ = display_name
+        return Extensional
 
     __kind__ = "meta"
     __typesystems__ = {TYPESYSTEM,}
@@ -359,56 +348,125 @@ class NOT_IN(EXTENSIONAL):
         from typed.mods.init import none
         return super().__call__("NotIn", *types, base=base, quantifier=none, typesystem=typesystem)
 
-class PROD(TYPE):
+
+class ALGEBRAIC(TYPE):
+    """
+    The base metaclass for types built over a discourse of other types, 
+    abstracting factory logic for Algebraic Data Types (Products and Coproducts).
+    """
+    def __call__(met, name_prefix, *types, typesystem=None):
+        from typed.mods.check import check, resolve
+        typesystem = resolve.typesystem.entity(typesystem)
+        
+        if not types:
+            from typed.mods.types.base import Tuple
+            return Tuple
+
+        check.every.ismember(types, typesystem)
+        types = tuple(types)
+
+        from typed.mods.poly import null
+
+        display_name = f"{name_prefix}({typesystem.nameof(*types)})"
+
+        is_prod = getattr(met, '__name__', '') == 'PROD'
+        is_coprod = getattr(met, '__name__', '') == 'COPROD'
+
+        if is_prod:
+            nulls = tuple(null(t) for t in types if null(t) is not NotDefined)
+            canonical_null = nulls if len(nulls) == len(types) else NotDefined
+        elif is_coprod:
+            first_null = null(types[0]) if types else NotDefined
+            canonical_null = (0, first_null) if first_null is not NotDefined else NotDefined
+        else:
+            canonical_null = NotDefined
+
+        class Algebraic(*types, metaclass=met):
+            __kind__ = "type"
+            __flags__ = Flags(
+                is_dependent=True, 
+                is_algebraic=True, 
+                is_prod=is_prod, 
+                is_coprod=is_coprod
+            )
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __display__ = display_name
+            __types__ = types
+            __null__ = canonical_null
+
+        Algebraic.__name__ = display_name
+        return Algebraic
+
+    __kind__ = "meta"
+    __typesystems__ = {TYPESYSTEM,}
+    __type__ = UNIVERSE_1
+    __display__ = "ALGEBRAIC"
+    __null__ = NotDefined
+    __builtin__ = NotDefined
+
+
+class PROD(ALGEBRAIC):
     def __isterm__(typ, trm):
         from typed.mods.typesystem import isterm
         from typed.mods.init import every
+        from typed.mods.logic import prod
         if not isterm(trm, tuple):
             return False
-        if len(trm) != len(typ.__types__):
+        try:
+            return every(isterm(x, t) for x, t in prod(trm, typ.__types__))
+        except Exception:
             return False
-        return every(isterm(x, t) for x, t in zip(trm, typ.__types__))
 
     def __issub__(typ, other):
-        from typed.mods.core import issub
-        types = getattr(typ, "__types__", set())
-        others = getattr(other, "__types__", set())
+        from typed.mods.typesystem import issub
+        types = getattr(typ, "__types__", tuple())
+        others = getattr(other, "__types__", tuple())
 
-        if getattr(other, "is_prod", False):
+        if other.__flags__.is_prod:
             if not types: return True
             if not others: return False
             if len(types) != len(others): return False
+            from typed.mods.logic import prod
 
-            return all(issub(others[i], types[i]) for i in range(0, len(types)))
+            return all(issub(o, t) for o, t in prod(others, types))
+
+        return False
+
+    def __call__(met, *types, typesystem=None):
+        return super().__call__("Prod", *types, typesystem=typesystem)
+
+class COPROD(ALGEBRAIC):
+    def __isterm__(typ, trm):
+        from typed.mods.typesystem import isterm
+        from typed.mods.init import some
+        from typed.mods.logic import coprod
+
+        if not isterm(trm, tuple) or len(trm) != 2:
+            return False
+        try:
+            return some(
+                trm[0] == i and isterm(trm[1], t)
+                for i, t in coprod(typ.__types__)
+            )
+        except Exception:
+            return False
+
+    def __issub__(typ, other):
+        from typed.mods.typesystem import issub
+        types = getattr(typ, "__types__", tuple())
+        others = getattr(other, "__types__", tuple())
+
+        if other.__flags__.is_coprod:
+            if not types: return False
+            if not others: return True
+            if len(types) != len(others): return False
+
+            return 
 
         return False
 
     def __call__(met, *types, typesystem=None):
         if not types:
-            from typed.mods.types.base import Tuple
-            return Tuple
-
-        from typed.mods.check import check, resolve
-        typesystem = resolve.typesystem.entity(typesystem)
-        check(*tuple(types))
-
-        if len(types) == 1:
-            return types[0]
-
-        from typed.mods.core import names, null
-        from typed.mods.err import NotDefined
-
-        name = f"Prod({names(*types)})"
-        nulls = tuple(null(t) for t in types if null(t) is not NotDefined)
-
-        return TYPE.__call__(name, types, {
-            'is_type': True,
-            'is_parametric': True,
-            'is_prod': True,
-            '__display__': name,
-            '__types__': types,
-            '__null__': nulls if len(nulls) == len(types) else NotDefined
-        })
-
-class COPROD(TYPE): pass
-
+            from typed.mods.types.base import Empty
+            return Empty
+        return super().__call__("Coprod", *types, typesystem=typesystem)
