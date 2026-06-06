@@ -1,19 +1,14 @@
 from typed.mods.init import TYPESYSTEM, UNIVERSE, ABSTRACT
-from typed.mods.err import NotDefined
 
 UNIVERSE_1 = UNIVERSE(1, typesystem=TYPESYSTEM)
 
 TYPE = UNIVERSE(0, typesystem=TYPESYSTEM)
 TYPE.__name__ = "TYPE"
 TYPE.__display__ = TYPE.__name__
-TYPE.__null__ = NotDefined
-TYPE.__builtin__ = NotDefined
 
 META = ABSTRACT(0, typesystem=TYPESYSTEM)
 META.__name__ = "META"
 META.__display__ = META.__name__
-META.__null__ = NotDefined
-META.__builtin__ = NotDefined
 
 class EMPTY(TYPE):
     """
@@ -36,12 +31,6 @@ class EMPTY(TYPE):
     def __issup__(typ, other):
         return True
 
-    __kind__        = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "EMPTY"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
-
 class ANY(TYPE):
     """
     The metatype of everything.
@@ -61,12 +50,6 @@ class ANY(TYPE):
     def __issup__(typ, other):
         return False
 
-    __kind__        = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "ANY"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
-
 class NILL(TYPE):
     """
     The metatype of None value type.
@@ -79,12 +62,6 @@ class NILL(TYPE):
     """
     def __isterm__(typ, trm):
         return trm is None
-
-    __kind__        = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "NILL"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
 
 class INT(TYPE):
     """
@@ -101,13 +78,6 @@ class INT(TYPE):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, int) or issub(typeof(typeof(trm)), INT)
 
-    __kind__        = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "INT"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
-
-
 class FLOAT(TYPE):
     """
     The metatype of floating-point numbers.
@@ -123,13 +93,6 @@ class FLOAT(TYPE):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, float) or issub(typeof(typeof(trm)), FLOAT)
 
-    __kind__        = "meta"
-    __typesystems__ = {TYPESYSTEM,} 
-    __display__     = "FLOAT"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
-
-
 class STR(TYPE):
     """
     The metatype of strings.
@@ -144,13 +107,6 @@ class STR(TYPE):
     def __isterm__(typ, trm):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, str) or issub(typeof(typeof(trm)), STR)
-
-    __kind__        = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "STR"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
-
 
 class BOOL(TYPE):
     """
@@ -173,13 +129,6 @@ class BOOL(TYPE):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, bool) or issub(typeof(typeof(trm)), BOOL)
 
-    __kind__        = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "BOOL"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
-
-
 class BYTE(TYPE):
     """
     The metatype of bytes and bytearrays.
@@ -190,14 +139,29 @@ class BYTE(TYPE):
     nullof(BYTE)    is  NotDefined
     builtin(BYTE)   is  NotDefined
     """
-
     def __isterm__(typ, trm):
         from builtins import bytes, bytearray
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, (bytes, bytearray)) or issub(typeof(typeof(trm)), BYTE)
 
-    __kind__        = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "BYTE"
-    __null__        = NotDefined
-    __builtin__     = NotDefined
+class ENUMERABLE(TYPE):
+    """
+    The metatype of enumerable types.
+
+    kindof(ENUMERABLE)    is  meta
+    typeof(ENUMERABLE)    is  UNIVERSE(1)
+    isterm(T, ENUMERABLE) iff issub(typeof(T), ENUMERABLE)
+    nullof(ENUMERABLE)    is  NotDefined
+    builtin(ENUMERABLE)   is  NotDefined
+    """
+
+    def __isterm__(typ, trm):
+        from typed.mods.typesystem import istype, issub
+        if not istype(trm):
+            return False
+        from typed.mods.logic import Discourse
+        return issub(trm, Discourse)
+
+    def __issub__(typ, other):
+        from typed.mods.flags import flag, flagged
+        return flagged(other, flag.is_enumerable)

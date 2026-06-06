@@ -47,7 +47,7 @@ class TUPLE(TYPE):
 
         display_name = f"Tuple({typesystem.nameof(*types)})" if types else "Tuple"
 
-        class DependentTuple(typ, metaclass=TUPLE):
+        class Tuple(typ, metaclass=TUPLE):
             __kind__ = "type"
             __flags__ = Flags(is_dependent=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
@@ -55,8 +55,8 @@ class TUPLE(TYPE):
             __types__ = types
             __null__ = NotDefined
 
-        DependentTuple.__name__ = display_name
-        return DependentTuple
+        Tuple.__name__ = display_name
+        return Tuple
 
     __kind__ = "meta"
     __typesystems__ = {TYPESYSTEM, }
@@ -110,7 +110,7 @@ class LIST(TYPE):
 
         display_name = f"List({typesystem.nameof(*types)})" if types else "List"
 
-        class DependentList(typ, metaclass=LIST):
+        class List(typ, metaclass=LIST):
             __kind__ = "type"
             __flags__ = Flags(is_dependent=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
@@ -118,8 +118,8 @@ class LIST(TYPE):
             __types__ = types
             __null__ = NotDefined
 
-        DependentList.__name__ = display_name
-        return DependentList
+        List.__name__ = display_name
+        return List
 
     __kind__ = "meta"
     __typesystems__ = {TYPESYSTEM, }
@@ -172,7 +172,7 @@ class SET(TYPE):
 
         display_name = f"Set({typesystem.nameof(*types)})" if types else "Set"
 
-        class DependentSet(typ, metaclass=SET):
+        class Set(typ, metaclass=SET):
             __kind__ = "type"
             __flags__ = Flags(is_dependent=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
@@ -180,8 +180,8 @@ class SET(TYPE):
             __types__ = types
             __null__ = NotDefined
 
-        DependentSet.__name__ = display_name
-        return DependentSet
+        Set.__name__ = display_name
+        return Set
 
     __kind__ = "meta"
     __typesystems__ = {TYPESYSTEM,}
@@ -259,7 +259,7 @@ class DICT(TYPE):
         check.ismember(key, typesystem)
         check.every.ismember(types, typesystem)
 
-        class DependentDict(typ, metaclass=DICT):
+        class Dict(typ, metaclass=DICT):
             __kind__ = "type"
             __flags__ = Flags(is_dependent=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
@@ -268,8 +268,8 @@ class DICT(TYPE):
             __key_type__ = key
             __null__ = NotDefined
 
-        DependentDict.__name__ = display_name
-        return DependentDict
+        Dict.__name__ = display_name
+        return Dict
 
     __kind__ = "meta"
     __typesystems__ = {TYPESYSTEM,}
@@ -348,10 +348,9 @@ class NOT_IN(EXTENSIONAL):
         from typed.mods.init import none
         return super().__call__("NotIn", *types, base=base, quantifier=none, typesystem=typesystem)
 
-
 class ALGEBRAIC(TYPE):
     """
-    The base metaclass for types built over a discourse of other types, 
+    The base metaclass for types built over a discourse of other types,
     abstracting factory logic for Algebraic Data Types (Products and Coproducts).
     """
     def __call__(met, name_prefix, *types, typesystem=None):

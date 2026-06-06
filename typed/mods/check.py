@@ -128,12 +128,12 @@ class Checker:
             )
         return True
 
-    def isstruc(self, objs) -> bool:
-        from typed.mods.typesystem import isstruc
+    def isentity(self, objs) -> bool:
+        from typed.mods.typesystem import isentity
         q = self.quantifier
 
         if q is None:
-            if not isstruc(objs):
+            if not isentity(objs):
                 from typed.mods.err import TypeSystemErr
                 raise TypeSystemErr(
                     entity=objs,
@@ -141,7 +141,7 @@ class Checker:
                 )
             return True
 
-        if not q(isstruc(obj) for obj in objs):
+        if not q(isentity(obj) for obj in objs):
             from typed.mods.err import TypeSystemErr
             raise TypeSystemErr(
                 entities=objs,
@@ -190,30 +190,6 @@ class Checker:
             raise TypeSystemErr(
                 details="Structures are not congruent",
                 types=(strucs, *others),
-                quantifier=q
-            )
-        return True
-
-    def isentity(self, strucs, *typesystems, quantifier=None) -> bool:
-        from typed.mods.typesystem import isentity
-        q = self.quantifier
-
-        if q is None:
-            if not isentity(strucs, *typesystems, quantifier=quantifier):
-                from typed.mods.err import TypeSystemErr
-                raise TypeSystemErr(
-                    entity=strucs,
-                    typesystems=typesystems,
-                    expected="entity"
-                )
-            return True
-
-        if not q(isentity(s, *typesystems, quantifier=quantifier) for s in strucs):
-            from typed.mods.err import TypeSystemErr
-            raise TypeSystemErr(
-                entities=strucs,
-                typesystems=typesystems,
-                expected="entity",
                 quantifier=q
             )
         return True
@@ -359,10 +335,10 @@ class check:
     ismeta = __checker__.ismeta
     isabstract = __checker__.isabstract
     isuniverse = __checker__.isuniverse
-    isstruc = __checker__.isstruc
+    isentity = __checker__.isentity
     iscognate = __checker__.iscognate
     iscongruent = __checker__.iscongruent
-    isentity = __checker__.isentity
+    ismember = __checker__.ismember
     isinstance = __checker__.isinstance
     iscallable = __checker__.iscallable
     isterm = __checker__.isterm

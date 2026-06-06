@@ -65,6 +65,7 @@ class ___UNIVERSE___(type):
         dct.setdefault("__null__", NotDefined)
         dct.setdefault("__builtin__", NotDefined)
         dct.setdefault("__display__", name if name else NotDefined)
+        dct.setdefault("__type__", mcls)
 
         is_subtype_of_level_0 = any(getattr(b, "level", None) == 0 and getattr(b, "is_universe", False) for b in bases)
         is_subtype_of_level_n = any(isinstance(getattr(b, "level", None), int) and getattr(b, "level", 0) > 0 and getattr(b, "is_universe", False) for b in bases)
@@ -123,6 +124,7 @@ class ___ABSTRACT___(___UNIVERSE___):
         dct.setdefault("__null__", NotDefined)
         dct.setdefault("__builtin__", NotDefined)
         dct.setdefault("__display__", name if name else NotDefined)
+        dct.setdefault("__type__", mcls)
 
         is_subtype_of_level_0 = any(getattr(b, "level", None) == 0 and getattr(b, "is_abstract", False) for b in bases)
         is_subtype_of_level_n = any(isinstance(getattr(b, "level", None), int) and getattr(b, "level", 0) > 0 and getattr(b, "is_abstract", False) for b in bases)
@@ -442,6 +444,7 @@ class __TYPESYSTEM__:
             namespace.setdefault("__builtin__", NotDefined)
             namespace.setdefault("__display__", typ if isinstance(typ, str) else NotDefined)
             namespace.setdefault("__typesystems__", getattr(univ, "__typesystems__", set()))
+            namespace.setdefault("__type__", univ)
 
             univ_level = getattr(univ, "level", None)
             if univ_level == 0:
