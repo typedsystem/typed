@@ -165,3 +165,18 @@ class ENUMERABLE(TYPE):
     def __issub__(typ, other):
         from typed.mods.flags import flag, flagged
         return flagged(other, flag.is_enumerable)
+
+class FINITE(ENUMERABLE):
+    def __isterm__(typ, trm):
+        if not super().__isterm__(trm):
+            return False
+
+        if hasattr(trm, '__len__'):
+            return True
+
+        b = trm.__builtin__
+        from typed.mods.err import NotDefined
+        if b is not NotDefined and hasattr(b, '__len__'):
+            return True
+
+        return False

@@ -1,80 +1,68 @@
-from typed.mods.meta.dependent import TUPLE, LIST, SET, DICT
+from typed.mods.meta.dependent import (
+    TUPLE, LIST, SET, DICT,
+    UNION, INTER, PROD, COPROD
+)
+from typed.mods.flags import Flags
 
 class Tuple(metaclass=TUPLE):
     """
     The dependent type of tuples.
 
-    : kindof(Tuple)    is  dependent
+    : kindof(Tuple)    is  type
     : typeof(Tuple)    is  TUPLE
-    : isterm(x, Tuple) iff issub(typeof(x), Tuple)
+    : isterm(x, Tuple) iff isinstance(x, tuple) or issub(typeof(x), Tuple)
     : nullof(Tuple)    is  tuple()
     : builtin(Tuple)   is  tuple
+    : flags(Tuple)     is  is_dependent
     """
-    from typed.mods.init import TYPESYSTEM
-
-    __kind__        = "type"
-    is_dependent    = True
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "Tuple"
-    __null__        = tuple()
-    __builtin__     = tuple
+    __flags     = Flags(is_dependent=True)
+    __null__    = tuple()
+    __builtin__ = tuple
 
 class List(metaclass=LIST):
     """
     The dependent type of lists.
 
-    : kindof(List)    is  dependent
+    : kindof(List)    is  type
     : typeof(List)    is  LIST
-    : isterm(x, List) iff issub(typeof(x), List)
+    : isterm(x, List) iff isinstance(x, list) or issub(typeof(x), List)
     : nullof(List)    is  []
     : builtin(List)   is  list
+    : flags(List)     is  is_dependent
     """
-    from typed.mods.init import TYPESYSTEM
-
-    __kind__        = "type"
-    is_dependent    = True
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "List"
-    __null__        = []
-    __builtin__     = list
+    __flags__   = Flags(is_dependent=True)
+    __null__    = []
+    __builtin__ = list
 
 class Set(metaclass=SET):
     """
     The dependent type of sets.
 
-    : kindof(Set)    is  dependent
+    : kindof(Set)    is  type
     : typeof(Set)    is  SET
-    : isterm(x, Set) iff issub(typeof(x), Set)
+    : isterm(x, Set) iff isinstance(x, set) or issub(typeof(x), Set)
     : nullof(Set)    is  set()
     : builtin(Set)   is  set
+    : flags(Set)     is  is_dependent
     """
-    from typed.mods.init import TYPESYSTEM
-
-    __kind__        = "type"
-    is_dependent    = True
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "Set"
-    __null__        = set()
-    __builtin__     = set
+    __flags__   = Flags(is_dependent=True)
+    __null__    = set()
+    __builtin__ = set
 
 class Dict(metaclass=DICT):
     """
     The dependent type of dicts.
 
-    : kindof(Dict)    is dependent
-    : typeof(Dict)    is DICT
-    : isterm(x, Dict) iff issub(typeof(x), Dict)
-    : nullof(Dict)    is {}
-    : builtin(Dict)   is dict
+    : kindof(Dict)    is  type
+    : typeof(Dict)    is  DICT
+    : isterm(x, Dict) iff isinstance(x, dict) or issub(typeof(x), Dict)
+    : nullof(Dict)    is  {}
+    : builtin(Dict)   is  dict
+    : flags(Dict)     is  is_dependent
     """
-    from typed.mods.init import TYPESYSTEM
-
-    __kind__        = "type"
-    is_dependent    = True
-    __typesystems__ = {TYPESYSTEM,}
-    __display__     = "Dict"
-    __null__        = {}
-    __builtin__     = dict
+    __flags__   = Flags(is_dependent=True)
+    __null__    = {}
+    __builtin__ = dict
 
     def __getitem__(trm, key):
         return trm.__dict__[key]
@@ -83,155 +71,58 @@ class Dict(metaclass=DICT):
     def __contains__(trm, key):
         return key in trm.__dict__
 
-def Union(*types, typesystem=None):
+class Union(metaclass=UNION):
     """
-    Build the 'union' type.
+    The dependent extensional 'union' type.
 
-    : types: Tuple
-    : typesystem: __TYPESYSTEM__
-
-    : isterm(x, Union(*types)) iff isterm(x, *types, checker=some)
-    : issub(T, Union(*types))  iff issub(T, *types, checker=some)
-    : builtin(Union(*types))
+    : kindof(Union)     is  type
+    : typeof(Union)     is  UNION
+    : isterm(x, Union)  iff issub(typeof(x), Union)
+    : nullof(Union)     is  NotDefined
+    : builtin(Union)    is  NotDefined
+    : flags(Union)      is  is_dependent, is_extensional
     """
+    __flags__ = Flags(is_dependent=True, is_extensional=True)
 
-def Prod(*args):
+class Inter(metaclass=INTER):
     """
-    Build the 'product' of types:
-        > the objects of 'Product(X, Y, ...)'
-        > are the tuples '(x, y, ...)' such that
-            1. 'len(x, y, ...) == len(X, Y, ...)'
-            2. 'x is in X', 'y is in Y', ...
-    Integer case:
-        > Prod(X, n) = Prod(X, X, ...).
-    Can be applied to typed functions:
-        > 'Prod(f, g, ...): Prod(f.domain, g.domain, ...) -> Prod(f.codomain, g.codomain, ...)'
+    The dependent extensional 'intersection' type.
+
+    : kindof(Inter)     is  type
+    : typeof(Inter)     is  INTER
+    : isterm(x, Inter)  iff issub(typeof(x), Inter)
+    : nullof(Inter)     is  NotDefined
+    : builtin(Inter)    is  NotDefined
+    : flags(Inter)      is  is_dependent, is_extensional
     """
+    __flags__ = Flags(is_dependent=True, is_extensional=True)
 
-    from typed.mods.types.base import TYPE, ABSTRACT
-    from typed.mods.types.func import Typed
-    T = (Typed, TYPE, ABSTRACT)
-    if not args:
-        from typed.mods.types.base import Nill
-        return Nill
-    if all((not isinstance(f, (TYPE, ABSTRACT))) and isinstance(f, Typed) for f in args):
-        in_types = [Prod(*f.domain) if len(f.domain) > 1 else f.domain[0] for f in args]
-        out_types = [f.codomain for f in args]
-        domain_type = Prod(*in_types)
-        codomain_type = Prod(*out_types)
-        def prod_mapper(*xs):
-            if len(xs) == 1 and isinstance(xs[0], tuple):
-                xs = xs[0]
-            outs = []
-            for f, x in zip(args, xs):
-                if len(f.domain) > 1:
-                    outs.append(f(*x))
-                else:
-                    outs.append(f(x))
-            return codomain_type(*outs)
-        prod_mapper.__annotations__ = {'xs': domain_type, 'return': codomain_type}
-        prod_mapper._composed_domain_hint = (domain_type,)
-        prod_mapper._composed_codomain_hint = codomain_type
-        prod_mapper.__name__ = f"Prod({_name_list(*args)})"
-        return Typed(prod_mapper)
-
-    elif len(args) == 2 and isinstance(args[0], (TYPE, ABSTRACT)) and isinstance(args[1], int) and args[1] > 0:
-        types = (args[0],) * args[1]
-
-    elif all(isinstance(t, (TYPE, ABSTRACT)) for t in args):
-        types = args
-
-    elif all(isinstance(t, T) for t in args):
-        for t in args:
-            if isinstance(t, Typed):
-                raise TypeError(
-                    "Mixed types in Prod factory:\n"
-                    f" ==> '{_name(t)}': it is a typed function."
-                     "     [received_type] subtype of Typed\n"
-                     "     [expected_type] subtype of TYPE or __UNIVERSE__"
-                )
-    else:
-        for t in args:
-            if not isinstance(t, T):
-                raise TypeError(
-                    "Wrong type in Prod factory: \n"
-                    f" ==> {_name(t)}: has unexpected type\n"
-                     "     [expected_type] TYPE, __UNIVERSE__ or Typed\n"
-                    f"     [received_type] {_name(TYPE(t))}"
-                )
-
-    from typed.mods.meta.base import _TYPE_
-    from typed.mods.types.base import Tuple 
-
-    def prod_new(cls, *args):
-        if len(args) == 1 and isinstance(args[0], Tuple):
-            return tuple.__new__(cls, args[0])
-        else:
-            return tuple.__new__(cls, args)
-
-    class_name = f"Prod({_name_list(*types)})"
-    return PROD(class_name, (tuple,), {
-        "__display__": class_name,
-        '__types__': types,
-        '__new__': prod_new,
-        "__null__": tuple(_null(t) for t in types)
-    })
-
-@cache
-def Inter(*types):
+class Prod(metaclass=PROD):
     """
-    Build the 'intersection' of types:
-        > an object 'p' of the Inter(X, Y, ...)
-        > is an object of every 'X, Y, ...'
+    The dependent algebraic 'product' type.
+
+    : kindof(Prod)     is  type
+    : typeof(Prod)     is  PROD
+    : isterm(x, Prod)  iff issub(typeof(x), Prod)
+    : nullof(Prod)     is  NotDefined
+    : builtin(Prod)    is  NotDefined
+    : flags(Prod)      is  is_dependent, is_algebraic
     """
-    from typed.mods.types.base import TYPE
-    for t in types:
-        if not isinstance(t, TYPE):
-            raise TypeError(
-                "Wrong type in Union factory: \n"
-                f" ==> {_name(t)}: has unexpected type\n"
-                 "     [expected_type] TYPE\n"
-                f"     [received_type] {_name(TYPE(t))}"
-            )
-    if types:
-        def _key(t):
-            return (t.__module__, getattr(t, '__qualname__', t.__name__))
-        unique = set(types)
-        sorted_types = tuple(sorted(unique, key=_key))
-        if len(sorted_types) == 1:
-            return sorted_types[0]
-        if sorted_types != types:
-            return Inter(*sorted_types)
-        unique_types = sorted_types
-    else:
-        unique_types = ()
+    __flags__ = Flags(is_dependent=True, is_algebraic=True)
 
-    non_builtin_types = [t for t in unique_types if not t.__module__ == 'builtins']
+class Coprod(metaclass=COPROD):
+    """
+    The dependent algebraic 'coproduct' type.
 
-    types_ = (TYPE(typ) for typ in unique_types)
-    class INTER(*types_):
-        def __instancecheck__(cls, instance):
-            return all(isinstance(instance, t) for t in non_builtin_types)
-        def __subclasscheck__(cls, subclass):
-            return all(issubclass(subclass, t) for t in unique_types)
+    : kindof(Coprod)     is  type
+    : typeof(Coprod)     is  COPROD
+    : isterm(x, Coprod)  iff issub(typeof(x), Coprod)
+    : nullof(Coprod)     is  NotDefined
+    : builtin(Coprod)    is  NotDefined
+    : flags(Coprod)      is  is_dependent, is_algebraic
+    """
+    __flags__ = Flags(is_dependent=True, is_algebraic=True)
 
-    __null__ = list(set(_null(t) for t in types))
-
-    class_name = f"Inter({_name_list(*unique_types)})"
-    try:
-        return INTER(class_name, unique_types, {
-            '__display__': class_name,
-            '__types__': unique_types,
-            '__null__': __null__[0] if len(__null__) == 1 else None
-        })
-    except Exception:
-        return INTER(class_name, (), {
-            '__display__': class_name,
-            '__types__': unique_types,
-            '__null__': __null__[0] if len(__null__) == 1 else None
-        })
-
-@cache
 def Filter(X, *conds):
     """
     Build the 'filtered type' of a given type through given conditions.
@@ -306,7 +197,6 @@ def Filter(X, *conds):
     return Filter_
 
 
-@cache
 def Compl(X, *subtypes):
     """
     Build the 'complement subtype' of a type by given subtypes.
@@ -356,7 +246,6 @@ def Compl(X, *subtypes):
     Compl_.__null__ = _null(X) if isinstance(_null(X), Compl_) else None
     return Compl_
 
-@cache
 def Regex(regex):
     """
     Build the 'regex type' for a given regex:
@@ -395,7 +284,6 @@ def Regex(regex):
     Regex_.__null__ = "" if isinstance("", Regex_) else None
     return Regex_
 
-@cache
 def Interval(typ, start, end, ops=('<=', '<=')):
     """
     Build the 'interval subtype' of given type.
@@ -563,43 +451,13 @@ def Interval(typ, start, end, ops=('<=', '<=')):
         right_op=right_func,
     )
 
-@cache
 def Range(x, y, ops=('<=', '<=')):
     from typed.mods.types.base import Int
     typ = Interval(Int, x, y, ops=ops)
     typ.__display__ = f'Range({x}, {y}, ops={ops})'
     return typ
 
-@cache
-def Not(*types):
-    """
-    Build the 'not-type':
-        > an object x of Not(X, Y, ...)
-        > is NOT an instance of any X, Y, ...
-    """
-    from typed.mods.types.base import Any, Nill
-    from typed.mods.meta.base import _TYPE_
 
-    if not types:
-        return Any
-    if Any in types:
-        return Nill
-
-    class NOT(_TYPE_):
-        def __instancecheck__(cls, instance):
-            return not any(isinstance(instance, typ) for typ in cls.__types__)
-
-        def __subclasscheck__(cls, subclass):
-            return not any(issubclass(subclass, typ) for typ in cls.__types__)
-
-    class_name = f"Not({_name_list(*types)})"
-    return NOT(class_name, (), {
-        "__display__": class_name,
-        '__types__': types,
-        '__null__': None
-    })
-
-@cache
 def Null(typ):
     from typed.mods.types.base import TYPE
     if not isinstance(typ, TYPE):
@@ -626,7 +484,6 @@ def Null(typ):
         "__null__": _null(typ)
     })
 
-@cache
 def Enum(typ, *values):
     """
     Build the 'valued-type':
@@ -680,7 +537,6 @@ def Enum(typ, *values):
     Enum_.__null__ = _null(typ) if isinstance(_null(typ), Enum_) else None
     return Enum_
 
-@cache
 def Single(x):
     """
     Build the 'singleton-type':
@@ -705,7 +561,6 @@ def Single(x):
     })
 Singleton = Single
 
-@cache
 def Len(typ, size):
     """
     Build a 'sized-type'.
@@ -762,7 +617,6 @@ def Len(typ, size):
         '__null__': _null(typ) if size == 0 else None
     })
 
-@cache
 def Maybe(*types):
     """
     Build a 'maybe-type'.
@@ -790,7 +644,6 @@ def Maybe(*types):
         "__null__": _null_from_list(*types)
     })
 
-@cache
 def ATTR(*attrs):
     for attr in attrs:
         if not isinstance(attr, Str):
@@ -817,7 +670,6 @@ def ATTR(*attrs):
         "__display__": class_name
     })
 
-@cache
 def SUBTYPES(*types):
     """
     Build the metatype of subtypes of a given types.

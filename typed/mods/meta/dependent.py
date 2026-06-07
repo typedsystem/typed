@@ -1,4 +1,4 @@
-from typed.mods.meta.base import TYPE, UNIVERSE_1
+from typed.mods.meta.base import TYPE, UNIVERSE_1, FINITE
 from typed.mods.init import TYPESYSTEM
 from typed.mods.err import NotDefined
 from typed.mods.flags import Flags
@@ -408,11 +408,11 @@ class PROD(ALGEBRAIC):
     def __isterm__(typ, trm):
         from typed.mods.typesystem import isterm
         from typed.mods.init import every
-        from typed.mods.logic import prod
+        from typed.mods.logic import diag
         if not isterm(trm, tuple):
             return False
         try:
-            return every(isterm(x, t) for x, t in prod(trm, typ.__types__))
+            return every(isterm(x, t) for x, t in diag(trm, typ.__types__))
         except Exception:
             return False
 
@@ -425,9 +425,9 @@ class PROD(ALGEBRAIC):
             if not types: return True
             if not others: return False
             if len(types) != len(others): return False
-            from typed.mods.logic import prod
+            from typed.mods.logic import diag
 
-            return all(issub(o, t) for o, t in prod(others, types))
+            return all(issub(o, t) for o, t in diag(others, types))
 
         return False
 
@@ -438,15 +438,12 @@ class COPROD(ALGEBRAIC):
     def __isterm__(typ, trm):
         from typed.mods.typesystem import isterm
         from typed.mods.init import some
-        from typed.mods.logic import coprod
+        from typed.mods.logic import codiag
 
         if not isterm(trm, tuple) or len(trm) != 2:
             return False
         try:
-            return some(
-                trm[0] == i and isterm(trm[1], t)
-                for i, t in coprod(typ.__types__)
-            )
+            return some(isterm(i, t) for i, t in codiag(typ.__types__))
         except Exception:
             return False
 
@@ -459,9 +456,9 @@ class COPROD(ALGEBRAIC):
             if not types: return False
             if not others: return True
             if len(types) != len(others): return False
+            from typed.mods.logic import codiag
 
-            return 
-
+            return all(issub(o, t) for o, t in codiag(others, types))
         return False
 
     def __call__(met, *types, typesystem=None):
@@ -469,3 +466,84 @@ class COPROD(ALGEBRAIC):
             from typed.mods.types.base import Empty
             return Empty
         return super().__call__("Coprod", *types, typesystem=typesystem)
+
+
+class BOUNDED(FINITE):
+    """
+    The dependent metatype for length-bounded types.
+    """
+    def __isterm__(met, trm):
+        from typed.mods.typesystem import isterm
+
+        base_type = getattr(met, "__base__", None)
+        bound = getattr(met, "__bound__", -1)
+        op = getattr(met, "__op__", None)
+
+        if base_type is None or op is None:
+            return False
+
+        if not isterm(trm, base_type):
+            return False
+        try:
+            return op(len(trm), bound)
+        except Exception:
+            return False
+
+    def __call__(type: type=None, bound=-1, op='==', base: type=None, typesystem=None):
+        from typed.mods.types.base import Empty
+        from typed.mods.typesystem import nameof
+        from typed.mods.check import resolve
+
+        typesystem = resolve.typesystem.entity(typesystem)
+
+        if base is None:
+            base = Empty
+
+        if type is None:
+            return base
+
+        from typed.mods.meta.base import FINITE
+        if not typesystem.issub(typesystem.typeof(type), FINITE):
+            from typed.mods.err import TypeErr
+            raise TypeErr(
+                message="Type must be a FINITE type.",
+                term=type,
+                expected=FINITE,
+                received=typesystem.typeof(type)
+            )
+
+        if bound < 0:
+            return type
+        if isinstance(op, str):
+            import operator
+            op_map = {
+                '<': operator.lt,
+                '<=': operator.le,
+                '==': operator.eq,
+                '!=': operator.ne,
+                '>=': operator.ge,
+                '>': operator.gt,
+            }
+            if op not in op_map:
+                raise ValueError(f"Unknown operator string: '{op}'. Expected one of {list(op_map.keys())}")
+            op_func = op_map[op]
+        elif callable(op):
+            op_func = op
+        else:
+            raise TypeError("The 'op' argument must be a string operator or a callable binary function.")
+
+        op_name = op if isinstance(op, str) else getattr(op, '__name__', 'custom_op')
+        display_name = f"Bounded({nameof(type, typesystem=typesystem)} {op_name} {bound})"
+
+        class BoundedType(Finite, metaclass=BOUNDED):
+            __kind__        = "type"
+            __flags__       = Flags(is_dependent=True)
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __display__     = display_name
+            __base__   = type
+            __bound__       = bound
+            __op__          = op_func
+            __null__        = NotDefined
+
+        BoundedType.__name__ = display_name
+        return BoundedType
