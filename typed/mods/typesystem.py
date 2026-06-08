@@ -539,9 +539,7 @@ class __TYPESYSTEM__:
 
     def add(self, *T):
         for t in T:
-            print(T)
             kind = getattr(t, "__kind__", None)
-            print(kind)
             if kind in self.__kinds__:
                 if kind in ["universe", "abstract"]:
                     self.__members__[kind][getattr(t, "__level__", -1)] = t

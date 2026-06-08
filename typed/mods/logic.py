@@ -111,6 +111,14 @@ def coprod(*discourses, limit: int = -1):
     else:
         yield from __coprod__()
 
+def codiag(trm, discourse):
+    try:
+        i, x = trm
+        if isinstance(i, int) and 0 <= i < len(discourse):
+            yield (x, discourse[i])
+    except (TypeError, ValueError):
+        pass
+
 class Reducer:
     """
     The class of reducers.
@@ -239,12 +247,11 @@ class Quantifier(metaclass=__QUANTIFIER__):
 
         values = tuple(__flatten__(args))
 
-        if all(isinstance(v, bool) or type(v).__name__ in ('Expression', 'Evaluator') for v in values):
-            bool_values = tuple(bool(v) for v in values)
-            return self.reducer(bool_values)
+        if all(isinstance(v, bool) or getattr(v, '__name__', '') == 'NotDefined' or v is None for v in values):
+            bool_values = tuple(v if isinstance(v, bool) else False for v in values)
+            return self.reducer(Discourse(bool_values))
 
         return self.evaluator(values, self.reducer, quantifier=self)
-
     def __contains__(self, instance):
         return isinstance(instance, type(self))
 
@@ -344,7 +351,7 @@ class Evaluator(metaclass=__EVALUATOR__):
             if yielded_count == 0 and first_error is not None:
                 raise first_error
 
-        return self.reducer(__eval__())
+        return self.reducer(Discourse(__eval__()))
 
     def __bool__(self) -> bool:
         return bool(self.eval(bool))
