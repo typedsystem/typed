@@ -1,17 +1,14 @@
-from typed.mods.meta.base import TYPE, UNIVERSE_1, FINITE
-from typed.mods.init import TYPESYSTEM
-from typed.mods.err import NotDefined
-from typed.mods.flags import Flags
+from typed.mods.meta.base import TYPE, FINITE
 
 class TUPLE(TYPE):
     """
     The metatype of the dependent type of tuples.
 
-    kindof(TUPLE)    is  meta
-    typeof(TUPLE)    is  UNIVERSE(1)
-    isterm(T, TUPLE) iff issub(typeof(T), TUPLE)
-    nullof(TUPLE)    is  NotDefined
-    builtin(TUPLE)   is  NotDefined
+    : kindof(TUPLE)    is  meta
+    : typeof(TUPLE)    is  UNIVERSE(1)
+    : isterm(T, TUPLE) iff issub(typeof(T), TUPLE)
+    : nullof(TUPLE)    is  NotDefined
+    : builtin(TUPLE)   is  NotDefined
     """
 
     def __isterm__(typ, trm):
@@ -47,33 +44,27 @@ class TUPLE(TYPE):
 
         display_name = f"Tuple({typesystem.nameof(*types)})" if types else "Tuple"
 
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
         class Tuple(typ, metaclass=TUPLE):
             __kind__ = "type"
             __flags__ = Flags(is_dependent=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
             __types__ = types
-            __null__ = NotDefined
 
         Tuple.__name__ = display_name
         return Tuple
-
-    __kind__ = "meta"
-    __typesystems__ = {TYPESYSTEM, }
-    __display__ = "TUPLE"
-    __null__ = NotDefined
-    __builtin__ = NotDefined
-
 
 class LIST(TYPE):
     """
     The metatype of lists.
 
-    kindof(LIST)    is  meta
-    typeof(LIST)    is  UNIVERSE(1)
-    isterm(T, LIST) iff issub(typof(T), LIST)
-    nullof(LIST)    is  NotDefined
-    builtin(LIST)   is  NotDefined
+    : kindof(LIST)    is  meta
+    : typeof(LIST)    is  UNIVERSE(1)
+    : isterm(T, LIST) iff issub(typof(T), LIST)
+    : nullof(LIST)    is  NotDefined
+    : builtin(LIST)   is  NotDefined
     """
 
     def __isterm__(typ, trm):
@@ -109,34 +100,27 @@ class LIST(TYPE):
         check.every.ismember(types, typesystem)
 
         display_name = f"List({typesystem.nameof(*types)})" if types else "List"
-
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
         class List(typ, metaclass=LIST):
             __kind__ = "type"
             __flags__ = Flags(is_dependent=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
             __types__ = types
-            __null__ = NotDefined
 
         List.__name__ = display_name
         return List
-
-    __kind__ = "meta"
-    __typesystems__ = {TYPESYSTEM, }
-    __display__ = "LIST"
-    __null__ = NotDefined
-    __builtin__ = NotDefined
-
 
 class SET(TYPE):
     """
     The metatype of sets.
 
-    kindof(SET)    is  meta
-    typeof(SET)    is  UNIVERSE(1)
-    isterm(T, SET) iff issub(typeof(T), SET)
-    nullof(SET)    is  NotDefined
-    builtin(SET)   is  NotDefined
+    : kindof(SET)    is  meta
+    : typeof(SET)    is  UNIVERSE(1)
+    : isterm(T, SET) iff issub(typeof(T), SET)
+    : nullof(SET)    is  NotDefined
+    : builtin(SET)   is  NotDefined
     """
     def __isterm__(typ, trm):
         from typed.mods.typesystem import typeof, issub, isterm
@@ -172,33 +156,27 @@ class SET(TYPE):
 
         display_name = f"Set({typesystem.nameof(*types)})" if types else "Set"
 
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
         class Set(typ, metaclass=SET):
             __kind__ = "type"
             __flags__ = Flags(is_dependent=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
             __types__ = types
-            __null__ = NotDefined
 
         Set.__name__ = display_name
         return Set
-
-    __kind__ = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__ = UNIVERSE_1
-    __display__ = "SET"
-    __null__ = NotDefined
-    __builtin__ = NotDefined
 
 class DICT(TYPE):
     """
     The metatype of dictionaries.
 
-    kindof(DICT)    is  meta
-    typeof(DICT)    is  UNIVERSE(1)
-    isterm(T, DICT) iff issub(typeof(T), DICT)
-    nullof(DICT)    is  NotDefined
-    builtin(DICT)   is  NotDefined
+    : kindof(DICT)    is  meta
+    : typeof(DICT)    is  UNIVERSE(1)
+    : isterm(T, DICT) iff issub(typeof(T), DICT)
+    : nullof(DICT)    is  NotDefined
+    : builtin(DICT)   is  NotDefined
     """
     def __isterm__(typ, trm):
         from typed.mods.typesystem import typeof, issub, isterm
@@ -259,6 +237,8 @@ class DICT(TYPE):
         check.ismember(key, typesystem)
         check.every.ismember(types, typesystem)
 
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
         class Dict(typ, metaclass=DICT):
             __kind__ = "type"
             __flags__ = Flags(is_dependent=True)
@@ -266,17 +246,9 @@ class DICT(TYPE):
             __display__ = display_name
             __types__ = types
             __key_type__ = key
-            __null__ = NotDefined
 
         Dict.__name__ = display_name
         return Dict
-
-    __kind__ = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__ = UNIVERSE_1
-    __display__ = "DICT"
-    __null__ = NotDefined
-    __builtin__ = NotDefined
 
 class EXTENSIONAL(TYPE):
     def __isterm__(typ, trm):
@@ -313,6 +285,8 @@ class EXTENSIONAL(TYPE):
 
         display_name = f"{name}({typesystem.nameof(*types)})"
 
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
         class Extensional(*types, metaclass=EXTENSIONAL):
             __kind__ = "type"
             __flags__ = Flags(is_dependent=True, is_extensional=True)
@@ -320,18 +294,9 @@ class EXTENSIONAL(TYPE):
             __quantifier__ = quantifier
             __display__ = display_name
             __types__ = types
-            __null__ = NotDefined
 
         Extensional.__name__ = display_name
         return Extensional
-
-    __kind__ = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__ = UNIVERSE_1
-    __display__ = "EXTENSIONAL"
-    __null__ = NotDefined
-    __builtin__ = NotDefined
-
 
 class UNION(EXTENSIONAL):
     def __call__(met, *types, base=None, typesystem=None):
@@ -353,7 +318,7 @@ class ALGEBRAIC(TYPE):
     The base metaclass for types built over a discourse of other types,
     abstracting factory logic for Algebraic Data Types (Products and Coproducts).
     """
-    def __call__(met, name_prefix, *types, typesystem=None):
+    def __call__(met, name, *types, typesystem=None):
         from typed.mods.check import check, resolve
         typesystem = resolve.typesystem.entity(typesystem)
 
@@ -366,11 +331,14 @@ class ALGEBRAIC(TYPE):
 
         from typed.mods.poly import null
 
-        display_name = f"{name_prefix}({typesystem.nameof(*types)})"
+        display_name = f"{name}({typesystem.nameof(*types)})"
 
         is_prod = getattr(met, '__name__', '') == 'PROD'
         is_coprod = getattr(met, '__name__', '') == 'COPROD'
 
+        from typed.mods.flags import Flags
+        from typed.mods.err import NotDefined
+        from typed.mods.init import TYPESYSTEM
         if is_prod:
             nulls = tuple(null(t) for t in types if null(t) is not NotDefined)
             canonical_null = nulls if len(nulls) == len(types) else NotDefined
@@ -380,7 +348,7 @@ class ALGEBRAIC(TYPE):
         else:
             canonical_null = NotDefined
 
-        class Algebraic(*types, metaclass=met):
+        class Algebraic(*types, metaclass=ALGEBRAIC):
             __kind__ = "type"
             __flags__ = Flags(
                 is_dependent=True, 
@@ -395,14 +363,6 @@ class ALGEBRAIC(TYPE):
 
         Algebraic.__name__ = display_name
         return Algebraic
-
-    __kind__ = "meta"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__ = UNIVERSE_1
-    __display__ = "ALGEBRAIC"
-    __null__ = NotDefined
-    __builtin__ = NotDefined
-
 
 class PROD(ALGEBRAIC):
     def __isterm__(typ, trm):
@@ -467,10 +427,9 @@ class COPROD(ALGEBRAIC):
             return Empty
         return super().__call__("Coprod", *types, typesystem=typesystem)
 
-
 class BOUNDED(FINITE):
     """
-    The dependent metatype for length-bounded types.
+    The dependent metatype for 'length-bounded' types.
     """
     def __isterm__(met, trm):
         from typed.mods.typesystem import isterm
@@ -489,10 +448,9 @@ class BOUNDED(FINITE):
         except Exception:
             return False
 
-    def __call__(type: type=None, bound=-1, op='==', base: type=None, typesystem=None):
+    def __call__(met, type: type=None, bound=-1, op='==', base: type=None, typesystem=None):
         from typed.mods.types.base import Empty
-        from typed.mods.typesystem import nameof
-        from typed.mods.check import resolve
+        from typed.mods.check import check, resolve
 
         typesystem = resolve.typesystem.entity(typesystem)
 
@@ -502,18 +460,21 @@ class BOUNDED(FINITE):
         if type is None:
             return base
 
+        check.isinstance(bound, int)
+
         from typed.mods.meta.base import FINITE
         if not typesystem.issub(typesystem.typeof(type), FINITE):
             from typed.mods.err import TypeErr
             raise TypeErr(
                 message="Type must be a FINITE type.",
                 term=type,
-                expected=FINITE,
+                expected=f"subtype of {FINITE}",
                 received=typesystem.typeof(type)
             )
 
         if bound < 0:
             return type
+
         if isinstance(op, str):
             import operator
             op_map = {
@@ -532,18 +493,158 @@ class BOUNDED(FINITE):
         else:
             raise TypeError("The 'op' argument must be a string operator or a callable binary function.")
 
-        op_name = op if isinstance(op, str) else getattr(op, '__name__', 'custom_op')
-        display_name = f"Bounded({nameof(type, typesystem=typesystem)} {op_name} {bound})"
+        display_name = f"Bounded({typesystem.nameof(type)}, {typesystem.nameof(op_func)}, {bound})"
 
-        class BoundedType(Finite, metaclass=BOUNDED):
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
+
+        class Bounded(type, metaclass=BOUNDED):
             __kind__        = "type"
-            __flags__       = Flags(is_dependent=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__     = display_name
-            __base__   = type
+            __base__        = type
             __bound__       = bound
             __op__          = op_func
-            __null__        = NotDefined
+            __flags__       = Flags(is_dependent=True, is_enumerable=True, is_finite=True, is_bounded=True)
 
-        BoundedType.__name__ = display_name
-        return BoundedType
+        Bounded.__name__ = display_name
+        return Bounded
+
+class RELATED(TYPE):
+    """
+    The dependent metatype of types of 'related entities'.
+    """
+    def __isterm__(typ, trm):
+        quantifier = getattr(typ, "__quantifier__", None)
+        if not quantifier:
+            from typed.mods.resolve import resolve
+            quantifier = resolve.logic.quantifier(quantifier)
+        entities = getattr(typ, "__entities__", None)
+        if not entities: return False
+        relations = getattr(typ, "__relations__", None)
+        from typed.mods.check import check
+        check.every.iscallable(relations)
+        return quantifier(relation(trm, *entities) for relation in relations)
+
+    def __call__(met, entities: tuple[object]=None, relations: tuple[callable]=None, name="Related", base: type=None, quantifier=None, typesystem=None):
+        if base is None:
+            from typed.mods.types.base import Empty
+            return Empty
+        if entities is None:
+            return base
+        from typed.mods.resolve import resolve
+        quantifier = resolve.logic.quantifier(quantifier)
+        typesystem = resolve.typesystem.entity(quantifier)
+        from typed.mods.check import check
+        check.every.iscallable(relations)
+
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
+
+        name = f"{name}({typesystem.nameof(entities)}, relations={typesystem.nameof(relations)})"
+        class Related(*(typesystem.typeof(entity) for entity in entities), metaclass=RELATED):
+            __quantifier__ = quantifier
+            __entities__ = entities
+            __relations__ = relations
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __flags__ = Flags(is_dependent=True)
+
+        return Related
+
+class FILTERED(TYPE):
+    def __isterm__(typ, trm):
+        base = getattr(typ, "__base__", None)
+        from typed.mods.check import check
+        check.isinstance(base, type)
+        check.isterm(trm, base)
+        filters = getattr(typ, "__filters__", [])
+        if not filters: return True
+        quantifier = getattr(typ, "__quantifier__")
+        from typed.mods.resolve import resolve
+        quantifier = resolve.logic.quantifier(quantifier)
+        check.every.iscallable(filters)
+        return quantifier(filter(trm) for filter in filters)
+
+    def __call__(met, type: type, filters: tuple[callable]=None, typesystem=None):
+        name = f"Filtered({typesystem.nameof(type)}, filters={typesystem.nameof(filters)})"
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
+        from typed.mods.logic import Discourse
+
+        class Filtered(type, metaclass=FILTERED):
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __flags__       = Flags(is_dependent=True)
+            __base__        = type
+            __filters__     = filters if filters in Discourse else (filters, )
+
+class SUBS(RELATED):
+    """
+    The metatype of dependent 'types of subs' of given entitites.
+    """
+    def __call__(met, entities: tuple[object]=None, base: type=None, quantifier=None, typesystem=None):
+        return super().__call__(
+            name="Subs",
+            entities=entities,
+            relations=(typesystem.issub,),
+            typesystem=typesystem,
+            quantifier=quantifier,
+            base=base
+        )
+
+class SUPS(RELATED):
+    """
+    The metatype of dependent 'types of sups' of given entitites.
+    """
+    def __call__(met, entities: tuple[object]=None, base: type=None, quantifier=None, typesystem=None):
+        return super().__call__(
+            name="Sups",
+            entities=entities,
+            relations=(typesystem.issup,),
+            typesystem=typesystem,
+            quantifier=quantifier,
+            base=base
+        )
+
+class SOME(RELATED):
+    """
+    The metatype of dependent 'types of some of them'.
+    """
+    def __call__(met, entities: tuple[object]=None, base: type=None, typesystem=None):
+        from typed.mods.init import some
+        return super().__call__(
+            name="Some",
+            entities=entities,
+            relations=(typesystem.issame,),
+            typesystem=typesystem,
+            quantifier=some,
+            base=base
+        )
+
+class EQUIV(RELATED):
+    """
+    The metatype of dependent 'equivalent types'.
+    """
+    def __call__(met, entities: tuple[object]=None, base: type=None, quantifier=None, typesystem=None):
+        return super().__call__(
+            name="Equiv",
+            entities=entities,
+            relations=(typesystem.isequiv,),
+            typesystem=typesystem,
+            quantifier=quantifier,
+            base=base
+        )
+
+class HAS(RELATED):
+    """
+    The metatype of dependent 'has types'.
+    """
+    def __call__(met, attrs: tuple[str], quantifier=None):
+        from typed.mods.check import check
+        from typed.mods.poly import has
+        check.every.isinstance(attrs, str)
+        return super().__call__(
+            entities=attrs,
+            relations=(has,),
+            name="Has",
+            quantifier=quantifier
+        )

@@ -14,6 +14,9 @@ def _resolve(provided: object, default: object) -> object:
     from typed.mods.err import NotDefined
     val = default if provided is None or provided is NotDefined else provided
 
+    if val is default:
+        return val
+
     from typed.mods.check import check
 
     check.isinstance(val, type(default))
@@ -68,6 +71,17 @@ class resolve:
                 from typed.mods.init import TYPESYSTEM
                 return TYPESYSTEM
             return _resolve(provided=typesystem, default=c.typesystem.entity)
+
+        @resolver
+        def sameness(sameness=None, conf=None):
+            from typed.mods.err import NotDefined
+            if sameness is not None and sameness is not NotDefined:
+                return sameness
+            c = resolve.conf(conf)
+            if c is None:
+                from typed.mods.init import SAMENESS
+                return SAMENESS
+            return _resolve(provided=sameness, default=c.typesystem.sameness)
 
         @resolver
         def stateful(stateful=None, conf=None):

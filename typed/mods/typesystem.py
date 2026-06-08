@@ -1,5 +1,5 @@
 class __SAMENESS__:
-    def __init__(self, suffices: tuple[callable]=(), needed: tuple[callable]=(), use_name: bool=True, use_duck: bool=False, use_id: bool=True):
+    def __init__(self, suffices: tuple[callable]=(), needed: tuple[callable]=(), use_name: bool=True, use_duck: bool=False):
         if suffices:
             from typed.mods.check import check
             for condition in suffices:
@@ -13,7 +13,6 @@ class __SAMENESS__:
         self.needed = needed
         self.use_name = use_name
         self.use_duck = use_duck
-        self.use_id   = use_id
 
 class __MAGIC__:
     def __init__(
@@ -59,21 +58,15 @@ class ___UNIVERSE___(type):
     """
     __name__ = "___UNIVERSE___"
     __display__ = __name__
+    __kind__ = "universe"
 
-    def __new__(mcls, name, bases, dct, **kwds):
+    def __new__(mcs, name, bases, dct, **kwds):
         from typed.mods.err import NotDefined
         dct.setdefault("__null__", NotDefined)
         dct.setdefault("__builtin__", NotDefined)
         dct.setdefault("__display__", name if name else NotDefined)
-        dct.setdefault("__type__", mcls)
-
-        is_subtype_of_level_0 = any(getattr(b, "level", None) == 0 and getattr(b, "is_universe", False) for b in bases)
-        is_subtype_of_level_n = any(isinstance(getattr(b, "level", None), int) and getattr(b, "level", 0) > 0 and getattr(b, "is_universe", False) for b in bases)
-
-        if is_subtype_of_level_0:
-            dct.setdefault("__kind__", "meta")
-        elif is_subtype_of_level_n:
-            dct.setdefault("__kind__", "abstract")
+        dct.setdefault("__type__", mcs)
+        dct.setdefault("__kind__", "universe")
 
         if "__typesystems__" not in dct:
             ts = set()
@@ -83,18 +76,18 @@ class ___UNIVERSE___(type):
             if ts:
                 dct["__typesystems__"] = ts
 
-        cls = super().__new__(mcls, name, bases, dct, **kwds)
+        cls = super().__new__(mcs, name, bases, dct, **kwds)
 
-        if "__terms__" not in mcls.__dict__:
+        if "__terms__" not in mcs.__dict__:
             from weakref import WeakSet
             cls.__terms__ = WeakSet()
 
-        if "__terms__" not in mcls.__dict__:
+        if "__terms__" not in mcs.__dict__:
             from weakref import WeakSet
-            mcls.__terms__ = WeakSet()
+            mcs.__terms__ = WeakSet()
 
         try:
-            mcls.__terms__.add(cls)
+            mcs.__terms__.add(cls)
         except AttributeError:
             pass
 
@@ -119,20 +112,13 @@ class ___ABSTRACT___(___UNIVERSE___):
     __name__ = "___ABSTRACT___"
     __display__ = __name__
 
-    def __new__(mcls, name, bases, dct, **kwds):
+    def __new__(mcs, name, bases, dct, **kwds):
         from typed.mods.err import NotDefined
         dct.setdefault("__null__", NotDefined)
         dct.setdefault("__builtin__", NotDefined)
         dct.setdefault("__display__", name if name else NotDefined)
-        dct.setdefault("__type__", mcls)
-
-        is_subtype_of_level_0 = any(getattr(b, "level", None) == 0 and getattr(b, "is_abstract", False) for b in bases)
-        is_subtype_of_level_n = any(isinstance(getattr(b, "level", None), int) and getattr(b, "level", 0) > 0 and getattr(b, "is_abstract", False) for b in bases)
-
-        if is_subtype_of_level_0:
-            dct.setdefault("__kind__", "meta")
-        elif is_subtype_of_level_n:
-            dct.setdefault("__kind__", "abstract")
+        dct.setdefault("__type__", mcs)
+        dct.setdefault("__kind__", "abstract")
 
         if "__typesystems__" not in dct:
             ts = set()
@@ -142,18 +128,18 @@ class ___ABSTRACT___(___UNIVERSE___):
             if ts:
                 dct["__typesystems__"] = ts
 
-        cls = super().__new__(mcls, name, bases, dct, **kwds)
+        cls = super().__new__(mcs, name, bases, dct, **kwds)
 
-        if "__terms__" not in mcls.__dict__:
+        if "__terms__" not in mcs.__dict__:
             from weakref import WeakSet
             cls.__terms__ = WeakSet()
 
-        if "__terms__" not in mcls.__dict__:
+        if "__terms__" not in mcs.__dict__:
             from weakref import WeakSet
-            mcls.__terms__ = WeakSet()
+            mcs.__terms__ = WeakSet()
 
         try:
-            mcls.__terms__.add(cls)
+            mcs.__terms__.add(cls)
         except AttributeError:
             pass
 
@@ -178,7 +164,7 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
     __display__ = __name__
 
     def __new__(
-        mcls,
+        mcs,
         name="UNIVERSE",
         bases=(type,),
         dct={},
@@ -205,8 +191,8 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
                 magic = resolve.typesystem.magic(magic)
 
         attrs = {
-            "is_universe": True,
-            "level": -1,
+            "__kind__": "universe",
+            "__level__": -1,
             "__stateful__": stateful,
             "__magic__": magic,
             "__isterm__": stateful.__isterm__,
@@ -227,18 +213,18 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
         attrs.update(dct)
         attrs.update(kwargs)
 
-        cls = super().__new__(mcls, name, bases, attrs)
+        cls = super().__new__(mcs, name, bases, attrs)
 
-        if "__terms__" not in mcls.__dict__:
+        if "__terms__" not in mcs.__dict__:
             from weakref import WeakSet
             cls.__terms__ = WeakSet()
 
-        if "__terms__" not in mcls.__dict__:
+        if "__terms__" not in mcs.__dict__:
             from weakref import WeakSet
-            mcls.__terms__ = WeakSet()
+            mcs.__terms__ = WeakSet()
 
         try:
-            mcls.__terms__.add(cls)
+            mcs.__terms__.add(cls)
         except AttributeError:
             pass
 
@@ -291,7 +277,7 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
     __display__ = __name__
 
     def __new__(
-        mcls,
+        mcs,
         name="ABSTRACT",
         bases=(type,),
         dct={},
@@ -318,8 +304,8 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
                 magic = resolve.typesystem.magic(magic)
 
         attrs = {
-            "is_abstract": True,
-            "level": -1,
+            "__kind__": "abstract",
+            "__level__": -1,
             "__stateful__": stateful,
             "__magic__": magic,
             "__isterm__": stateful.__isterm__,
@@ -340,18 +326,18 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
         attrs.update(dct)
         attrs.update(kwargs)
 
-        cls = super().__new__(mcls, name=name, bases=bases, dct=attrs, stateful=stateful, magic=magic)
+        cls = super().__new__(mcs, name=name, bases=bases, dct=attrs, stateful=stateful, magic=magic)
 
-        if "__terms__" not in mcls.__dict__:
+        if "__terms__" not in mcs.__dict__:
             from weakref import WeakSet
             cls.__terms__ = WeakSet()
 
-        if "__terms__" not in mcls.__dict__:
+        if "__terms__" not in mcs.__dict__:
             from weakref import WeakSet
-            mcls.__terms__ = WeakSet()
+            mcs.__terms__ = WeakSet()
 
         try:
-            mcls.__terms__.add(cls)
+            mcs.__terms__.add(cls)
         except AttributeError:
             pass
 
@@ -402,6 +388,7 @@ class __TYPESYSTEM__:
         name: str="TYPESYSTEM",
         universe: __UNIVERSE__=None,
         abstract: __ABSTRACT__=None,
+        sameness: __SAMENESS__=None,
         stateful: __STATEFUL__=None,
         magic: __MAGIC__=None,
         quantifiers: set=None,
@@ -411,6 +398,7 @@ class __TYPESYSTEM__:
         from typed.mods.resolve import resolve
         universe = resolve.typesystem.universe(universe)
         abstract = resolve.typesystem.abstract(abstract)
+        sameness = resolve.typesystem.sameness(sameness)
         stateful = resolve.typesystem.stateful(stateful)
         magic = resolve.typesystem.magic(magic)
         quantifiers = resolve.typesystem.quantifiers(quantifiers)
@@ -419,6 +407,7 @@ class __TYPESYSTEM__:
 
         self.__name__ = name
         self.__display__ = name
+        self.__sameness__ = sameness
         self.__stateful__ = stateful
         self.__magic__ = magic
         self.__universe__ = universe
@@ -446,11 +435,11 @@ class __TYPESYSTEM__:
             namespace.setdefault("__typesystems__", getattr(univ, "__typesystems__", set()))
             namespace.setdefault("__type__", univ)
 
-            univ_level = getattr(univ, "level", None)
+            univ_level = getattr(univ, "__level__", None)
             if univ_level == 0:
                 namespace.setdefault("__kind__", "type")
             elif isinstance(univ_level, int) and univ_level > 0:
-                namespace.setdefault("__kind__", "universe")
+                namespace.setdefault("__kind__", "meta")
 
             cls = type.__new__(univ, typ, bases, namespace, **kwds)
 
@@ -499,7 +488,7 @@ class __TYPESYSTEM__:
                     stateful=univ_stateful,
                     magic=magic,
                     __new__=__new__,
-                    level=level,
+                    __level__=level,
                     __display__=univ_name
                 )
 
@@ -516,7 +505,7 @@ class __TYPESYSTEM__:
                     bases=(univ_cls,),
                     stateful=abs_stateful,
                     magic=magic,
-                    level=level,
+                    __level__=level,
                     __display__=abs_name
                 )
 
@@ -541,7 +530,7 @@ class __TYPESYSTEM__:
     def enrich(self, level):
         while len(self.__members__["universe"]) <= level + 1:
             u, a = next(self.__enricher__)
-            u_level = getattr(u, "level", -1)
+            u_level = getattr(u, "__level__", -1)
 
             if u_level not in self.__members__["universe"]:
                 self.__members__["universe"][u_level] = u
@@ -550,35 +539,23 @@ class __TYPESYSTEM__:
 
     def add(self, *T):
         for t in T:
-            for kind in self.__kinds__:
-                attr = f"is_{kind}"
-                is_k = False
-                if hasattr(t, '__dict__') and attr in t.__dict__:
-                    is_k = t.__dict__[attr]
-                elif not isinstance(t, type) and hasattr(type(t), '__dict__') and attr in type(t).__dict__:
-                    is_k = type(t).__dict__[attr]
-
-                if is_k:
-                    if kind in ["universe", "abstract"]:
-                        self.__members__[kind][getattr(t, "level", -1)] = t
-                    else:
-                        self.__members__[kind].add(t)
+            print(T)
+            kind = getattr(t, "__kind__", None)
+            print(kind)
+            if kind in self.__kinds__:
+                if kind in ["universe", "abstract"]:
+                    self.__members__[kind][getattr(t, "__level__", -1)] = t
+                else:
+                    self.__members__[kind].add(t)
 
     def rm(self, *T):
         for t in T:
-            for kind in self.__kinds__:
-                attr = f"is_{kind}"
-                is_k = False
-                if hasattr(t, '__dict__') and attr in t.__dict__:
-                    is_k = t.__dict__[attr]
-                elif not isinstance(t, type) and hasattr(type(t), '__dict__') and attr in type(t).__dict__:
-                    is_k = type(t).__dict__[attr]
-
-                if is_k:
-                    if kind in ["universe", "abstract"]:
-                        self.__members__[kind].pop(getattr(t, "level", -1), None)
-                    else:
-                        self.__members__[kind].discard(t)
+            kind = getattr(t, "__kind__", None)
+            if kind in self.__kinds__:
+                if kind in ["universe", "abstract"]:
+                    self.__members__[kind].pop(getattr(t, "__level__", -1), None)
+                else:
+                    self.__members__[kind].discard(t) 
 
     def prune(self):
         for kind in self.__kinds__:
@@ -857,7 +834,7 @@ def issame(entity: type, *others: tuple[type], quantifier=None, typesystem: __TY
     return quantifier(__issame__(other, entity, typesystem=typesystem) for other in others)
 
 def issup(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
-    from typed.mods.check import resolve
+    from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
     quantifier = resolve.logic.quantifier(quantifier)
     __issup__ = typesystem.__stateful__.__issup__
@@ -865,7 +842,7 @@ def issup(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYP
     return quantifier(__issup__(other, entity, typesystem=typesystem) for other in others)
 
 def issub(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
-    from typed.mods.check import resolve
+    from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
     quantifier = resolve.logic.quantifier(quantifier)
     __issub__ = typesystem.__stateful__.__issub__
@@ -873,7 +850,7 @@ def issub(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYP
     return quantifier(__issub__(other, entity, typesystem=typesystem) for other in others)
 
 def isterm(term: object, *types: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
-    from typed.mods.check import resolve
+    from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
     quantifier = resolve.logic.quantifier(quantifier)
     __isterm__ = typesystem.__stateful__.__isterm__
@@ -881,7 +858,7 @@ def isterm(term: object, *types: tuple[type], quantifier=None, typesystem: __TYP
     return quantifier(__isterm__(type, term, typesystem=typesystem) for type in types)
 
 def isequiv(entity: type, *others: tuple[type],  quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
-    from typed.mods.check import resolve
+    from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
     quantifier = resolve.logic.quantifier(quantifier)
     __isequiv__ = typesystem.__stateful__.__isequiv__
@@ -889,7 +866,7 @@ def isequiv(entity: type, *others: tuple[type],  quantifier=None, typesystem: __
     return quantifier(__isequiv__(other, entity, typesystem=typesystem) for other in others)
 
 def term(value, type: type=None, typesystem:__TYPESYSTEM__=None):
-    from typed.mods.check import resolve
+    from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
     if type is None:
         type = typeof(value, typesystem=typesystem)
@@ -941,14 +918,12 @@ class new:
         needed: tuple[callable]=(),
         use_name: bool=True,
         use_duck: bool=False,
-        use_id: bool=True
     ):
         return __SAMENESS__(
             suffices=suffices,
             needed=needed,
             use_name=use_name,
             use_duck=use_duck,
-            use_id=use_id
         )
 
     @staticmethod

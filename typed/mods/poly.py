@@ -1,11 +1,3 @@
-from typed.helper.poly import (
-    _is_placeholder_like,
-    _resolve_placeholder_value,
-    _append,
-    _join,
-    _split,
-)
-
 def null(obj: object) -> object:
     """
     The 'null' parametric polymorphism.
@@ -35,14 +27,6 @@ def terms(t: type) -> set:
     if __terms__ is not None:
         return set(__terms__)
     return
-
-def extends(typ: type, *others: tuple[type]) -> bool:
-    for other in others:
-        mro = getattr(other, "__mro__", None)
-        if mro is not None:
-            if any(base is typ for base in mro):
-                return True
-    return False
 
 def append(container, *args, **kwargs):
     if any(

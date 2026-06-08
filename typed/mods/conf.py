@@ -22,6 +22,7 @@ class TypeSystemConf(metaclass=__CONF__):
     def __init__(
         self,
         entity:      type=None,
+        sameness:    type=None,
         stateful:    type=None,
         magic:       type=None,
         universe:    type=None,
@@ -33,6 +34,10 @@ class TypeSystemConf(metaclass=__CONF__):
         if entity is None:
             from typed.mods.init import TYPESYSTEM
             entity = TYPESYSTEM
+
+        if sameness is None:
+            from typed.mods.init import SAMENESS
+            sameness = SAMENESS
 
         if stateful is None:
             from typed.mods.init import STATEFUL
@@ -62,10 +67,11 @@ class TypeSystemConf(metaclass=__CONF__):
             from typed.mods.init import __quantifiers__
             quantifiers = __quantifiers__
 
-        from typed.mods.typesystem import __STATEFUL__, __MAGIC__, __UNIVERSE__, __ABSTRACT__, __TYPESYSTEM__
+        from typed.mods.typesystem import __SAMENESS__, __STATEFUL__, __MAGIC__, __UNIVERSE__, __ABSTRACT__, __TYPESYSTEM__
         from typed.mods.check import check
 
         check.isinstance(entity, __TYPESYSTEM__)
+        check.isinstance(sameness, __SAMENESS__)
         check.isinstance(stateful, __STATEFUL__)
         check.isinstance(magic, __MAGIC__)
         check.isinstance(universe, __UNIVERSE__)
@@ -75,6 +81,7 @@ class TypeSystemConf(metaclass=__CONF__):
         check.isinstance(quantifiers, set)
 
         self.entity = entity
+        self.sameness = sameness
         self.stateful = stateful
         self.magic = magic
         self.universe = universe

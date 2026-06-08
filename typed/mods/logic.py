@@ -239,8 +239,9 @@ class Quantifier(metaclass=__QUANTIFIER__):
 
         values = tuple(__flatten__(args))
 
-        if all(isinstance(v, bool) for v in values):
-            return self.reducer(values)
+        if all(isinstance(v, bool) or type(v).__name__ in ('Expression', 'Evaluator') for v in values):
+            bool_values = tuple(bool(v) for v in values)
+            return self.reducer(bool_values)
 
         return self.evaluator(values, self.reducer, quantifier=self)
 
@@ -344,6 +345,9 @@ class Evaluator(metaclass=__EVALUATOR__):
                 raise first_error
 
         return self.reducer(__eval__())
+
+    def __bool__(self) -> bool:
+        return bool(self.eval(bool))
 
 class Predicate:
     __display__ = "Predicate"

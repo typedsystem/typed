@@ -8,6 +8,10 @@ class STATEFUL:
 
     @staticmethod
     def __issame__(X, Y, typesystem=None):
+
+        if X is Y:
+            return True
+
         if typesystem is None:
             from typed.mods.check import resolve
             typesystem = resolve.typesystem.entity(typesystem)
@@ -19,10 +23,6 @@ class STATEFUL:
 
         if getattr(sameness, 'use_name', False):
             if typesystem.nameof(X) == typesystem.nameof(Y):
-                return True
-
-        if getattr(sameness, 'use_id', False):
-            if X is Y:
                 return True
 
         if getattr(sameness, 'use_duck', False):
