@@ -12,7 +12,7 @@ META.__display__ = META.__name__
 
 class EMPTY(TYPE):
     """
-    The metatype of nothing.
+    The atomic metatype of nothing.
 
     : kindof(EMPTY)    is  meta
     : typeof(EMPTY)    is  UNIVERSE(1)
@@ -33,7 +33,7 @@ class EMPTY(TYPE):
 
 class ANY(TYPE):
     """
-    The metatype of everything.
+    The atomic metatype of everything.
 
     kindof(ANY)     is  meta
     typeof(ANY)     is  UNIVERSE(1)
@@ -52,7 +52,7 @@ class ANY(TYPE):
 
 class NILL(TYPE):
     """
-    The metatype of None value type.
+    The atomic metatype of None value type.
 
     : kindof(NILL)    is  meta
     : typeof(NILL)    is  UNIVERSE(1)
@@ -65,7 +65,7 @@ class NILL(TYPE):
 
 class INT(TYPE):
     """
-    The metatype of integers.
+    The atomic metatype of integers.
 
     : kindof(INT)    is  meta
     : typeof(INT)    is  UNIVERSE(1)
@@ -80,7 +80,7 @@ class INT(TYPE):
 
 class FLOAT(TYPE):
     """
-    The metatype of floating-point numbers.
+    The atomic metatype of floating-point numbers.
 
     kindof(FLOAT)    is  meta
     typeof(FLOAT)    is  UNIVERSE(1)
@@ -95,7 +95,7 @@ class FLOAT(TYPE):
 
 class STR(TYPE):
     """
-    The metatype of strings.
+    The atomic metatype of strings.
 
     kindof(STR)    is  meta
     typeof(STR)    is  UNIVERSE(1)
@@ -110,7 +110,7 @@ class STR(TYPE):
 
 class BOOL(TYPE):
     """
-    The metatype of booleans.
+    The atomic metatype of booleans.
 
     kindof(BOOL)    is  meta
     typeof(BOOL)    is  UNIVERSE(1)
@@ -131,7 +131,7 @@ class BOOL(TYPE):
 
 class BYTE(TYPE):
     """
-    The metatype of bytes and bytearrays.
+    The atomic metatype of bytes and bytearrays.
 
     kindof(BYTE)    is  meta
     typeof(BYTE)    is  UNIVERSE(1)
@@ -146,7 +146,7 @@ class BYTE(TYPE):
 
 class ENUMERABLE(TYPE):
     """
-    The metatype of enumerable types.
+    The atomic metatype of enumerable types.
 
     kindof(ENUMERABLE)    is  meta
     typeof(ENUMERABLE)    is  UNIVERSE(1)
@@ -167,6 +167,15 @@ class ENUMERABLE(TYPE):
         return flagged(other, flag.is_enumerable)
 
 class FINITE(ENUMERABLE):
+    """
+    The atomic metatype of finite types.
+
+    kindof(FINITE)    is  meta
+    typeof(FINITE)    is  UNIVERSE(1)
+    isterm(T, FINITE) iff issub(typeof(T), FINITE)
+    nullof(FINITE)    is  NotDefined
+    builtin(FINITE)   is  NotDefined
+    """
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
@@ -179,4 +188,75 @@ class FINITE(ENUMERABLE):
         if b is not NotDefined and hasattr(b, '__len__'):
             return True
 
+        return False
+
+class MEMBER(TYPE):
+    """
+    The atomic metatype of TYPESYSTEM members.
+
+    : kindof(MEMBER)    is  meta
+    : typeof(MEMBER)    is  UNIVERSE(1)
+    : isterm(T, MEMBER) iff issub(typeof(T), MEMBER)
+    : nullof(MEMBER)    is  NotDefined
+    : builtin(MEMBER)   is  NotDefined
+    """
+    def __isterm__(typ, trm):
+        from typed.mods.typesystem import ismember
+        return ismember(trm)
+
+class DOM(TYPE):
+    """
+    The atomic metatype of domain types.
+
+    kindof(DOM)    is  meta
+    typeof(DOM)    is  UNIVERSE(1)
+    isterm(T, DOM) iff issub(typeof(T), DOM)
+    nullof(DOM)    is  NotDefined
+    builtin(DOM)   is  NotDefined
+    """
+    def __isterm__(typ, trm):
+        if not isinstance(trm, tuple):
+            return False
+
+        from typed.mods.err import NotDefined
+        types = getattr(trm, "__types__", NotDefined)
+        if types is NotDefined or types is None:
+            return False
+
+        from typed.mods.typesystem import ismember
+        return all(ismember(t) for t in trm)
+
+class COD(MEMBER):
+    """
+    The atomic metatype of codomain types.
+
+    kindof(COD)    is  meta
+    typeof(COD)    is  UNIVERSE(1)
+    isterm(T, COD) iff issub(typeof(T), COD)
+    nullof(COD)    is  NotDefined
+    builtin(COD)   is  NotDefined
+    """
+
+class LAZY(TYPE):
+    """
+    The atomic metatype of lazy types.
+
+    kindof(LAZY)    is  meta
+    typeof(LAZY)    is  UNIVERSE(1)
+    isterm(T, LAZY) iff issub(typeof(T), COD)
+    nullof(LAZY)    is  NotDefined
+    builtin(LAZY)   is  NotDefined
+    """
+
+    def __new__(mcs, name, bases, dct, **kwargs):
+        if "materialize" not in dct and not any(hasattr(b, "materialize") for b in bases):
+            from typed.mods.err import TypeErr
+            raise TypeErr(message=f"Class '{name}' created from LAZY must implement the method 'materialize'")
+        return super().__new__(mcs, name, bases, dct, **kwargs)
+
+    def __isterm__(typ, trm):
+        flags = getattr(trm, "__flags__", None)
+        is_lazy = getattr(flags, "is_lazy", False) if flags else False
+        if is_lazy and hasattr(trm, "materialize"):
+            return True
         return False

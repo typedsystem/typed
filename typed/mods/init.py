@@ -4,7 +4,7 @@ def __typemap__():
     from typed.mods.types.base import (
         Int, Float, Bool, Str, Byte
     )
-    from typed.mods.types.dependent import (
+    from typed.mods.types.constructor import (
         Tuple, List, Set, Dict
     )
     return {
@@ -23,13 +23,23 @@ def __typemap__():
 __kinds__ = {"universe", "abstract", "meta", "type", "quantifier", "dependent"}
 
 some  = new.quantifier(new.reducer(any), order=1)
-every = new.quantifier(new.reducer(all), order=1)
-none  = new.quantifier(new.reducer(lambda iter: not any(iter)), order=1)
-true  = new.quantifier(new.reducer(lambda iter: True), order=1)
-false = new.quantifier(new.reducer(lambda iter: False), order=1)
-only  = new.quantifier(reducer=new.reducer(lambda n: lambda iter: sum(bool(x) for x in iter) == n), order=1)
+some.__display__ = "some"
 
-__quantifiers__ = { some, every, none, true, false, only }
+every = new.quantifier(new.reducer(all), order=1)
+every.__display__ = "every"
+
+none  = new.quantifier(new.reducer(lambda iter: not any(iter)), order=1)
+none.__display__ = "none"
+
+only  = new.quantifier(reducer=new.reducer(lambda n: lambda iter: sum(bool(x) for x in iter) == n), order=1)
+only.__display__ = "only"
+
+__quantifiers__ = { some, every, none, only }
+
+class __typecheck__:
+    lazy = True
+    defaults = False
+    envs = ()
 
 SAMENESS = new.sameness()
 STATEFUL = new.stateful()
@@ -47,5 +57,3 @@ TYPESYSTEM = new.typesystem(
 )
 
 conf = new.conf()
-
-TYPESYSTEM.__typemap__.update(__typemap__())

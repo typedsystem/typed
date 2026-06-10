@@ -1,14 +1,14 @@
-from typed.mods.meta.base import (
+from typed.mods.meta.atomic import (
     EMPTY, NILL, ANY,
-    TYPE,
-    STR, INT, FLOAT, BOOL, BYTE
+    TYPE, META,
+    ENUMERABLE, FINITE,
+    STR, INT, FLOAT, BOOL, BYTE,
+    MEMBER, DOM, COD
 )
-from typed.mods.init import TYPESYSTEM
-from typed.mods.err import NotDefined
 
 class Empty(metaclass=EMPTY):
     """
-    The type with no terms.
+    The atomic type with no terms
 
     : kindof(Empty)    is  type
     : typeof(Empty)    is  EMPTY
@@ -16,16 +16,10 @@ class Empty(metaclass=EMPTY):
     : nullof(Empty)    is  NotDefined
     : builtin(Empty)   is  NotDefined
     """
-    __kind__       = "type"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__       = EMPTY
-    __display__    = "Empty"
-    __null__       = NotDefined
-    __builtin__    = NotDefined
 
 class Nill(metaclass=NILL):
     """
-    The type with None value.
+    The atomic type of the None value
 
     : kindof(Empty)   is  type
     : typeof(Nill)    is  NILL
@@ -33,15 +27,11 @@ class Nill(metaclass=NILL):
     : nullof(Nill)    is  None
     : builtin(Nill)   is  NotDefined
     """
-    __kind__        = "type"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__        = NILL
-    __display__     = "Nill"
-    __null__        = None
+    __null__ = None
 
 class Any(metaclass=ANY):
     """
-    The type of anything.
+    The atomic type of anything
 
     : kindof(Empty)  is  type
     : typeof(Any)    is ANY
@@ -50,33 +40,57 @@ class Any(metaclass=ANY):
     : nullof(Any)    is None
     : builtin(Any)   is NotDefined
     """
-    __kind__        = "type"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__        = ANY
-    __display__     = "Any"
     __null__        = None
-    __builtin__     = NotDefined
 
 class Type(metaclass=TYPE):
     """
-    The type of all non-universe types.
+    The atomic type of all types
 
-    : kindof(Empty)   is  type
+    : kindof(Type)    is  type
     : typeof(Type)    is  TYPE := UNIVERSE(0)
     : isterm(x, Type) iff issub(typeof(x), Type)
     : nullof(Type)    is  Nill
     : builtin(Type)   is  type
     """
-    __kind__        = "type"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__        = TYPE
-    __display__     = "Type"
     __null__        = Nill
     __builtin__     = type
 
+class Meta(metaclass=META):
+    """
+    The atomic type of all metaypes
+
+    : kindof(Meta)    is  type
+    : typeof(Meta)    is  META := ABSTRACT(0)
+    : isterm(x, Meta) iff issub(typeof(x), Meta)
+    : nullof(Meta)    is  NotDefined
+    : builtin(Meta)   is  NotDefined
+    """
+
+class Enumerable(metaclass=ENUMERABLE):
+    """
+    The atomic type of all enumerable types.
+
+    : kindof(Enumerable)    is  type
+    : typeof(Enumerable)    is  ENUMERABLE
+    : isterm(x, Enumerable) iff issub(typeof(x), Enumerable)
+    : nullof(Enumerable)    is  NotDefined
+    : builtin(Enumerable)   is  NotDefined
+    """
+
+class Finite(metaclass=FINITE):
+    """
+    The atomic type of all finite types.
+
+    : kindof(Finite)    is  type
+    : typeof(Finite)    is  FINITE
+    : isterm(x, Finite) iff issub(typeof(x), Finite)
+    : nullof(Finite)    is  NotDefined
+    : builtin(Finite)   is  NotDefined
+    """
+
 class Int(metaclass=INT):
     """
-    The type of integers.
+    The atomic type of integers.
 
     : kindof(Int)    is  type
     : typeof(Int)    is  INT
@@ -84,16 +98,12 @@ class Int(metaclass=INT):
     : null(Int)      is  0
     : builtin(Int)   is  int
     """
-    __kind__        = "type"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__        = INT
-    __display__     = "Int"
     __null__        = 0
     __builtin__     = int
 
 class Float(metaclass=FLOAT):
     """
-    The type of floats.
+    The atomic type of floats.
 
     : kindof(Float)    is  type
     : typeof(Float)    is  FLOAT
@@ -101,16 +111,12 @@ class Float(metaclass=FLOAT):
     : nullof(Float)    is  0.0
     : builtin(Float)   is  float
     """
-    __kind__        = "type"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__        = FLOAT
-    __display__     = "Float"
     __null__        = 0.0
     __builtin__     = float
 
 class Bool(metaclass=BOOL):
     """
-    The type of booleans.
+    The atomic type of booleans
 
     : kindof(Bool)    is type
     : typeof(Bool)    is BOOL
@@ -118,16 +124,12 @@ class Bool(metaclass=BOOL):
     : nullof(Bool)    is False
     : builtin(Bool)   is bool
     """
-    __kind__        = "type"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__        = BOOL
-    __display__     = "Bool"
     __null__        = False
     __builtin__     = bool
 
 class Str(metaclass=STR):
     """
-    The type of strings.
+    The atomic type of strings
 
     : kindof(Str)    is type
     : typeof(Str)    is STR
@@ -138,16 +140,12 @@ class Str(metaclass=STR):
     def __len__(self, obj):
         return len(obj)
 
-    __kind__        = "type"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__        = STR
-    __display__     = "Str"
     __null__        = ""
     __builtin__     = str
 
 class Byte(metaclass=BYTE):
     """
-    The type of bytes.
+    The atomic type of bytes
 
     : kindof(Byte)    is type
     : typeof(Byte)    is BYTE
@@ -155,9 +153,38 @@ class Byte(metaclass=BYTE):
     : nullof(Byte)    is bytes()
     : builtin(Byte)   is bytes
     """
-    __kind__        = "type"
-    __typesystems__ = {TYPESYSTEM,}
-    __type__        = BYTE
-    __display__     = "Byte"
     __null__        = bytes()
     __builtin__     = bytes
+
+class Member(metaclass=MEMBER):
+    """
+    The atomic type of TYPESYSTEM members
+
+    : kindof(Member)    is type
+    : typeof(Member)    is MEMBER
+    : isterm(x, Member) iff x in TYPESYSTEM
+    : nullof(Member)    is NotDefined
+    : builtin(Member)   is NotDefined
+    """
+
+class Dom(metaclass=COD):
+    """
+    The atomic type of domains
+
+    : kindof(Dom)    is type
+    : typeof(Dom)    is DOM
+    : isterm(x, Dom) iff x in Tuple and t in Member for t in x
+    : nullof(Dom)    is NotDefined
+    : builtin(Dom)   is NotDefined
+    """
+
+class Cod(Member, metaclass=COD):
+    """
+    The atomic type of codomains
+
+    : kindof(Cod)    is type
+    : typeof(Cod)    is COD
+    : isterm(x, Cod) iff x in Member
+    : nullof(Cod)    is NotDefined
+    : builtin(Cod)   is NotDefined
+    """

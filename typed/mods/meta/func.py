@@ -1,22 +1,14 @@
-from builtins import type as __Type__
-from typed.mods.meta.base import TYPE, UNIVERSE
-from typed.mods.core import TYPESYSTEM, __UNIVERSE__, type, isterm, issub
-from typed.mods.err import NotDefined, FuncErr, TypeSystemErr, TypeErr
-from typed.helper.func import _unwrap
+from typed.mods.meta.atomic import TYPE, LAZY
 
 class CALLABLE(TYPE):
     """
-    The universe of callables.
-
-    type(CALLABLE)      is  UNIVERSE(1)
-    isterm(T, CALLABLE) iff issub(type(T), CALLABLE)
-    builtin(CALLABLE)   is  NotDefined
-    null(CALLABLE)      is  TYPE.__null__
+    The metatype of 'callable types'.
     """
 
     def __isterm__(typ, trm):
         from inspect import isbuiltin, ismethod, isfunction, isclass
-        unwrapped = _unwrap(trm)
+        from typed.helper.func import unwrap
+        unwrapped = unwrap(trm)
 
         return (
             isbuiltin(unwrapped)
@@ -25,134 +17,61 @@ class CALLABLE(TYPE):
             or isclass(unwrapped)
         )
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "CALLABLE"
-    __builtin__ = NotDefined
-    __null__    = TYPE.__null__
+    def __call__(typ, *args, **kwargs):
+        if len(args) == 1 and callable(args[0]) and not kwargs:
+            from typed.mods.check import check
+            func = args[0]
+            check.iscallable(func)
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            return inst
+        return super().__call__(*args, **kwargs)
 
 class CLASS(CALLABLE):
     """
-    The universe of classes.
-
-    type(CLASS)      is  UNIVERSE(1)
-    isterm(T, CLASS) iff issub(type(T), CLASS)
+    The metatype of 'Python classes'
     """
-
     def __isterm__(typ, trm):
         from inspect import isclass
+        from typed.helper.func import unwrap
+        from typed.mods.typesystem import issub
 
-        unwrapped = _unwrap(trm)
+        unwrapped = unwrap(trm)
         if issub(type(trm), typ) or issub(type(unwrapped), typ):
             return True
 
-        return isclass(_unwrap(trm))
-
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "CLASS"
-    __builtin__ = NotDefined
-    __null__    = TYPE.__null__
+        return isclass(unwrap(trm))
 
 class METHOD(CALLABLE):
     """
-    The universe of methods.
+    The metatype of 'method types'.
     """
-
-    is_meta = True
     def __isterm__(typ, trm):
         from inspect import ismethod
+        from typed.mods.func import unwrap
+        from typed.mods.typesystem import issub
 
-        unwrapped = _unwrap(trm)
+        unwrapped = unwrap(trm)
         if issub(type(trm), typ) or issub(type(unwrapped), typ):
             return True
 
-        return ismethod(_unwrap(trm))
-
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "METHOD"
-    __builtin__ = NotDefined
-    __null__    = TYPE.__null__
-
-class BOUND_METHOD(METHOD):
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "BOUND_METHOD"
-    __builtin__ = NotDefined
-    __null__    = TYPE.__null__
-
-class UNBOUND_METHOD(METHOD):
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "UNBOUND_METHOD"
-    __builtin__ = NotDefined
-    __null__    = TYPE.__null__
-
-class BUILTIN_FUNC(CALLABLE):
-    """
-    The universe of built-in functions.
-    """
-
-    is_meta = True
-    def __isterm__(typ, trm):
-        from inspect import isbuiltin
-
-        unwrapped = _unwrap(trm)
-        if issub(type(trm), typ) or issub(type(unwrapped), typ):
-            return True
-
-        return isbuiltin(unwrapped)
-
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "BUILTIN_FUNC"
-    __builtin__ = NotDefined
-    __null__    = TYPE.__null__
+        return ismethod(unwrap(trm))
 
 class LAMBDA(CALLABLE):
     """
-    The universe of lambdas.
+    The metatype of 'lambda types'.
     """
-
-    is_meta = True
     def __isterm__(typ, trm):
         from inspect import isfunction
+        from typed.mods.func import unwrap
+        from typed.mods.typesystem import issub
 
-        unwrapped = _unwrap(trm)
+        unwrapped = unwrap(trm)
         if issub(type(trm), typ) or issub(type(unwrapped), typ):
             return True
 
-        return isfunction(unwrapped) and unwrapped.__name__ == "<lambda>"
-
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "LAMBDA"
-    __builtin__ = NotDefined
-    __null__    = TYPE.__null__
-
-class GENERATOR(TYPE):
-    def __isterm__(typ, trm):
-        if not super().__isterm__(trm): return False
-        if issub(type(trm), typ): return True
-
-        from inspect import isgeneratorfunction, isasyncgenfunction
-
-        return (
-            isgeneratorfunction(trm)
-            or isasyncgenfunction(trm)
-        )
-
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "GENERATOR"
-    __builtin__ = NotDefined
-    __null__    = TYPE.__null__
+        return isfunction(unwrapped) and getattr(unwrapped, "__name__", "") == "<lambda>"
 
 class FUNC(CALLABLE):
     """
@@ -161,6 +80,7 @@ class FUNC(CALLABLE):
     def __isterm__(typ, trm):
         from typed.helper.func import _unwrap
         from inspect import isfunction, ismethod, isbuiltin
+        from typed.mods.typesystem import issub
 
         unwrapped = _unwrap(trm)
         if issub(type(trm), typ) or issub(type(unwrapped), typ):
@@ -168,17 +88,18 @@ class FUNC(CALLABLE):
 
         return (
             isfunction(unwrapped)
-            and unwrapped.__name__ != "<lambda>"
+            and getattr(unwrapped, "__name__", "") != "<lambda>"
             and not ismethod(unwrapped)
             and not isbuiltin(unwrapped)
         )
 
-    def __call__(typ, *args, typesystem=NotDefined, **kwargs):
-        if typesystem is NotDefined:
-            typesystem = TYPESYSTEM
+    def __call__(typ, *args, typesystem=None, **kwargs):
+        from typed.mods.resolve import resolve
+        typesystem = resolve.typesystem.entity(typesystem)
 
-        if len(args) == 1:
+        if len(args) == 1 and callable(args[0]) and not kwargs:
             func = args[0]
+            from typed.mods.typesystem import issub
             if not issub(type(func), CALLABLE):
                 raise TypeErr(
                     term=typ,
@@ -186,44 +107,97 @@ class FUNC(CALLABLE):
                     received=type(func),
                     expected=typ
                 )
-            return __UNIVERSE__.__call__(typ, args[0])
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            return inst
 
         if args or kwargs:
+            from typed.mods.err import FuncErr
             raise FuncErr(
                 details="received unexpected number of arguments",
-                expected=1,
-                received=len(args)
+                func=typ
             )
 
         return typ
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "FUNC"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
-
 class PARTIAL(FUNC):
-    def __isterm__(typ, trm):
-        return super().__isterm__(trm) and getattr(trm, 'is_partial', False)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "PARTIAL"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+    def __isterm__(typ, trm):
+        flags = getattr(trm, "__flags__", None)
+        is_partial = getattr(flags, "is_partial", False) if flags else False
+        return super().__isterm__(trm) and is_partial
+
+    def __call__(typ, *args, **kwargs):
+        if len(args) == 3 and callable(args[0]) and isinstance(args[1], (list, tuple)) and isinstance(args[2], dict) and not kwargs:
+            func, bound_args, bound_kwargs = args
+            from typed.mods.func import unwrap
+            from typed.helper.general import _name
+
+            inst = type.__call__(typ)
+            inst.original_func = func
+            inst.func = func
+            inst.__wrapped__ = func
+            inst.bound_args = list(bound_args)
+            inst.bound_kwargs = dict(bound_kwargs)
+
+            is_lazy = False
+            flags = getattr(func, "__flags__", None)
+            if flags:
+                is_lazy = getattr(flags, "is_lazy", False)
+
+            kwargs_flags = {"is_func": True, "is_partial": True}
+            if is_lazy:
+                kwargs_flags["is_lazy"] = True
+            inst.__flags__ = Flags(**kwargs_flags)
+
+            try:
+                from typed.mods.general import _
+                base = unwrap(func)
+
+                def _fmt_arg(a):
+                    if a is _:
+                        return "_"
+                    return repr(a)
+
+                pos = ", ".join(_fmt_arg(a) for a in bound_args)
+                kw  = ", ".join(
+                    f"{k}={_fmt_arg(v)}" for k, v in bound_kwargs.items()
+                )
+                inside = ", ".join(p for p in (pos, kw) if p)
+                inst.__display__ = f"{_name(base)}({inside})"
+            except Exception:
+                inst.__display__ = _name(func)
+
+            if hasattr(func, '__name__'):
+                inst.__name__ = f"{func.__name__}_partial"
+            else:
+                inst.__name__ = "partial"
+
+            if hasattr(func, 'dom'):
+                inst._original_dom = func.dom
+            elif hasattr(func, 'domain'):
+                inst._original_dom = func.domain
+
+            if hasattr(func, 'cod'):
+                inst._original_cod = func.cod
+            elif hasattr(func, 'codomain'):
+                inst._original_cod = func.codomain
+
+            return inst
+
+        return super().__call__(*args, **kwargs)
 
 class DOM_FUNC(FUNC):
     """
     The metatype of domain-specified functions.
     """
+
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
 
-        dom = getattr(trm, "dom", NotDefined) or getattr(trm, "domain", NotDefined)
+        dom = getattr(trm, "dom", NotDefined)
         if dom is NotDefined:
             return False
 
@@ -239,12 +213,13 @@ class DOM_FUNC(FUNC):
         return actual == dom_type
 
     def __call__(typ, *args, typesystem=None, **kwargs):
-        from typed.mods.core import names
-        from typed.mods.core import TYPESYSTEM
-        if typesystem is None:
-            typesystem = TYPESYSTEM
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
+
+        typesystem = resolve.typesystem.entity(typesystem)
 
         if kwargs:
+            from typed.mods.err import FuncErr
             raise FuncErr(
                 details="function do not expect kwargs",
                 func=typ
@@ -252,52 +227,27 @@ class DOM_FUNC(FUNC):
 
         if not args: return typ
 
-        if len(args) == 1:
-            func = args[0]
-            if not issub(type(func), FUNC):
-                raise TypeErr(
-                    term=func,
-                    received=type(func),
-                    expected=FUNC
-                )
-
-            return __UNIVERSE__.__call__(typ, func)
+        if len(args) == 1 and callable(args[0]):
+            inst = type.__call__(typ)
+            inst.__func__ = args[0]
+            inst.__wrapped__ = args[0]
+            return inst
 
         types = tuple(args)
+        check.every.ismember(types, typesystem)
 
-        if all(isinstance(t, __Type__) for t in types):
-            if typesystem.is_restrictive:
-                for t in types:
-                    if t not in tuple(typesystem.__members__.values()):
-                        raise TypeSystemErr(
-                            type=t,
-                            typesystem=typesystem
-                        )
+        class_name = f"DomFunc({typesystem.nameof(*types)})"
+        from typed.mods.init import TYPESYSTEM
 
-            name = f"DomFunc({names(*types)})"
-            return FUNC(name, (typ,), {
-                "__display__": name,
-                "__types__": types,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+        class DomFunc(typ, metaclass=type(typ)):
+            __kind__ = "type"
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __display__ = class_name
+            __types__ = types
+            __flags__ = Flags(is_func=True, is_dom=True)
 
-        for t in types:
-            wrong = [t for t in types if not isinstance(t, __Type__)]
-
-        raise TypeErr(
-            term=typ,
-            args=tuple(wrong),
-            received=tuple([type(t) for t in types]),
-            expected=tuple([TYPE for t in types])
-        )
-
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "DOM_FUNC"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+        DomFunc.__name__ = class_name
+        return DomFunc
 
 class COD_FUNC(FUNC):
     """
@@ -307,58 +257,63 @@ class COD_FUNC(FUNC):
         if not super().__isterm__(trm):
             return False
 
-        cod = getattr(trm, "cod", NotDefined) or getattr(trm, "codomain", NotDefined)
+        cod = getattr(trm, "cod", NotDefined)
         if cod is NotDefined:
             return False
 
-        cod_type = getattr(typ, "__types__", NotDefined)
+        cod_type = getattr(typ, "__cod__", NotDefined)
+        if cod_type is NotDefined:
+            cod_type = getattr(typ, "__types__", NotDefined)
+
         if cod_type is NotDefined:
             return False
 
-        return cod in tuple(cod_type)
+        try:
+            if cod in tuple(cod_type):
+                return True
+        except TypeError:
+            pass
+        return cod is cod_type
 
     def __call__(typ, *args, cod=None, typesystem=None, **kwargs):
-        from typed.mods.types.base import TYPE
-        from typed.mods.helper.general import _name
-        from typed.mods.core import TYPESYSTEM
-        
-        if typesystem is None:
-            typesystem = TYPESYSTEM
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
+
+        typesystem = resolve.typesystem.entity(typesystem)
 
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
 
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
-            return __Type__.__call__(typ, args[0])
-            
-        if cod is None and len(args) == 1 and isterm(args[0], TYPE):
+            inst = type.__call__(typ)
+            inst.__func__ = args[0]
+            inst.__wrapped__ = args[0]
+            return inst
+
+        if cod is None and len(args) == 1 and check.isterm(args[0], TYPE, explode=False):
             cod = args[0]
             args = ()
 
         if cod is None and not args and not kwargs:
             return typ
 
-        if isinstance(cod, __Type__) and not args and not kwargs:
-            if typesystem.is_restrictive:
-                if cod not in tuple(typesystem.__members__.values()):
-                    raise TypeError(f"Type {cod} not in typesystem.__types__")
-    
-            class_name = f"CodFunc({_name(cod)})"
-            return __Type__.__new__(typ.__class__, class_name, (typ,), {
-                "__display__": class_name,
-                "__codomain__": cod,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+        if check.isterm(cod, TYPE, explode=False) and not args and not kwargs:
+            check.ismember(cod, typesystem)
 
-        raise TypeError("CodFunc(X) expects a single TYPE argument")
+            class_name = f"CodFunc(cod={typesystem.nameof(cod)})"
+            from typed.mods.init import TYPESYSTEM
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "COD_FUNC"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+            class CodFunc(typ, metaclass=type(typ)):
+                __kind__ = "type"
+                __typesystems__ = {TYPESYSTEM, typesystem}
+                __display__ = class_name
+                __cod__ = cod
+                __flags__ = Flags(is_func=True, is_cod=True)
+
+            CodFunc.__name__ = class_name
+            return CodFunc
+
+        raise TypeErr(message="CodFunc(X) expects a single TYPE argument")
 
 class COMP_FUNC(DOM_FUNC, COD_FUNC):
     """
@@ -366,6 +321,7 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
     """
     def __isterm__(typ, trm):
         from typed.mods.types.func import DomFunc, CodFunc
+        from typed.mods.typesystem import isterm
 
         if not isterm(trm, DomFunc):
             return False
@@ -373,10 +329,10 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
             return False
 
         dom_types = getattr(typ, "__types__", None)
-        cod_type = getattr(typ, "__codomain__", None)
+        cod_type = getattr(typ, "__cod__", None)
 
         if dom_types is not None:
-            dom = getattr(trm, "dom", getattr(trm, "domain", None))
+            dom = getattr(trm, "dom", None)
             try:
                 actual_dom = tuple(dom)
             except TypeError:
@@ -385,187 +341,185 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
                 return False
 
         if cod_type is not None:
-            cod = getattr(trm, "cod", getattr(trm, "codomain", None))
+            cod = getattr(trm, "cod", None)
             if cod is not cod_type:
                 return False
 
         return True
 
     def __call__(typ, *args, cod=None, typesystem=None, **kwargs):
-        from typed.mods.types.base import TYPE
-        from typed.mods.helper.general import _name_list, _name
-        from typed.mods.core import TYPESYSTEM
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
 
-        if typesystem is None:
-            typesystem = TYPESYSTEM
-            
+        typesystem = resolve.typesystem.entity(typesystem)
+
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
 
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
-            return __Type__.__call__(typ, args[0])
+            inst = type.__call__(typ)
+            inst.__func__ = args[0]
+            inst.__wrapped__ = args[0]
+            return inst
 
         if not args and cod is None and not kwargs:
             return typ
 
-        if args and all(isterm(t, TYPE) for t in args) and isterm(cod, TYPE) and not kwargs:
+        if args and check.every.isterm(args, TYPE, explode=False) and check.isterm(cod, TYPE, explode=False) and not kwargs:
             types = tuple(args)
-            if typesystem.is_restrictive:
-                for t in types:
-                    if t not in typesystem.__types__:
-                        raise TypeError(f"Type {t} not in typesystem.__types__")
-                if cod not in typesystem.__types__:
-                    raise TypeError(f"Type {cod} not in typesystem.__types__")
+            check.every.ismember(types, typesystem)
+            check.ismember(cod, typesystem)
 
-            class_name = f"CompFunc({_name_list(*types)}, cod={_name(cod)})"
-            return __Type__.__new__(typ.__class__, class_name, (typ,), {
-                "__display__": class_name,
-                "__types__": types,
-                "__codomain__": cod,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+            class_name = f"CompFunc({typesystem.nameof(*types)}, cod={typesystem.nameof(cod)})"
+            from typed.mods.init import TYPESYSTEM
 
-        raise TypeError("CompFunc(X, Y, ..., cod=Z) expects TYPE arguments only")
+            class CompFunc(typ, metaclass=type(typ)):
+                __kind__ = "type"
+                __typesystems__ = {TYPESYSTEM, typesystem}
+                __display__ = class_name
+                __types__ = types
+                __cod__ = cod
+                __flags__ = Flags(is_func=True, is_dom=True, is_cod=True)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "COMP_FUNC"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+            CompFunc.__name__ = class_name
+            return CompFunc
+
+        raise TypeErr(message="CompFunc(X, Y, ..., cod=Z) expects TYPE arguments only")
 
 
 class DOM_HINTED(DOM_FUNC, PARTIAL):
     """
     Metatype for DomHinted.
     """
+
     def __isterm__(typ, trm):
-        if issubclass(type(trm), typ):
+        if isinstance(trm, type) and issubclass(trm, typ):
             return True
         if not super().__isterm__(trm):
             return False
-        from typed.mods.helper.func import _is_domain_hinted, _hinted_domain
+        from typed.helper.func import _is_domain_hinted, _hinted_domain
         try:
-            if not _is_domain_hinted(trm.func):
+            if not _is_domain_hinted(getattr(trm, 'func', trm)):
                 return False
         except Exception:
             return False
-            
+
         expected = getattr(typ, "__types__", None)
         if expected is not None:
-            domain_hints = set(_hinted_domain(trm.func))
+            domain_hints = set(_hinted_domain(getattr(trm, 'func', trm)))
             return domain_hints == set(expected)
-            
+
         return True
 
     def __call__(typ, *args, typesystem=None, **kwargs):
-        from typed.mods.types.base import TYPE
-        from typed.mods.helper.general import _name_list
-        from typed.mods.core import TYPESYSTEM
-        
-        if typesystem is None:
-            typesystem = TYPESYSTEM
-            
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
+
+        typesystem = resolve.typesystem.entity(typesystem)
+
         if len(args) == 1 and callable(args[0]) and not kwargs:
-            return __Type__.__call__(typ, args[0])
+            func = args[0]
+            from typed.helper.func import _is_domain_hinted, _hinted_domain
+            _is_domain_hinted(func)
+
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            inst._hinted_dom = _hinted_domain(func)
+            return inst
 
         if not args and not kwargs:
             return typ
 
-        if args and all(isterm(t, TYPE) for t in args) and not kwargs:
+        if args and check.every.isterm(args, TYPE, explode=False) and not kwargs:
             types = tuple(args)
-            if typesystem.is_restrictive:
-                for t in types:
-                    if t not in typesystem.__types__:
-                        raise TypeError(f"Type {t} not in typesystem.__types__")
-            
-            class_name = f"DomHinted({_name_list(*types)})"
+            check.every.ismember(types, typesystem)
 
-            return __Type__.__new__(typ.__class__, class_name, (typ,), {
-                "__display__": class_name,
-                "__types__": types,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+            class_name = f"DomHinted({typesystem.nameof(*types)})"
+            from typed.mods.init import TYPESYSTEM
 
-        raise TypeError(f"{typ.__name__}(): expected 0 args, or a callable, or TYPE arguments")
-        
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "DOM_HINTED"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+            class DomHinted(typ, metaclass=type(typ)):
+                __kind__ = "type"
+                __typesystems__ = {TYPESYSTEM, typesystem}
+                __display__ = class_name
+                __types__ = types
+                __flags__ = Flags(is_type=True, is_dom_hinted=True)
+
+            DomHinted.__name__ = class_name
+            return DomHinted
+
+        raise TypeErr(message=f"{getattr(typ, '__name__', 'DOM_HINTED')}(): expected 0 args, or a callable, or TYPE arguments")
+
 
 class COD_HINTED(COD_FUNC, PARTIAL):
     """
     Metatype for CodHinted.
     """
     def __isterm__(typ, trm):
-        from typed.mods.types.base import TYPE
-        from typed.mods.helper.func import _is_codomain_hinted, _hinted_codomain
+        from typed.mods.typesystem import issub
+        from typed.helper.func import _is_codomain_hinted, _hinted_codomain
 
         if issub(TYPE(trm), typ):
             return True
         if not super().__isterm__(trm):
             return False
         try:
-            if not _is_codomain_hinted(trm.func):
+            if not _is_codomain_hinted(getattr(trm, 'func', trm)):
                 return False
         except Exception:
             return False
-            
-        expected = getattr(typ, "__codomain__", None)
+
+        expected = getattr(typ, "__cod__", None)
         if expected is not None:
-            return_hint = _hinted_codomain(trm.func)
+            return_hint = _hinted_codomain(getattr(trm, 'func', trm))
             return return_hint == expected
-            
+
         return True
 
     def __call__(typ, *args, cod=None, typesystem=None, **kwargs):
-        from typed.mods.types.base import TYPE
-        from typed.mods.helper.general import _name
-        from typed.mods.core import TYPESYSTEM
-        
-        if typesystem is None:
-            typesystem = TYPESYSTEM
-            
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
+
+        typesystem = resolve.typesystem.entity(typesystem)
+
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
 
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
-            return __Type__.__call__(typ, args[0])
-            
-        if cod is None and len(args) == 1 and isterm(args[0], TYPE):
+            func = args[0]
+            from typed.helper.func import _is_codomain_hinted, _hinted_codomain
+            _is_codomain_hinted(func)
+
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            inst._hinted_cod = _hinted_codomain(func)
+            return inst
+
+        if cod is None and len(args) == 1 and check.isterm(args[0], TYPE, explode=False):
             cod = args[0]
             args = ()
 
         if cod is None and not args and not kwargs:
             return typ
 
-        if isterm(cod, TYPE) and not args and not kwargs:
-            if typesystem.is_restrictive:
-                if cod not in typesystem.__types__:
-                    raise TypeError(f"Type {cod} not in typesystem.__types__")
-                    
-            class_name = f"CodHinted(cod={_name(cod)})"
+        if check.isterm(cod, TYPE, explode=False) and not args and not kwargs:
+            check.ismember(cod, typesystem)
 
-            return __Type__.__new__(typ.__class__, class_name, (typ,), {
-                "__display__": class_name,
-                "__codomain__": cod,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+            class_name = f"CodHinted(cod={typesystem.nameof(cod)})"
+            from typed.mods.init import TYPESYSTEM
 
-        raise TypeError(f"{typ.__name__}(): expected 0 args, or a callable, or a single TYPE")
-        
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "COD_HINTED"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+            class CodHinted(typ, metaclass=type(typ)):
+                __kind__ = "type"
+                __typesystems__ = {TYPESYSTEM, typesystem}
+                __display__ = class_name
+                __cod__ = cod
+                __flags__ = Flags(is_type=True, is_cod_hinted=True)
+
+            CodHinted.__name__ = class_name
+            return CodHinted
+
+        raise TypeErr(message=f"{getattr(typ, '__name__', 'COD_HINTED')}(): expected 0 args, or a callable, or a single TYPE")
 
 
 class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
@@ -575,66 +529,70 @@ class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
-        from typed.mods.helper.func import _hinted_domain, _hinted_codomain
-        
+        from typed.helper.func import _hinted_domain, _hinted_codomain
+
         expected_types = getattr(typ, "__types__", None)
-        expected_cod = getattr(typ, "__codomain__", None)
-        
+        expected_cod = getattr(typ, "__cod__", None)
+
+        func_obj = getattr(trm, 'func', trm)
+
         if expected_types is not None:
-            domain_hints = set(_hinted_domain(trm.func))
+            domain_hints = set(_hinted_domain(func_obj))
             if domain_hints != set(expected_types):
                 return False
-                
+
         if expected_cod is not None:
-            return_hint = _hinted_codomain(trm.func)
+            return_hint = _hinted_codomain(func_obj)
             if return_hint != expected_cod:
                 return False
-                
+
         return True
 
     def __call__(typ, *args, cod=None, typesystem=None, **kwargs):
-        from typed.mods.types.base import TYPE
-        from typed.mods.helper.general import _name_list, _name
-        from typed.mods.core import TYPESYSTEM
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
 
-        if typesystem is None:
-            typesystem = TYPESYSTEM
-            
+        typesystem = resolve.typesystem.entity(typesystem)
+
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
 
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
-            return __Type__.__call__(typ, args[0])
+            func = args[0]
+            from typed.helper.func import _is_domain_hinted, _is_codomain_hinted, _hinted_domain, _hinted_codomain
+            _is_domain_hinted(func)
+            _is_codomain_hinted(func)
+
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            inst._hinted_dom = _hinted_domain(func)
+            inst._hinted_cod = _hinted_codomain(func)
+            return inst
 
         if not args and cod is None and not kwargs:
             return typ
 
-        if args and all(isterm(t, TYPE) for t in args) and isterm(cod, TYPE) and not kwargs:
+        if args and check.every.isterm(args, TYPE, explode=False) and check.isterm(cod, TYPE, explode=False) and not kwargs:
             types = tuple(args)
-            if typesystem.is_restrictive:
-                for t in types:
-                    if t not in typesystem.__types__:
-                        raise TypeError(f"Type {t} not in typesystem.__types__")
-                if cod not in typesystem.__types__:
-                    raise TypeError(f"Type {cod} not in typesystem.__types__")
+            check.every.ismember(types, typesystem)
+            check.ismember(cod, typesystem)
 
-            class_name = f"Hinted({_name_list(*types)}; {_name(cod)})"
-            return __Type__.__new__(typ.__class__, class_name, (typ,), {
-                "__display__": class_name,
-                "__types__": types,
-                "__codomain__": cod,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+            class_name = f"Hinted({typesystem.nameof(*types)}; {typesystem.nameof(cod)})"
+            from typed.mods.init import TYPESYSTEM
 
-        raise TypeError(f"{typ.__name__}(): expected 0 args, or a callable, or TYPE arguments plus cod=TYPE")
+            class Hinted(typ, metaclass=type(typ)):
+                __kind__ = "type"
+                __typesystems__ = {TYPESYSTEM, typesystem}
+                __display__ = class_name
+                __types__ = types
+                __cod__ = cod
+                __flags__ = Flags(is_func=True, is_dom=True, is_cod=True, is_hinted=True)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "HINTED"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+            Hinted.__name__ = class_name
+            return Hinted
+
+        raise TypeErr(message=f"{getattr(typ, '__name__', 'HINTED')}(): expected 0 args, or a callable, or TYPE arguments plus cod=TYPE")
 
 
 class DOM_TYPED(DOM_HINTED):
@@ -646,49 +604,49 @@ class DOM_TYPED(DOM_HINTED):
             return False
         expected = getattr(typ, "__types__", None)
         if expected is not None:
-            from typed.mods.helper.func import _hinted_domain
-            domain_hints = set(_hinted_domain(trm.func))
+            from typed.helper.func import _hinted_domain
+            domain_hints = set(_hinted_domain(getattr(trm, 'func', trm)))
             return domain_hints == set(expected)
         return True
 
     def __call__(typ, *args, typesystem=None, **kwargs):
-        from typed.mods.types.base import TYPE
-        from typed.mods.helper.general import _name_list
-        from typed.mods.core import TYPESYSTEM
-        
-        if typesystem is None:
-            typesystem = TYPESYSTEM
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
+
+        typesystem = resolve.typesystem.entity(typesystem)
 
         if len(args) == 1 and callable(args[0]) and not kwargs:
-            return __Type__.__call__(typ, args[0])
+            func = args[0]
+            from typed.helper.func import _is_domain_hinted, _hinted_domain
+            _is_domain_hinted(func)
+
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            inst._hinted_dom = _hinted_domain(func)
+            return inst
 
         if not args and not kwargs:
             return typ
 
-        if args and all(isterm(t, TYPE) for t in args) and not kwargs:
+        if args and check.every.isterm(args, TYPE, explode=False) and not kwargs:
             types = tuple(args)
-            if typesystem.is_restrictive:
-                for t in types:
-                    if t not in typesystem.__types__:
-                        raise TypeError(f"Type {t} not in typesystem.__types__")
-            
-            class_name = f"DomTyped({_name_list(*types)})"
+            check.every.ismember(types, typesystem)
 
-            return __Type__.__new__(typ.__class__, class_name, (typ,), {
-                "__display__": class_name,
-                "__types__": types,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+            class_name = f"DomTyped({typesystem.nameof(*types)})"
+            from typed.mods.init import TYPESYSTEM
 
-        raise TypeError(f"{typ.__name__}(): expected 0 args, or a callable, or TYPE arguments")
+            class DomTyped(typ, metaclass=type(typ)):
+                __kind__ = "type"
+                __typesystems__ = {TYPESYSTEM, typesystem}
+                __display__ = class_name
+                __types__ = types
+                __flags__ = Flags(is_type=True, is_dom_typed=True)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "DOM_TYPED"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+            DomTyped.__name__ = class_name
+            return DomTyped
+
+        raise TypeErr(message=f"{getattr(typ, '__name__', 'DOM_TYPED')}(): expected 0 args, or a callable, or TYPE arguments")
 
 
 class COD_TYPED(COD_HINTED):
@@ -698,56 +656,57 @@ class COD_TYPED(COD_HINTED):
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
-        expected = getattr(typ, "__codomain__", None)
+        expected = getattr(typ, "__cod__", None)
         if expected is not None:
-            from typed.mods.helper.func import _hinted_codomain
-            return_hint = _hinted_codomain(trm.func)
+            from typed.helper.func import _hinted_codomain
+            return_hint = _hinted_codomain(getattr(trm, 'func', trm))
             return return_hint == expected
         return True
 
     def __call__(typ, *args, cod=None, typesystem=None, **kwargs):
-        from typed.mods.types.base import TYPE
-        from typed.mods.helper.general import _name
-        from typed.mods.core import TYPESYSTEM
-        
-        if typesystem is None:
-            typesystem = TYPESYSTEM
-            
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
+
+        typesystem = resolve.typesystem.entity(typesystem)
+
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
 
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
-            return __Type__.__call__(typ, args[0])
-            
-        if cod is None and len(args) == 1 and isterm(args[0], TYPE):
+            func = args[0]
+            from typed.helper.func import _is_codomain_hinted, _hinted_codomain
+            _is_codomain_hinted(func)
+
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            inst._hinted_cod = _hinted_codomain(func)
+            return inst
+
+        if cod is None and len(args) == 1 and check.isterm(args[0], TYPE, explode=False):
             cod = args[0]
             args = ()
 
         if cod is None and not args and not kwargs:
             return typ
 
-        if isterm(cod, TYPE) and not args and not kwargs:
-            if typesystem.is_restrictive:
-                if cod not in typesystem.__types__:
-                    raise TypeError(f"Type {cod} not in typesystem.__types__")
-                    
-            class_name = f"CodTyped(cod={_name(cod)})"
+        if check.isterm(cod, TYPE, explode=False) and not args and not kwargs:
+            check.ismember(cod, typesystem)
 
-            return __Type__.__new__(typ.__class__, class_name, (typ,), {
-                "__display__": class_name,
-                "__codomain__": cod,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+            class_name = f"CodTyped(cod={typesystem.nameof(cod)})"
+            from typed.mods.init import TYPESYSTEM
 
-        raise TypeError(f"{typ.__name__}(): expected 0 args, or a callable, or a single TYPE")
+            class CodTyped(typ, metaclass=type(typ)):
+                __kind__ = "type"
+                __typesystems__ = {TYPESYSTEM, typesystem}
+                __display__ = class_name
+                __cod__ = cod
+                __flags__ = Flags(is_type=True, is_cod_typed=True)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "COD_TYPED"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+            CodTyped.__name__ = class_name
+            return CodTyped
+
+        raise TypeErr(message=f"{getattr(typ, '__name__', 'COD_TYPED')}(): expected 0 args, or a callable, or a single TYPE")
 
 
 class TYPED(HINTED, DOM_TYPED, COD_TYPED):
@@ -755,206 +714,196 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
     Metatype for Typed.
     """
     def __isterm__(typ, trm):
-        if getattr(trm, 'is_partial', False):
+        from typed.mods.typesystem import isterm
+        flags = getattr(trm, "__flags__", None)
+        is_partial = getattr(flags, "is_partial", False) if flags else False
+        is_lazy = getattr(flags, "is_lazy", False) if flags else False
+
+        if is_partial:
             orig = getattr(trm, 'original_func', None)
             if orig is None:
                 return False
 
-            if getattr(orig, 'is_lazy', False):
+            orig_flags = getattr(orig, "__flags__", None)
+            orig_lazy = getattr(orig_flags, "is_lazy", False) if orig_flags else False
+
+            if orig_lazy:
                 return False
 
             return isterm(orig, typ)
 
-        if getattr(trm, "is_lazy", False):
+        if is_lazy:
             return False
 
         if not super().__isterm__(trm):
             return False
-            
+
         expected_types = getattr(typ, "__types__", None)
-        expected_cod = getattr(typ, "__codomain__", None)
-        
+        expected_cod = getattr(typ, "__cod__", None)
+
         if expected_types is not None or expected_cod is not None:
-            from typed.mods.helper.func import _hinted_domain, _hinted_codomain
+            from typed.helper.func import _hinted_domain, _hinted_codomain
             from typed.mods.types.base import Any
-            
+
+            func_obj = getattr(trm, 'func', trm)
+
             if expected_types is not None:
-                domain_hints = set(_hinted_domain(trm.func))
+                domain_hints = set(_hinted_domain(func_obj))
                 if len(expected_types) == 1 and expected_types[0] is Any:
                     pass
                 elif domain_hints != set(expected_types):
                     return False
-                    
+
             if expected_cod is not None:
-                return_hint = _hinted_codomain(trm.func)
+                return_hint = _hinted_codomain(func_obj)
                 if return_hint != expected_cod:
                     return False
 
         return True
 
     def __call__(typ, *args, cod=None, typesystem=None, **kwargs):
-        from typed.mods.types.base import TYPE
-        from typed.mods.helper.general import _name_list, _name
-        from typed.mods.core import TYPESYSTEM
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
 
-        if typesystem is None:
-            typesystem = TYPESYSTEM
+        typesystem = resolve.typesystem.entity(typesystem)
 
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
 
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
-            return __Type__.__call__(typ, args[0])
+            func = args[0]
+            from typed.helper.func import _is_domain_hinted, _is_codomain_hinted, _hinted_domain, _hinted_codomain
+            _is_domain_hinted(func)
+            _is_codomain_hinted(func)
+
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            inst._hinted_dom = _hinted_domain(func)
+            inst._hinted_cod = _hinted_codomain(func)
+            return inst
 
         if not args and cod is None and not kwargs:
             return typ
 
-        if cod is not None and all(isterm(t, TYPE) for t in args):
+        if cod is not None and check.every.isterm(args, TYPE, explode=False):
             types = tuple(args)
-            if typesystem.is_restrictive:
-                for t in types:
-                    if t not in typesystem.__types__:
-                        raise TypeError(f"Type {t} not in typesystem.__types__")
-                if cod not in typesystem.__types__:
-                    raise TypeError(f"Type {cod} not in typesystem.__types__")
+            check.every.ismember(types, typesystem)
+            check.ismember(cod, typesystem)
 
-            class_name = f"Typed({_name_list(*types)}, cod={_name(cod)})"
-            return __Type__.__new__(typ.__class__, class_name, (typ,), {
-                "__display__": class_name,
-                "__types__": types,
-                "__codomain__": cod,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+            class_name = f"Typed({typesystem.nameof(*types)}, cod={typesystem.nameof(cod)})"
+            from typed.mods.init import TYPESYSTEM
 
-        raise TypeError("Typed() expects a callable, or TYPE arguments plus cod=TYPE")
+            class Typed(typ, metaclass=type(typ)):
+                __kind__ = "type"
+                __typesystems__ = {TYPESYSTEM, typesystem}
+                __display__ = class_name
+                __types__ = types
+                __cod__ = cod
+                __flags__ = Flags(is_func=True, is_typed=True)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "TYPED"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+            Typed.__name__ = class_name
+            return Typed
+
+        raise TypeErr(message="Typed() expects a callable, or TYPE arguments plus cod=TYPE")
 
 
 class CONDITION(TYPED):
     def __isterm__(typ, trm):
-        from typed.mods.types.base import Bool
+        from typed.mods.types import Bool
         return super().__isterm__(trm) and getattr(trm, "cod", None) is Bool
 
     def __call__(typ, *args, typesystem=None, **kwargs):
         from typed.mods.types.base import TYPE, Bool
-        from typed.mods.helper.general import _name_list, _name
-        from typed.mods.core import TYPESYSTEM
+        from typed.mods.resolve import resolve
+        from typed.mods.check import check
 
-        if typesystem is None:
-            typesystem = TYPESYSTEM
+        typesystem = resolve.typesystem.entity(typesystem)
 
         if len(args) == 1 and callable(args[0]) and not kwargs:
-            instance = __Type__.__call__(typ, args[0])
-            if getattr(instance, "cod", None) is not Bool:
-                raise TypeError(
-                    f"Wrong type in codomain of '{_name(args[0])}':\n"
-                    f" ==> '{_name(getattr(instance, 'cod', None))}' is not 'Bool'"
+            func = args[0]
+            from typed.helper.func import _is_domain_hinted, _is_codomain_hinted, _hinted_domain, _hinted_codomain
+            _is_domain_hinted(func)
+            _is_codomain_hinted(func)
+
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            inst._hinted_dom = _hinted_domain(func)
+            inst._hinted_cod = _hinted_codomain(func)
+
+            if getattr(inst, "cod", None) is not Bool:
+                raise TypeErr(
+                    message=f"Wrong type in codomain of '{typesystem.nameof(func)}':\n"
+                    f" ==> '{typesystem.nameof(getattr(inst, 'cod', None))}' is not 'Bool'"
                 )
-            return instance
+            return inst
 
         if not args and not kwargs:
             return typ
 
-        if args and all(isterm(t, TYPE) for t in args) and not kwargs:
+        if args and check.every.isterm(args, TYPE, explode=False) and not kwargs:
             types = tuple(args)
-            if typesystem.is_restrictive:
-                for t in types:
-                    if t not in typesystem.__types__:
-                        raise TypeError(f"Type {t} not in typesystem.__types__")
+            check.every.ismember(types, typesystem)
 
-            class_name = f"Condition({_name_list(*types)})"
-            return __Type__.__new__(typ.__class__, class_name, (typ,), {
-                "__display__": class_name,
-                "__types__": types,
-                "__codomain__": Bool,
-                "__typesystems__": [typesystem],
-                "is_type": True
-            })
+            class_name = f"Condition({typesystem.nameof(*types)})"
+            from typed.mods.init import TYPESYSTEM
 
-        raise TypeError("Condition() expects a Bool-returning callable, or TYPE arguments")
+            class Condition(typ, metaclass=type(typ)):
+                __kind__ = "type"
+                __typesystems__ = {TYPESYSTEM, typesystem}
+                __display__ = class_name
+                __types__ = types
+                __cod__ = Bool
+                __flags__ = Flags(is_type=True, is_condition=True)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "CONDITION"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+            Condition.__name__ = class_name
+            return Condition
+
+        raise TypeErr(message="Condition() expects a Bool-returning callable, or TYPE arguments")
 
 
-class FACTORY(TYPED):
+class FAMILY(TYPED):
     def __isterm__(typ, trm):
-        from typed.mods.types.base import TYPE
-        from typed.mods.types.func import Typed
-        if trm == Typed.__call__:
-            return True
-        return isterm(trm, Typed) and issub(trm.cod, TYPE)
+        from typed.mods.typesystem import issub
+        return super().__isterm__(trm) and issub(getattr(trm, "cod", None), TYPE)
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "FACTORY"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
 
-class OPERATION(FACTORY):
+class CONSTRUCTOR(FAMILY):
     def __isterm__(typ, trm):
-        from typed.mods.types.base import TYPE, Tuple
-        return super().__isterm__(trm) and issub(trm.dom, Tuple(TYPE))
+        from typed.mods.types.constructor import Tuple
+        from typed.mods.typesystem import issub
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "OPERATION"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+        return super().__isterm__(trm) and issub(getattr(trm, "dom", None), Tuple(TYPE))
 
-class DEPENDENT(FACTORY):
+class LAZY_TYPED(LAZY, HINTED):
     def __isterm__(typ, trm):
-        if super().__isterm__(trm) and hasattr(trm, "is_dependent_type"):
-            return trm.is_dependent_type
-        return False
+        flags = getattr(trm, "__flags__", None)
+        is_partial = getattr(flags, "is_partial", False) if flags else False
 
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "DEPENDENT"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
-
-class LAZY(HINTED):
-    def __isterm__(typ, trm):
-        if getattr(trm, "is_partial", False):
+        if is_partial:
             orig = getattr(trm, "original_func", None)
             if orig is not None:
+                from typed.mods.typesystem import isterm
                 return isterm(orig, typ)
             return False
-
-        if getattr(trm, "is_lazy", False):
-            return True
-
-        return False
+        
+        return super().__isterm__(trm)
 
     def __call__(typ, *args, typesystem=None, **kwargs):
-        from typed.mods.core import TYPESYSTEM
-        
-        if typesystem is None:
-            typesystem = TYPESYSTEM
+        from typed.mods.resolve import resolve
+        typesystem = resolve.typesystem.entity(typesystem)
             
         if len(args) == 1 and callable(args[0]) and not kwargs:
-            return __Type__.__call__(typ, args[0])
+            func = args[0]
+            from typed.helper.func import _hinted_domain, _hinted_codomain
+            
+            inst = type.__call__(typ)
+            inst.__func__ = func
+            inst.__wrapped__ = func
+            inst._wrapped = None
+            inst._lazy_dom = tuple(_hinted_domain(func))
+            inst._lazy_cod = _hinted_codomain(func)
+            return inst
 
-        return super().__call__(*args, **kwargs)
-
-    is_meta = True
-    __typesystems__ = [TYPESYSTEM]
-    __type__ = UNIVERSE(1)
-    __display__ = "LAZY"
-    __builtin__ = NotDefined
-    __null__ = NotDefined
+        return super(LAZY_TYPED, typ).__call__(*args, typesystem=typesystem, **kwargs)

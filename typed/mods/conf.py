@@ -18,6 +18,34 @@ class LogicConf(metaclass=__CONF__):
         check.isinstance(quantifier, Quantifier)
         self.quantifier = quantifier
 
+class TypeCheck(metaclass=__CONF__):
+    def __init__(
+        self,
+        lazy:     bool=None,
+        defaults: bool=None,
+        envs:     list[str]=None
+    ):
+        if lazy is None:
+            from typed.mods.init import __typecheck__
+            lazy = __typecheck__.lazy
+
+        if defaults is None:
+            from typed.mods.init import __typecheck__
+            defaults = __typecheck__.defaults
+
+        if envs is None:
+            from typed.mods.init import __typecheck__
+            envs = __typecheck__.envs
+
+        from typed.mods.check import check
+        check.isinstance(lazy, bool)
+        check.isinstance(defaults, bool)
+        check.isinstance(envs, list, tuple, set)
+
+        self.lazy = lazy
+        self.defaults = defaults
+        self.envs = envs
+
 class TypeSystemConf(metaclass=__CONF__):
     def __init__(
         self,
@@ -59,10 +87,6 @@ class TypeSystemConf(metaclass=__CONF__):
             from typed.mods.init import __kinds__
             kinds = __kinds__
 
-        if typemap is None:
-            from typed.mods.init import __typemap__
-            typemap = __typemap__()
-
         if quantifiers is None:
             from typed.mods.init import __quantifiers__
             quantifiers = __quantifiers__
@@ -76,9 +100,11 @@ class TypeSystemConf(metaclass=__CONF__):
         check.isinstance(magic, __MAGIC__)
         check.isinstance(universe, __UNIVERSE__)
         check.isinstance(abstract, __ABSTRACT__)
-        check.isinstance(typemap, dict)
         check.isinstance(kinds, set)
         check.isinstance(quantifiers, set)
+
+        if typemap is not None:
+            check.isinstance(typemap, dict)
 
         self.entity = entity
         self.sameness = sameness
@@ -86,9 +112,22 @@ class TypeSystemConf(metaclass=__CONF__):
         self.magic = magic
         self.universe = universe
         self.abstract = abstract
-        self.typemap = typemap
+        self._typemap = typemap
         self.kinds = kinds
         self.quantifiers = quantifiers
+
+    @property
+    def typemap(self):
+        if self._typemap is None:
+            from typed.mods.init import __typemap__
+            self._typemap = __typemap__()
+        return self._typemap
+
+    @typemap.setter
+    def typemap(self, value):
+        from typed.mods.check import check
+        check.isinstance(value, dict)
+        self._typemap = value
 
 class Conf(metaclass=__CONF__):
     def __init__(
@@ -96,19 +135,20 @@ class Conf(metaclass=__CONF__):
         logic:      LogicConf=None,
         typesystem: TypeSystemConf=None,
         err:        ErrConf=None,
+        typecheck:  TypeCheck=None
     ):
-        if typesystem is None:
-            typesystem = TypeSystemConf()
-        if err is None:
-            err = ErrConf()
-        if logic is None:
-            logic = LogicConf()
+        if typesystem is None: typesystem = TypeSystemConf()
+        if err is None:        err = ErrConf()
+        if logic is None:      logic = LogicConf()
+        if typecheck is None:  typecheck = TypeCheck()
 
         from typed.mods.check import check
         check.isinstance(logic, LogicConf)
         check.isinstance(typesystem, TypeSystemConf)
         check.isinstance(err, ErrConf)
+        check.isinstance(typecheck, TypeCheck)
 
         self.typesystem=typesystem
+        self.typecheck=typecheck
         self.err=err
         self.logic=logic

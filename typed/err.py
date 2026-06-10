@@ -2,21 +2,25 @@ from typed.mods.loader import lazy
 
 __imports__ = {
     "typed.mods.err": [
-        "notify", "Err",
+        "notify", "iserr", "explode",
+        "ERR", "Err",
+        "NotDefined",
         "MissingErr",
         "FuncErr", "HintErr",
         "TypeErr", "CodErr", "DomErr",
-        "TypeSystemErr",
-        "NotDefined", "Anonymous"
+        "ConfErr",
+        "TypeSystemErr" 
     ]
 }
 
 if lazy(__imports__):
     from typed.mods.err import (
-        notify, Err,
+        notify, iserr, explode,
+        ERR, Err,
+        NotDefined,
         MissingErr,
         FuncErr, HintErr,
         TypeErr, CodErr, DomErr,
-        TypeSystemErr,
-        NotDefined, Anonymous
+        ConfErr,
+        TypeSystemErr
     )

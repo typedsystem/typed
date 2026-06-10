@@ -8,12 +8,11 @@ class STATEFUL:
 
     @staticmethod
     def __issame__(X, Y, typesystem=None):
-
         if X is Y:
             return True
 
         if typesystem is None:
-            from typed.mods.check import resolve
+            from typed.mods.resolve import resolve
             typesystem = resolve.typesystem.entity(typesystem)
 
         if not STATEFUL.__issame__(typesystem.typeof(X), typesystem.typeof(Y), typesystem=typesystem):
@@ -42,7 +41,7 @@ class STATEFUL:
     def __extends__(t1, t2, typesystem=None):
         if not STATEFUL.__issame__(typesystem.typeof(t1), typesystem.typeof(t2), typesystem=typesystem):
             return False
-        return any(STATEFUL.__issame__(base, t2, typesystem=typesystem) for base in t1.__mro__)
+        return any(STATEFUL.__issame__(base, t2, typesystem=typesystem) for base in getattr(t1, "__mro__", []))
 
     @staticmethod
     def __issup__(typ, other, typesystem=None):
@@ -53,7 +52,7 @@ class STATEFUL:
         STATEFUL.SUPS.add(key)
         try:
             if typesystem is None:
-                from typed.mods.check import resolve
+                from typed.mods.resolve import resolve
                 typesystem = resolve.typesystem.entity(typesystem)
 
             meta_typ = typesystem.typeof(typ)
@@ -61,21 +60,25 @@ class STATEFUL:
             if not STATEFUL.__issame__(meta_typ, meta_other, typesystem=typesystem):
                 return False
 
-            if "__issup__" in getattr(meta_typ, "__dict__", {}):
-                issup = meta_typ.__dict__["__issup__"]
-                if issup is not STATEFUL.__issup__:
-                    try:
-                        return issup(typ, other)
-                    except TypeError:
-                        pass
+            for base in getattr(meta_typ, "__mro__", [meta_typ]):
+                if "__issup__" in getattr(base, "__dict__", {}):
+                    issup = base.__dict__["__issup__"]
+                    if issup is not STATEFUL.__issup__:
+                        try:
+                            return issup(typ, other)
+                        except TypeError:
+                            pass
+                    break
 
-            if "__issub__" in getattr(meta_other, "__dict__", {}):
-                issub = meta_other.__dict__["__issub__"]
-                if issub is not STATEFUL.__issub__:
-                    try:
-                        return issub(other, typ)
-                    except TypeError:
-                        pass
+            for base in getattr(meta_other, "__mro__", [meta_other]):
+                if "__issub__" in getattr(base, "__dict__", {}):
+                    issub = base.__dict__["__issub__"]
+                    if issub is not STATEFUL.__issub__:
+                        try:
+                            return issub(other, typ)
+                        except TypeError:
+                            pass
+                    break
 
             if STATEFUL.__extends__(typ, other, typesystem=typesystem):
                 return True
@@ -93,7 +96,7 @@ class STATEFUL:
         STATEFUL.SUBS.add(key)
         try:
             if typesystem is None:
-                from typed.mods.check import resolve
+                from typed.mods.resolve import resolve
                 typesystem = resolve.typesystem.entity(typesystem)
 
             meta_typ = typesystem.typeof(typ)
@@ -101,21 +104,25 @@ class STATEFUL:
             if not STATEFUL.__issame__(meta_typ, meta_other, typesystem=typesystem):
                 return False
 
-            if "__issub__" in getattr(meta_typ, "__dict__", {}):
-                issub = meta_typ.__dict__["__issub__"]
-                if issub is not STATEFUL.__issub__:
-                    try:
-                        return issub(typ, other)
-                    except TypeError:
-                        pass
+            for base in getattr(meta_typ, "__mro__", [meta_typ]):
+                if "__issub__" in getattr(base, "__dict__", {}):
+                    issub = base.__dict__["__issub__"]
+                    if issub is not STATEFUL.__issub__:
+                        try:
+                            return issub(typ, other)
+                        except TypeError:
+                            pass
+                    break
 
-            if "__issup__" in getattr(meta_other, "__dict__", {}):
-                issup = meta_other.__dict__["__issup__"]
-                if issup is not STATEFUL.__issup__:
-                    try:
-                        return issup(other, typ)
-                    except TypeError:
-                        pass
+            for base in getattr(meta_other, "__mro__", [meta_other]):
+                if "__issup__" in getattr(base, "__dict__", {}):
+                    issup = base.__dict__["__issup__"]
+                    if issup is not STATEFUL.__issup__:
+                        try:
+                            return issup(other, typ)
+                        except TypeError:
+                            pass
+                    break
 
             return STATEFUL.__issup__(other, typ, typesystem=typesystem)
         finally:
@@ -129,26 +136,31 @@ class STATEFUL:
         STATEFUL.TERMS.add(key)
         try:
             if typesystem is None:
-                from typed.mods.check import resolve
+                from typed.mods.resolve import resolve
                 typesystem = resolve.typesystem.entity(typesystem)
 
             meta_typ = typesystem.typeof(typ)
-            if "__isterm__" in getattr(meta_typ, "__dict__", {}):
-                isterm = meta_typ.__dict__["__isterm__"]
-                if isterm is not STATEFUL.__isterm__:
-                    try:
-                        res = isterm(typ, trm)
-                    except TypeError:
-                        pass
+
+            for base in getattr(meta_typ, "__mro__", [meta_typ]):
+                if "__isterm__" in getattr(base, "__dict__", {}):
+                    isterm = base.__dict__["__isterm__"]
+                    if isterm is not STATEFUL.__isterm__:
+                        try:
+                            return isterm(typ, trm)
+                        except TypeError:
+                            pass
+                    break
 
             type_trm = typesystem.typeof(trm)
-            if "__issub__" in getattr(type_trm, "__dict__", {}):
-                issub = type_trm.__dict__["__issub__"]
-                if issub is not STATEFUL.__issub__:
-                    try:
-                        return issub(type_trm, typ)
-                    except TypeError:
-                        pass
+            for base in getattr(type_trm, "__mro__", [type_trm]):
+                if "__issub__" in getattr(base, "__dict__", {}):
+                    issub = base.__dict__["__issub__"]
+                    if issub is not STATEFUL.__issub__:
+                        try:
+                            return issub(type_trm, typ)
+                        except TypeError:
+                            pass
+                    break
 
             return STATEFUL.__issub__(typ, type_trm, typesystem=typesystem)
         finally:
@@ -162,26 +174,30 @@ class STATEFUL:
         STATEFUL.EQUIVS.add(key)
         try:
             if typesystem is None:
-                from typed.mods.check import resolve
+                from typed.mods.resolve import resolve
                 typesystem = resolve.typesystem.entity(typesystem)
 
             meta_typ = typesystem.typeof(typ)
-            if "__isequiv__" in getattr(meta_typ, "__dict__", {}):
-                isequiv = meta_typ.__isequiv__
-                if isequiv is not STATEFUL.__isequiv__:
-                    try:
-                        return isequiv(typ, other)
-                    except TypeError:
-                        pass
+            for base in getattr(meta_typ, "__mro__", [meta_typ]):
+                if "__isequiv__" in getattr(base, "__dict__", {}):
+                    isequiv = base.__dict__["__isequiv__"]
+                    if isequiv is not STATEFUL.__isequiv__:
+                        try:
+                            return isequiv(typ, other)
+                        except TypeError:
+                            pass
+                    break
 
             meta_other = typesystem.typeof(other)
-            if "__isequiv__" in getattr(meta_other, "__dict__", {}):
-                isequiv = meta_other.__isequiv__
-                if isequiv is not STATEFUL.__isequiv__:
-                    try:
-                        return isequiv(other, typ)
-                    except TypeError:
-                        pass
+            for base in getattr(meta_other, "__mro__", [meta_other]):
+                if "__isequiv__" in getattr(base, "__dict__", {}):
+                    isequiv = base.__dict__["__isequiv__"]
+                    if isequiv is not STATEFUL.__isequiv__:
+                        try:
+                            return isequiv(other, typ)
+                        except TypeError:
+                            pass
+                    break
 
             if STATEFUL.__issame__(typ, other, typesystem=typesystem):
                 return True

@@ -9,6 +9,8 @@ __imports__ = {
 
 if lazy(__imports__):
     from typed.mods.init import (
+        SAMENESS, STATEFUL, MAGIC,
         TYPESYSTEM, UNIVERSE, ABSTRACT,
-        conf, some, every, none, true, false
+        conf,
+        some, every, none, true, false
     )

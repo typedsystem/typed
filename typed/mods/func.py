@@ -2,7 +2,7 @@ from functools import lru_cache as cache
 from inspect import Signature
 
 @cache
-def Dom(typesystem=TYPESYSTEM):
+def Dom(typesystem=None):
     class DOM(TYPE):
         def __instancecheck__(cls, instance):
             t = typeof(instance, typesystem)
@@ -17,7 +17,7 @@ def Dom(typesystem=TYPESYSTEM):
     return DOM("Dom", (TYPE,), {"__display__": "Dom", "__typesystems__": [typesystem]})
 
 @cache
-def Cod(typesystem=TYPESYSTEM):
+def Cod(typesystem=None):
     class COD(TYPE):
         def __instancecheck__(cls, instance):
             return instance in typesystem

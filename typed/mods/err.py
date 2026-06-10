@@ -19,10 +19,12 @@ def notify(message, __notifier__=None, __multiline__=False, **kwargs) -> None:
     __notifier__(full_message)
     return None
 
+
 class ERR(type):
     def __isterm__(typ, trm):
         from typed.mods.typesystem import issub, typeof
         return issub(typeof(trm), ERR) and issub(trm, Err)
+
 
 class Err(BaseException, metaclass=ERR):
     __display__ = "Err"
@@ -30,6 +32,7 @@ class Err(BaseException, metaclass=ERR):
     def __init__(self, message, **kwargs):
         __message__ = notify(message=message,  **kwargs)
         super().__init__(__message__)
+
 
 def iserr(*errs: tuple, quantifier=None) -> bool:
     if quantifier is None:
@@ -44,14 +47,14 @@ def iserr(*errs: tuple, quantifier=None) -> bool:
     from typed.mods.typesystem import isterm
     return quantifier(isterm(err, ERR) for err in errs)
 
+
 class NotDefined(Err, metaclass=ERR):
     __display__ = "NotDefined"
+
 
 def explode(err: ERR, message=NotDefined, **kwargs: dict) -> None:
     return notify(message=message, __notifier__=err, **kwargs)
 
-class Anonymous(Err, metaclass=ERR):
-    __display__ = "Anonymous"
 
 class MissingErr(Err, metaclass=ERR):
     __display__ = "MissingErr"
@@ -62,14 +65,17 @@ class MissingErr(Err, metaclass=ERR):
         details=NotDefined,
         where=NotDefined,
         what=NotDefined,
-        __multiline__=True,
+        __multiline__=None,
         **kwargs
     ):
+        from typed.mods.resolve import resolve
+        __multiline__ = resolve.err.multiline(__multiline__)
+
         if where is NotDefined:
-            raise MissingErr("Missing 'where' in 'MissingErr'.")
+            raise MissingErr("Missing 'where' in 'MissingErr'.", where="MissingErr", what="where")
 
         if what is NotDefined:
-            raise MissingErr("Missing 'what' in 'MissingErr'.")
+            raise MissingErr("Missing 'what' in 'MissingErr'.", where="MissingErr", what="what")
 
         from typed.mods.typesystem import nameof
 
@@ -83,8 +89,10 @@ class MissingErr(Err, metaclass=ERR):
             details=details,
             where=nameof(where),
             what=what,
+            __multiline__=__multiline__,
             **kwargs
         )
+
 
 class NotSatisfied(Err, metaclass=ERR):
     __display__ = "NotSatisfied"
@@ -95,9 +103,12 @@ class NotSatisfied(Err, metaclass=ERR):
         details=NotDefined,
         condition=NotDefined,
         args=NotDefined,
-        __multiline__=True,
+        __multiline__=None,
         **kwargs
     ):
+        from typed.mods.resolve import resolve
+        __multiline__ = resolve.err.multiline(__multiline__)
+
         if condition is NotDefined:
             raise MissingErr("Missing 'condition' in 'MissingErr'.")
 
@@ -115,6 +126,7 @@ class NotSatisfied(Err, metaclass=ERR):
             **kwargs
         )
 
+
 class FuncErr(Err, metaclass=ERR):
     __display__ = "FuncErr"
 
@@ -123,9 +135,12 @@ class FuncErr(Err, metaclass=ERR):
         message="Error in function",
         details=NotDefined,
         func=NotDefined,
-        __multiline__=True,
+        __multiline__=None,
         **kwargs
     ):
+        from typed.mods.resolve import resolve
+        __multiline__ = resolve.err.multiline(__multiline__)
+
         if func is NotDefined:
             raise MissingErr(
                 where=FuncErr,
@@ -138,8 +153,10 @@ class FuncErr(Err, metaclass=ERR):
             message=message,
             details=details,
             func=nameof(func),
+            __multiline__=__multiline__,
             **kwargs
         )
+
 
 class HintErr(Err, metaclass=ERR):
     __display__ = "HintErr"
@@ -152,9 +169,12 @@ class HintErr(Err, metaclass=ERR):
         term=NotDefined,
         arg=NotDefined,
         args=NotDefined,
-        __multiline__=True,
+        __multiline__=None,
         **kwargs
     ):
+        from typed.mods.resolve import resolve
+        __multiline__ = resolve.err.multiline(__multiline__)
+
         if all(x is NotDefined for x in (term, func)):
             raise MissingErr(
                 where=HintErr,
@@ -191,6 +211,7 @@ class HintErr(Err, metaclass=ERR):
             **kwargs
         )
 
+
 class TypeErr(Err, metaclass=ERR):
     __display__ = "TypeErr"
 
@@ -198,27 +219,28 @@ class TypeErr(Err, metaclass=ERR):
         self,
         message="Wrong term type identified",
         details=NotDefined,
+        func=NotDefined,
         term=NotDefined,
         arg=NotDefined,
         args=NotDefined,
         received=NotDefined,
         expected=NotDefined,
         quantifier=NotDefined,
-        __multiline__=True,
+        __multiline__=None,
         **kwargs
     ):
+        from typed.mods.resolve import resolve
+        __multiline__ = resolve.err.multiline(__multiline__)
+
         if term is NotDefined:
-            raise MissingErr(
-                where=TypeErr,
-                what=term
-            )
+            raise MissingErr(where=TypeErr, what="term")
         if expected is NotDefined:
-            raise MissingErr(
-                where=TypeErr,
-                what=expected
-            )
+            raise MissingErr(where=TypeErr, what="expected")
 
         from typed.mods.typesystem import nameof, typeof
+
+        if func is not NotDefined:
+            func = nameof(func)
 
         term_type = typeof(term)
         term_typesystems = getattr(term_type, "__typesystems__", [])
@@ -227,16 +249,18 @@ class TypeErr(Err, metaclass=ERR):
             received = term_type
 
         if not term_typesystems:
-            raise MissingErr(
-                where=term_type,
-                what="__typesystems__"
-            )
+            raise MissingErr(where=term_type, what="__typesystems__")
 
-        if args or arg is not NotDefined:
+        if args is not NotDefined or arg is not NotDefined:
             message = "Wrong argument type identified"
-            args = [nameof(x) for x in args]
+
+            if args is not NotDefined:
+                args = [nameof(x) for x in args]
+            else:
+                args = []
+
             if arg is not NotDefined:
-                args.extend(nameof(arg))
+                args.append(nameof(arg))
 
             if not isinstance(received, (tuple, set, list)) or len(received) != len(args):
                 raise ValueError("'received' must be an iterable of the same length as 'args'.")
@@ -250,6 +274,25 @@ class TypeErr(Err, metaclass=ERR):
                 args = args[0]
                 received = received[0]
                 expected = expected[0]
+        else:
+            if isinstance(received, (tuple, set, list)):
+                received = tuple(nameof(r) for r in received)
+                if len(received) == 1:
+                    received = received[0]
+            elif received is not NotDefined:
+                received = nameof(received)
+
+            if isinstance(expected, (tuple, set, list)):
+                expected = tuple(nameof(e) for e in expected)
+                if len(expected) == 1:
+                    expected = expected[0]
+            elif expected is not NotDefined:
+                expected = nameof(expected)
+
+        if quantifier is None:
+            quantifier = NotDefined
+        elif quantifier is not NotDefined:
+            quantifier = nameof(quantifier)
 
         term = nameof(term)
         typesystems = ", ".join(nameof(t) for t in term_typesystems)
@@ -257,6 +300,7 @@ class TypeErr(Err, metaclass=ERR):
         super().__init__(
             message=message,
             details=details,
+            func=func,
             term=term,
             args=args,
             received=received,
@@ -279,9 +323,18 @@ class DomErr(FuncErr, metaclass=ERR):
         received=NotDefined,
         expected=NotDefined,
         quantifier=NotDefined,
-        __multiline__=True,
+        __multiline__=None,
         **kwargs
     ):
+        from typed.mods.resolve import resolve
+        __multiline__ = resolve.err.multiline(__multiline__)
+
+        from typed.mods.typesystem import nameof
+        if quantifier is None:
+            quantifier = NotDefined
+        elif quantifier is not NotDefined:
+            quantifier = nameof(quantifier)
+
         super().__init__(
             message=message,
             details=details,
@@ -295,8 +348,10 @@ class DomErr(FuncErr, metaclass=ERR):
             **kwargs
         )
 
+
 class CodErr(FuncErr, metaclass=ERR):
     __display__ = "CodErr"
+
     def __init__(
         self,
         message="Wrong codomain type identified",
@@ -307,9 +362,18 @@ class CodErr(FuncErr, metaclass=ERR):
         received=NotDefined,
         expected=NotDefined,
         quantifier=NotDefined,
-        __multiline__=True,
+        __multiline__=None,
         **kwargs
     ):
+        from typed.mods.resolve import resolve
+        __multiline__ = resolve.err.multiline(__multiline__)
+
+        from typed.mods.typesystem import nameof
+        if quantifier is None:
+            quantifier = NotDefined
+        elif quantifier is not NotDefined:
+            quantifier = nameof(quantifier)
+
         super().__init__(
             message=message, 
             details=details,
@@ -323,6 +387,7 @@ class CodErr(FuncErr, metaclass=ERR):
             **kwargs
         )
 
+
 class TypeSystemErr(Err, metaclass=ERR):
     __display__ = "TypeSystemErr"
 
@@ -335,8 +400,11 @@ class TypeSystemErr(Err, metaclass=ERR):
         typesystem=NotDefined,
         typesystems=NotDefined,
         quantifier=NotDefined,
-        __multiline__=True,
+        __multiline__=None,
     ):
+        from typed.mods.resolve import resolve
+        __multiline__ = resolve.err.multiline(__multiline__)
+
         if all(x is NotDefined for x in (typesystem, typesystems)):
             raise MissingErr(
                 where=TypeSystemErr,
@@ -350,6 +418,11 @@ class TypeSystemErr(Err, metaclass=ERR):
             )
 
         from typed.mods.typesystem import nameof
+
+        if quantifier is None:
+            quantifier = NotDefined
+        elif quantifier is not NotDefined:
+            quantifier = nameof(quantifier)
 
         if types is not NotDefined:
             if not isinstance(types, (tuple, list, set)):
@@ -370,8 +443,10 @@ class TypeSystemErr(Err, metaclass=ERR):
             __multiline__=__multiline__
         )
 
+
 class ConfErr(Err, metaclass=ERR):
     __display__ = "ConfErr"
+
     def __init__(
         self,
         message='Wrong type in config',
@@ -379,8 +454,13 @@ class ConfErr(Err, metaclass=ERR):
         conf=NotDefined,
         arg=NotDefined,
         received=NotDefined,
-        expected=NotDefined
+        expected=NotDefined,
+        __multiline__=None,
+        **kwargs
     ):
+        from typed.mods.resolve import resolve
+        __multiline__ = resolve.err.multiline(__multiline__)
+
         if conf is NotDefined:
             raise ValueError("Missing 'conf' in 'ConfErr'.")
         if arg is NotDefined:
@@ -396,5 +476,7 @@ class ConfErr(Err, metaclass=ERR):
             conf=conf,
             arg=arg,
             received=received,
-            expected=expected
+            expected=expected,
+            __multiline__=__multiline__,
+            **kwargs
         )
