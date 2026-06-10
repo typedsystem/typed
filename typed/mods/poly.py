@@ -1,3 +1,35 @@
+from typed.mods.err import NotDefined
+
+def get(obj: object, what: str="", default: object=NotDefined) -> object:
+    keys = entry.split('.')
+    value = obj
+    for key in keys:
+        if isinstance(value, Dict):
+            if key not in value:
+                return std
+            value = value[key]
+        elif isinstance(value, List):
+            try:
+                index = int(key)
+            except ValueError:
+                return std
+            if index < 1 or index >= len(value):
+                return std
+            value = value[index]
+        else:
+            return std
+    from typed.mods.typesystem import typeof
+    if not what:
+        return obj
+
+    if len(what) == 1:
+        what = what[0]
+
+    getattr_ = getattr(typeof(obj), "")
+    if 
+
+
+
 def null(obj: object) -> object:
     """
     The 'null' parametric polymorphism.
@@ -23,10 +55,11 @@ def terms(t: type) -> set:
     """
     The 'terms' polymorphism.
     """
-    __terms__ = getattr(t, "__terms__", None)
-    if __terms__ is not None:
+    from typed.mods.err import NotDefined
+    __terms__ = getattr(t, "__terms__", NotDefined)
+    if __terms__ is not NotDefined:
         return set(__terms__)
-    return
+    return NotDefined
 
 def append(container, *args, **kwargs):
     if any(

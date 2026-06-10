@@ -288,35 +288,56 @@ class Checker:
             return False
         return True
 
-    def ishinted(self, objs) -> bool:
-        from typed.mods.types.func import Hinted
-        from typed.mods.typesystem import isterm
+    def ishinted(self, objs, dom: bool = True, cod: bool = True) -> bool:
+        from typed.mods.func import signature
+        from typed.mods.err import NotDefined
         q = self.quantifier
 
         if q is None:
-            res = isterm(objs, Hinted)
-            if not res:
-                if self.explode:
-                    from typed.mods.err import TypeErr
-                    raise TypeErr(
-                        func="ishinted",
-                        term=objs,
-                        expected=(Hinted,),
-                        received=type(objs)
-                    )
-                return False
+            sig = signature(objs)
+            if dom:
+                non_hinted = [a.name for a in sig.args if a.hint is None or a.hint is NotDefined]
+                if non_hinted:
+                    if self.explode:
+                        from typed.mods.err import HintErr
+                        raise HintErr(
+                            term=objs,
+                            message=f"Missing type hints for parameters: {', '.join(non_hinted)}"
+                        )
+                    return False
+            if cod:
+                if not sig.has_return_hint:
+                    if self.explode:
+                        from typed.mods.err import HintErr
+                        raise HintErr(
+                            term=objs,
+                            message="Missing return type hint"
+                        )
+                    return False
             return True
 
-        res = q(isterm(obj, Hinted) for obj in objs)
+        def _check(f):
+            try:
+                sig = signature(f)
+            except Exception:
+                return False
+            if dom:
+                if any(a.hint is None or a.hint is NotDefined for a in sig.args):
+                    return False
+            if cod:
+                if not sig.has_return_hint:
+                    return False
+            return True
+
+        res = q(_check(f) for f in objs)
         if not res:
             if self.explode:
-                from typed.mods.err import TypeErr
-                raise TypeErr(
+                from typed.mods.err import HintErr
+                raise HintErr(
                     func="ishinted",
                     term=objs,
-                    expected=(Hinted,),
                     quantifier=q,
-                    received=type(objs) if not hasattr(objs, '__iter__') or isinstance(objs, str) else tuple(type(obj) for obj in objs)
+                    message="Missing type hints in one or more quantified functions"
                 )
             return False
         return True
