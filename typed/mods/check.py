@@ -50,7 +50,33 @@ class Checker:
                 expected_list.extend(ts_obj.__members__.get(kind, []))
         return tuple(expected_list)
 
-    def dom(self, func, arg_names, arg_values, expected_dom) -> bool:
+    def hint_dom(self, func, expected_dom, received_dom) -> bool:
+        if expected_dom and received_dom and expected_dom != received_dom:
+            if self.explode:
+                from typed.mods.err import HintErr
+                raise HintErr(
+                    message="Domain mismatch with actual Python hints",
+                    func=func,
+                    expected=expected_dom,
+                    received=received_dom
+                )
+            return False
+        return True
+
+    def hint_cod(self, func, expected_cod, received_cod) -> bool:
+        if expected_cod and received_cod and expected_cod != received_cod:
+            if self.explode:
+                from typed.mods.err import HintErr
+                raise HintErr(
+                    message="Codomain mismatch with actual Python hints",
+                    func=func,
+                    expected=expected_cod,
+                    received=received_cod
+                )
+            return False
+        return True
+
+    def bind_dom(self, func, arg_names, arg_values, expected_dom) -> bool:
         from typed.mods.typesystem import typeof, isterm
         for p_name, expected_type, actual_value in zip(arg_names, expected_dom, arg_values):
             if not isterm(actual_value, expected_type):
@@ -65,7 +91,7 @@ class Checker:
                 return False
         return True
 
-    def cod(self, func, result, expected_cod) -> bool:
+    def bind_cod(self, func, result, expected_cod) -> bool:
         from typed.mods.typesystem import typeof, isterm
         if not isterm(result, expected_cod):
             if self.explode:
@@ -78,11 +104,12 @@ class Checker:
             return False
         return True
 
-    def issafe(self, func, bound_args, expected_dom, expected_cod):
-        self.dom(func, list(bound_args.arguments.keys()), list(bound_args.arguments.values()), expected_dom)
-        r = func(*bound_args.args, **bound_args.kwargs)
-        self.cod(func, r, expected_cod)
-        return r
+    def issafe(self, func, arg_names, arg_values, expected_dom, result, expected_cod) -> bool:
+        if not self.bind_dom(func, arg_names, arg_values, expected_dom):
+            return False
+        if not self.bind_cod(func, result, expected_cod):
+            return False
+        return True
 
     def istype(self, entities, *typesystems, quantifier=None) -> bool:
         from typed.mods.typesystem import istype
@@ -340,7 +367,7 @@ class Checker:
                         )
                     return False
             if cod:
-                if sig.cod is None:
+                if not sig.has_return_hint:
                     if self.explode:
                         from typed.mods.err import HintErr
                         raise HintErr(
@@ -359,7 +386,7 @@ class Checker:
                 if any(a.hint is None or a.hint is NotDefined for a in sig.args):
                     return False
             if cod:
-                if sig.cod is None:
+                if not sig.has_return_hint:
                     return False
             return True
 
@@ -858,8 +885,14 @@ class check:
     none = checker("none", explode=True)
     only = checker("only", explode=True)
 
-    dom = __checker__.dom
-    cod = __checker__.cod
+    class hint:
+        dom = __checker__.hint_dom
+        cod = __checker__.hint_cod
+
+    class bind:
+        dom = __checker__.bind_dom
+        cod = __checker__.bind_cod
+
     issafe = __checker__.issafe
 
     isinstance = __checker__.isinstance
@@ -896,8 +929,14 @@ class true:
     none = checker("none", explode=False)
     only = checker("only", explode=False)
 
-    dom = __true__.dom
-    cod = __true__.cod
+    class hint:
+        dom = __true__.hint_dom
+        cod = __true__.hint_cod
+
+    class bind:
+        dom = __true__.bind_dom
+        cod = __true__.bind_cod
+
     issafe = __true__.issafe
 
     isinstance = __true__.isinstance

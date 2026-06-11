@@ -54,7 +54,7 @@ def args(func: callable) -> tuple[Arg, ...]:
 @cache
 def signature(func: callable) -> Signature:
     from typed.mods.meta.atomic import TYPE
-    from typed.mods.err import HintErr, NotDefined
+    from typed.mods.err import NotDefined
     from typed.mods.general import _
 
     target = unwrap(func)
@@ -63,6 +63,7 @@ def signature(func: callable) -> Signature:
     hints_dict = hints(target)
 
     hint_dom = tuple(a.hint for a in target_args if a.hint is not None and a.hint is not NotDefined)
+    has_return_hint = 'return' in hints_dict
     hint_cod = hints_dict.get('return', None)
 
     if not isinstance(hint_cod, TYPE):
@@ -83,21 +84,11 @@ def signature(func: callable) -> Signature:
         orig_dom = hint_dom
         orig_cod = hint_cod
 
-    if hint_dom and orig_dom and hint_dom != orig_dom:
-        raise HintErr(
-            message="Domain mismatch with actual Python hints",
-            func=func,
-            expected=orig_dom,
-            received=hint_dom
-        )
+    from typed.mods.check import check
+    check.hint.dom(func, orig_dom, hint_dom)
 
-    if hint_cod and orig_cod and hint_cod != orig_cod:
-        raise HintErr(
-            message="Codomain mismatch with actual Python hints",
-            func=func,
-            expected=orig_cod,
-            received=hint_cod
-        )
+    if has_return_hint:
+        check.hint.cod(func, orig_cod, hint_cod)
 
     dom, cod = (), None
 

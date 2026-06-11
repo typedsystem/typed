@@ -26,7 +26,6 @@ def get(obj: object, what: str="", default: object=NotDefined) -> object:
         what = what[0]
 
     getattr_ = getattr(typeof(obj), "")
-    if 
 
 
 

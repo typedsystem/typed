@@ -1,7 +1,5 @@
-from functools import lru_cache as cache
 from typed.mods.types.atomic import Nill, Bool, Type
 
-@cache
 class nill:
     def func():
         return None
@@ -9,6 +7,9 @@ class nill:
     class cls:
         def nill(self):
             return None
+
+    def comp():
+        return None
 
     class dom:
         def func():

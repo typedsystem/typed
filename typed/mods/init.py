@@ -1,7 +1,7 @@
 from typed.mods.typesystem import new
 
 def __typemap__():
-    from typed.mods.types.base import (
+    from typed.mods.types.atomic import (
         Int, Float, Bool, Str, Byte
     )
     from typed.mods.types.constructor import (

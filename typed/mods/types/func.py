@@ -151,41 +151,51 @@ class Hinted(CompFunc, DomHinted, CodHinted, metaclass=HINTED):
 class DomTyped(DomHinted, metaclass=DOM_TYPED):
     __null__ = nill.dom.typed
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, check: bool=True, **kwargs):
         from typed.mods.func import signature
-        from typed.mods.check import check
+        from typed.mods.check import check as _check
 
-        sig = signature(self.__func__)
-        b = sig.bind(*args, **kwargs)
+        sig_data = signature(self.__func__)
+        b = sig_data.bind(*args, **kwargs)
 
-        check.dom(self.__func__, list(b.arguments.keys()), list(b.arguments.values()), sig.dom)
+        if check:
+            _check.bind.dom(self.__func__, list(b.arguments.keys()), list(b.arguments.values()), sig_data.dom)
+
         return self.__func__(*b.args, **b.kwargs)
 
 class CodTyped(CodHinted, metaclass=COD_TYPED):
     __null__ = nill.cod.typed
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, check: bool=True, **kwargs):
         from typed.mods.func import signature
-        from typed.mods.check import check
+        from typed.mods.check import check as _check
 
-        sig = signature(self.__func__)
-        b = sig.bind(*args, **kwargs)
+        sig_data = signature(self.__func__)
+        b = sig_data.bind(*args, **kwargs)
 
         r = self.__func__(*b.args, **b.kwargs)
-        check.cod(self.__func__, r, sig.cod)
+
+        if check:
+            _check.bind.cod(self.__func__, r, sig_data.cod)
+
         return r
 
 class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
     __null__ = nill.cod.typed
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, check: bool=True, **kwargs):
         from typed.mods.func import signature
-        from typed.mods.check import check
+        from typed.mods.check import check as _check
 
-        sig = signature(self.__func__)
-        b = sig.bind(*args, **kwargs)
+        sig_data = signature(self.__func__)
+        b = sig_data.bind(*args, **kwargs)
 
-        return check.issafe(self.__func__, b, sig.dom, sig.cod)
+        r = self.__func__(*b.args, **b.kwargs)
+
+        if check:
+            _check.issafe(self.__func__, list(b.arguments.keys()), list(b.arguments.values()), sig_data.dom, r, sig_data.cod)
+
+        return r
 
 class Condition(Typed, metaclass=CONDITION):
     __null__ = nill.condition
@@ -202,8 +212,8 @@ class LazyTyped(Hinted, metaclass=LAZY_TYPED):
             self._wrapped = Typed(self.__func__)
         return self._wrapped
 
-    def __call__(self, *a, **kw):
-        return self.materialize()(*a, **kw)
+    def __call__(self, *a, check: bool=True, **kw):
+        return self.materialize()(*a, check=check, **kw)
 
     def __getattr__(self, name):
         if name in ('__flags__', '__func__', '__wrapped__', '_wrapped', 'is_lazy'):

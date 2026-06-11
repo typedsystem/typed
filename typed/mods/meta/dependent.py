@@ -1,4 +1,4 @@
-from typed.mods.meta.base import TYPE, FINITE
+from typed.mods.meta.atomic import TYPE, FINITE
 
 class RELATED(TYPE):
     """
@@ -23,7 +23,7 @@ class RELATED(TYPE):
 
     def __call__(met, entities: tuple[object]=None, relations: tuple[callable]=None, name="Related", base: type=None, quantifier=None, typesystem=None):
         if base is None:
-            from typed.mods.types.base import Empty
+            from typed.mods.types.atomic import Empty
             base = Empty
         if entities is None:
             return base
@@ -181,8 +181,9 @@ class BOUNDED(FINITE):
             return False
 
     def __call__(met, type: type=None, bound=-1, op='==', base: type=None, typesystem=None):
-        from typed.mods.types.base import Empty
-        from typed.mods.check import check, resolve
+        from typed.mods.types.atomic import Empty
+        from typed.mods.check import check
+        from typed.mods.resolve import resolve
 
         typesystem = resolve.typesystem.entity(typesystem)
 

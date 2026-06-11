@@ -328,7 +328,7 @@ class ALGEBRAIC(TYPE):
         typesystem = resolve.typesystem.entity(typesystem)
 
         if base is None:
-            from typed.mods.types.base import Empty
+            from typed.mods.types.atomic import Empty
             base = Empty
 
         if not types:
