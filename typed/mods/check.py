@@ -50,6 +50,40 @@ class Checker:
                 expected_list.extend(ts_obj.__members__.get(kind, []))
         return tuple(expected_list)
 
+    def dom(self, func, arg_names, arg_values, expected_dom) -> bool:
+        from typed.mods.typesystem import typeof, isterm
+        for p_name, expected_type, actual_value in zip(arg_names, expected_dom, arg_values):
+            if not isterm(actual_value, expected_type):
+                if self.explode:
+                    from typed.mods.err import DomErr
+                    raise DomErr(
+                        func=func,
+                        arg=p_name,
+                        expected=expected_type,
+                        received=typeof(actual_value)
+                    )
+                return False
+        return True
+
+    def cod(self, func, result, expected_cod) -> bool:
+        from typed.mods.typesystem import typeof, isterm
+        if not isterm(result, expected_cod):
+            if self.explode:
+                from typed.mods.err import CodErr
+                raise CodErr(
+                    func=func,
+                    expected=expected_cod,
+                    received=typeof(result)
+                )
+            return False
+        return True
+
+    def issafe(self, func, bound_args, expected_dom, expected_cod):
+        self.dom(func, list(bound_args.arguments.keys()), list(bound_args.arguments.values()), expected_dom)
+        r = func(*bound_args.args, **bound_args.kwargs)
+        self.cod(func, r, expected_cod)
+        return r
+
     def istype(self, entities, *typesystems, quantifier=None) -> bool:
         from typed.mods.typesystem import istype
         from typed.mods.resolve import resolve
@@ -306,7 +340,7 @@ class Checker:
                         )
                     return False
             if cod:
-                if not sig.has_return_hint:
+                if sig.cod is None:
                     if self.explode:
                         from typed.mods.err import HintErr
                         raise HintErr(
@@ -325,7 +359,7 @@ class Checker:
                 if any(a.hint is None or a.hint is NotDefined for a in sig.args):
                     return False
             if cod:
-                if not sig.has_return_hint:
+                if sig.cod is None:
                     return False
             return True
 
@@ -824,6 +858,10 @@ class check:
     none = checker("none", explode=True)
     only = checker("only", explode=True)
 
+    dom = __checker__.dom
+    cod = __checker__.cod
+    issafe = __checker__.issafe
+
     isinstance = __checker__.isinstance
     iscallable = __checker__.iscallable
 
@@ -857,6 +895,10 @@ class true:
     every = checker("every", explode=False)
     none = checker("none", explode=False)
     only = checker("only", explode=False)
+
+    dom = __true__.dom
+    cod = __true__.cod
+    issafe = __true__.issafe
 
     isinstance = __true__.isinstance
     iscallable = __true__.iscallable

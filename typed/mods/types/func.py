@@ -28,16 +28,19 @@ class Callable(metaclass=CALLABLE):
     : typeof(Callable)    is  CALLABLE
     : isterm(f, Callable) iff callable(f)
     : nullof(Callable)    is  nill
-
     """
 
     def __call__(self, *a, **kw):
         return self.__func__(*a, **kw)
 
     @property
+    def signature(self):
+        from typed.mods.func import signature
+        return signature(self)
+
+    @property
     def args(self):
-        from typed.mods.func import args
-        return args(self)
+        return self.signature.args
 
     @property
     def kwargs(self):
@@ -50,9 +53,12 @@ class Callable(metaclass=CALLABLE):
         return tuple(a for a in self.args if a.default is NotDefined)
 
     @property
-    def signature(self):
-        from typed.mods.func import signature
-        return signature(self)
+    def dom(self):
+        return self.signature.dom
+
+    @property
+    def cod(self):
+        return self.signature.cod
 
     @property
     def unwrap(self):
@@ -133,94 +139,64 @@ class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
         from typed.helper.func import _compose_functions
         return _compose_functions(other, self)
 
-
 class DomHinted(DomFunc, metaclass=DOM_HINTED):
-
     __null__ = nill.dom.hinted
 
-    @property
-    def dom(self):
-        return self._hinted_dom
-
 class CodHinted(CodFunc, metaclass=COD_HINTED):
-
     __null__ = nill.cod.hinted
 
-    @property
-    def cod(self):
-        return self._hinted_cod
-
 class Hinted(CompFunc, DomHinted, CodHinted, metaclass=HINTED):
-
     __null__ = nill.hinted
 
-    @property
-    def dom(self):
-        return self._hinted_dom
-
-    @property
-    def cod(self):
-        return self._hinted_cod
-
 class DomTyped(DomHinted, metaclass=DOM_TYPED):
-
     __null__ = nill.dom.typed
 
     def __call__(self, *args, **kwargs):
         from typed.mods.func import signature
         from typed.mods.check import check
+
         sig = signature(self.__func__)
-        b = sig.bind(*args, **kwargs); b.apply_defaults()
-        check.dom(self.__func__, list(b.arguments.keys()), list(b.arguments.values()), self.dom)
+        b = sig.bind(*args, **kwargs)
+
+        check.dom(self.__func__, list(b.arguments.keys()), list(b.arguments.values()), sig.dom)
         return self.__func__(*b.args, **b.kwargs)
 
 class CodTyped(CodHinted, metaclass=COD_TYPED):
-
     __null__ = nill.cod.typed
 
     def __call__(self, *args, **kwargs):
         from typed.mods.func import signature
         from typed.mods.check import check
+
         sig = signature(self.__func__)
-        b = sig.bind(*args, **kwargs); b.apply_defaults()
+        b = sig.bind(*args, **kwargs)
+
         r = self.__func__(*b.args, **b.kwargs)
-        check.cod(self.__func__, r, self.cod)
+        check.cod(self.__func__, r, sig.cod)
         return r
 
 class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
-
     __null__ = nill.cod.typed
 
     def __call__(self, *args, **kwargs):
         from typed.mods.func import signature
         from typed.mods.check import check
+
         sig = signature(self.__func__)
         b = sig.bind(*args, **kwargs)
-        b.apply_defaults()
-        return check.issafe(self.__func__, b, self.dom, self.cod)
+
+        return check.issafe(self.__func__, b, sig.dom, sig.cod)
 
 class Condition(Typed, metaclass=CONDITION):
-
     __null__ = nill.condition
 
 class Family(Typed, metaclass=FAMILY):
-
     __null__ = nill.family
 
 class Constructor(Family, metaclass=CONSTRUCTOR):
-
     __null__ = nill.constructor
 
 class LazyTyped(Hinted, metaclass=LAZY_TYPED):
-
-    @property
-    def dom(self):
-        return self._lazy_dom
-
-    @property
-    def cod(self):
-        return self._lazy_cod
-
     def materialize(self):
         if self._wrapped is None:
             self._wrapped = Typed(self.__func__)
@@ -230,14 +206,14 @@ class LazyTyped(Hinted, metaclass=LAZY_TYPED):
         return self.materialize()(*a, **kw)
 
     def __getattr__(self, name):
-        if name in ('__flags__', '__func__', '__wrapped__', '_wrapped', 'is_lazy', '_lazy_dom', '_lazy_cod'):
+        if name in ('__flags__', '__func__', '__wrapped__', '_wrapped', 'is_lazy'):
             return super().__getattribute__(name)
         return getattr(self.materialize(), name)
 
 class Partial(Func, metaclass=PARTIAL):
     def __call__(self, *new_args, **new_kwargs):
         from typed.mods.general import _
-        from typed.helper.general import _name
+        from typed.mods.typesystem import nameof
         from typed.mods.func import signature
         from typed.mods.err import TypeErr
 
@@ -258,10 +234,11 @@ class Partial(Func, metaclass=PARTIAL):
             else:
                 expected_type = self.dom
 
+            from typed.mods.meta.atomic import TYPE
             actual_type = TYPE(input_val)
 
             raise TypeErr(
-                message=f"Domain mismatch in partial application '{_name(self)}'",
+                message=f"Domain mismatch in partial application '{nameof(self)}'",
                 received=actual_type,
                 expected=expected_type,
             )
@@ -280,10 +257,9 @@ class Partial(Func, metaclass=PARTIAL):
         for extra in new_args_iter:
             arg_list.append(extra)
 
-        target = getattr(self.func, "func", self.func)
         try:
-            sig = signature(target)
-            param_names = list(sig.parameters.keys())
+            sig = signature(self.__func__)
+            param_names = [a.name for a in sig.args]
         except Exception:
             sig = None
             param_names = []
@@ -310,8 +286,7 @@ class Partial(Func, metaclass=PARTIAL):
 
         if _ in arg_list:
             new_partial = object.__new__(self.__class__)
-            # Initialization logic handled by metatype
-            return PARTIAL(self.func, arg_list, kwarg_dict)
+            return PARTIAL(self.__func__, arg_list, kwarg_dict)
 
         cleaned_args = [arg for arg in arg_list if arg is not _]
 
@@ -324,11 +299,11 @@ class Partial(Func, metaclass=PARTIAL):
                 if param_name in final_kwargs:
                     del final_kwargs[param_name]
 
-        return self.func(*cleaned_args, **final_kwargs)
+        return self.__func__(*cleaned_args, **final_kwargs)
 
     def __repr__(self):
         return (
-            f"<Partial: {getattr(self.func, '__name__', 'func')} "
+            f"<Partial: {getattr(self.__func__, '__name__', 'func')} "
             f"with bound args {self.bound_args} and kwargs {self.bound_kwargs}>"
         )
 
@@ -343,39 +318,3 @@ class Partial(Func, metaclass=PARTIAL):
 
     def __rrshift__(self, other):
         return CompFunc.__rshift__(other, self)
-
-    @property
-    def dom(self):
-        from typed.mods.general import _
-        from typed.mods.func import signature
-        if not hasattr(self, '_original_dom'):
-            return ()
-
-        target = getattr(self.func, "func", self.func)
-
-        try:
-            sig = signature(target)
-            param_names = list(sig.parameters.keys())
-        except Exception:
-            remaining = [
-                t for arg, t in zip(self.bound_args, self._original_dom)
-                if arg is _
-            ]
-            return tuple(remaining)
-
-        remaining_types = []
-
-        for idx, (name, typ) in enumerate(zip(param_names, self._original_dom)):
-            pos_bound = idx < len(self.bound_args) and self.bound_args[idx] is not _
-            kw_bound = name in self.bound_kwargs
-
-            if not pos_bound and not kw_bound:
-                remaining_types.append(typ)
-
-        return tuple(remaining_types)
-
-    @property
-    def cod(self):
-        if hasattr(self, '_original_cod'):
-            return self._original_cod
-        return None

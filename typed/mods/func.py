@@ -8,16 +8,31 @@ class Arg:
         self.default = default
 
 class Signature:
-    def __init__(self, func: str, dom: Dom, cod: Cod, args: tuple[Arg, ...]):
+    def __init__(self, func: callable, dom: Dom, cod: Cod, args: tuple[Arg, ...]):
         self.func = func
         self.dom = dom
         self.cod = cod
         self.args = args
 
+    def bind(self, *args, **kwargs):
+        from inspect import signature as _signature
+        sig = _signature(self.func)
+        b = sig.bind(*args, **kwargs)
+        b.apply_defaults()
+        return b
+
+@cache
+def hints(func):
+    from typing import get_type_hints
+    try:
+        return get_type_hints(func)
+    except Exception:
+        return {}
+
 @cache
 def args(func: callable) -> tuple[Arg, ...]:
     from inspect import signature as _signature, Parameter
-    from typed.mods.types.base import Nill
+    from typed.mods.err import NotDefined
 
     actual_func = unwrap(func)
     try:
@@ -30,25 +45,27 @@ def args(func: callable) -> tuple[Arg, ...]:
     arg_objs = []
     for name, param in sig.parameters.items():
         if param.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD, Parameter.KEYWORD_ONLY):
-            hint = hints_dict.get(name, None)
-            default = Nill if param.default is Parameter.empty else param.default
+            hint = hints_dict.get(name, NotDefined)
+            default = NotDefined if param.default is Parameter.empty else param.default
             arg_objs.append(Arg(name=name, hint=hint, default=default))
 
     return tuple(arg_objs)
 
 @cache
 def signature(func: callable) -> Signature:
-    from inspect import Signature as _Sig
     from typed.mods.meta.atomic import TYPE
-    from typed.helper.func import _hinted_domain, _hinted_codomain
-    from typed.mods.err import HintErr
+    from typed.mods.err import HintErr, NotDefined
     from typed.mods.general import _
 
     target = unwrap(func)
 
-    hint_dom = tuple(_hinted_domain(target))
-    hint_cod = _hinted_codomain(target)
-    if hint_cod is _Sig.empty or not isinstance(hint_cod, TYPE):
+    target_args = args(func)
+    hints_dict = hints(target)
+
+    hint_dom = tuple(a.hint for a in target_args if a.hint is not None and a.hint is not NotDefined)
+    hint_cod = hints_dict.get('return', None)
+
+    if not isinstance(hint_cod, TYPE):
         hint_cod = None
 
     orig_dom, orig_cod = (), None
@@ -85,7 +102,7 @@ def signature(func: callable) -> Signature:
     dom, cod = (), None
 
     if hasattr(func, "bound_args"):
-        param_names = [a.name for a in args(target)]
+        param_names = [a.name for a in target_args]
         if not param_names:
             remaining = [
                 t for arg, t in zip(func.bound_args, orig_dom)
@@ -106,19 +123,11 @@ def signature(func: callable) -> Signature:
         cod = orig_cod
 
     return Signature(
-        func=getattr(func, "__name__", str(func)),
+        func=target,
         dom=dom,
         cod=cod,
-        args=args(func)
+        args=target_args
     )
-
-@cache
-def hints(func):
-    from typing import get_type_hints
-    try:
-        return get_type_hints(func)
-    except Exception:
-        return {}
 
 __wrap_attrs__ = ["__func__", "__wrapped__", "func", "original_func"]
 
