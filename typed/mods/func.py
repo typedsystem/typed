@@ -192,3 +192,92 @@ def unwrap(func: callable, attrs: list[str]=None) -> callable:
             break
 
     return current
+
+def func(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+    def decorator(fn):
+        from typed.mods.resolve import resolve
+        lz = resolve.typecheck.lazy(lazy)
+
+        from typed.mods.types.func import Func, LazyFunc
+        if lz:
+            return LazyFunc(fn, check=check, defaults=defaults, envs=envs)
+        return Func(fn, check=check, defaults=defaults, envs=envs)
+
+    if f is None:
+        return decorator
+    return decorator(f)
+
+
+def hinted(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+    def decorator(fn):
+        from typed.mods.resolve import resolve
+        lz = resolve.typecheck.lazy(lazy)
+
+        from typed.mods.types.func import Hinted, LazyHinted
+        if lz:
+            return LazyHinted(fn, check=check, defaults=defaults, envs=envs)
+        return Hinted(fn, check=check, defaults=defaults, envs=envs)
+
+    if f is None:
+        return decorator
+    return decorator(f)
+
+
+def typed(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+    def decorator(fn):
+        from typed.mods.resolve import resolve
+        lz = resolve.typecheck.lazy(lazy)
+
+        from typed.mods.types.func import Typed, LazyTyped
+        if lz:
+            return LazyTyped(fn, check=check, defaults=defaults, envs=envs)
+        return Typed(fn, check=check, defaults=defaults, envs=envs)
+
+    if f is None:
+        return decorator
+    return decorator(f)
+
+
+def condition(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+    def decorator(fn):
+        from typed.mods.resolve import resolve
+        lz = resolve.typecheck.lazy(lazy)
+
+        from typed.mods.types.func import Condition, LazyCondition
+        if lz:
+            return LazyCondition(fn, check=check, defaults=defaults, envs=envs)
+        return Condition(fn, check=check, defaults=defaults, envs=envs)
+
+    if f is None:
+        return decorator
+    return decorator(f)
+
+
+def family(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+    def decorator(fn):
+        from typed.mods.resolve import resolve
+        lz = resolve.typecheck.lazy(lazy)
+
+        from typed.mods.types.func import Family, LazyFamily
+        if lz:
+            return LazyFamily(fn, check=check, defaults=defaults, envs=envs)
+        return Family(fn, check=check, defaults=defaults, envs=envs)
+
+    if f is None:
+        return decorator
+    return decorator(f)
+
+
+def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+    def decorator(fn):
+        from typed.mods.resolve import resolve
+        lz = resolve.typecheck.lazy(lazy)
+
+        from typed.mods.types.func import Constructor, LazyConstructor
+        if lz:
+            return LazyConstructor(fn, check=check, defaults=defaults, envs=envs)
+        return Constructor(fn, check=check, defaults=defaults, envs=envs)
+
+    if f is None:
+        return decorator
+    return decorator(f)
