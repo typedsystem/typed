@@ -414,7 +414,6 @@ class PROD(ALGEBRAIC):
     def __call__(met, *types, typesystem=None):
         return super().__call__("Prod", *types, typesystem=typesystem)
 
-
 class COPROD(ALGEBRAIC, TUPLE):
     def __isterm__(typ, trm):
         from typed.mods.typesystem import isterm
@@ -448,5 +447,101 @@ class COPROD(ALGEBRAIC, TUPLE):
             return True
         return False
 
+    def __isequiv__(typ, other):
+        from typed.mods.typesystem import isequiv, issame
+        from typed.mods.types.atomic import Empty
+
+        types = list(getattr(typ, "__types__", []))
+
+        if len(types) == 2:
+            if issame(types[1], Empty) and isequiv(types[0], other):
+                return True
+            if issame(types[0], Empty) and isequiv(types[1], other):
+                return True
+
+        if getattr(other, "__flags__", None) and other.__flags__.is_coprod:
+            others = list(getattr(other, "__types__", []))
+
+            types_clean = [t for t in types if not issame(t, Empty)]
+            others_clean = [o for o in others if not issame(o, Empty)]
+
+            if len(types_clean) == len(others_clean):
+                used = set()
+                for t in types_clean:
+                    found = False
+                    for i, o in enumerate(others_clean):
+                        if i not in used and isequiv(t, o):
+                            used.add(i)
+                            found = True
+                            break
+                    if not found:
+                        return False
+                return True
+        return False
+
     def __call__(met, *types, typesystem=None):
         return super().__call__("Coprod", *types, typesystem=typesystem)
+
+class DIAG(TYPE):
+    def __isterm__(typ, trm):
+        from typed.mods.typesystem import isterm
+        base = getattr(typ, "__base_type__", None)
+        if not base:
+            return False
+        if not isinstance(trm, tuple) or len(trm) != 2:
+            return False
+        return trm[0] == trm[1] and isterm(trm[0], base)
+
+    def __issub__(typ, other):
+        from typed.mods.types.constructor import Prod
+        from typed.mods.typesystem import issub
+        base = getattr(typ, "__base_type__", None)
+        if issub(Prod(base, base), other):
+            return True
+        return False
+
+    def __call__(met, base_type, typesystem=None):
+        from typed.mods.resolve import resolve
+        typesystem = resolve.typesystem.entity(typesystem)
+        display_name = f"Diag({typesystem.nameof(base_type)})"
+
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
+
+        class Diag(met, metaclass=DIAG):
+            __kind__ = "type"
+            __flags__ = Flags(is_constructor=True)
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __display__ = display_name
+            __base_type__ = base_type
+
+        Diag.__name__ = display_name
+        return Diag
+
+class CODIAG(TYPE):
+    def __isterm__(typ, trm):
+        from typed.mods.typesystem import isterm
+        base = getattr(typ, "__base_type__", None)
+        if not base:
+            return False
+        if not isinstance(trm, tuple) or len(trm) != 2:
+            return False
+        return trm[0] in (0, 1) and isterm(trm[1], base)
+
+    def __call__(met, base_type, typesystem=None):
+        from typed.mods.resolve import resolve
+        typesystem = resolve.typesystem.entity(typesystem)
+        display_name = f"Codiag({typesystem.nameof(base_type)})"
+
+        from typed.mods.flags import Flags
+        from typed.mods.init import TYPESYSTEM
+
+        class Codiag(met, metaclass=CODIAG):
+            __kind__ = "type"
+            __flags__ = Flags(is_constructor=True)
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __display__ = display_name
+            __base_type__ = base_type
+
+        Codiag.__name__ = display_name
+        return Codiag

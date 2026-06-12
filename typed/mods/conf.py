@@ -21,27 +21,34 @@ class LogicConf(metaclass=__CONF__):
 class TypeCheck(metaclass=__CONF__):
     def __init__(
         self,
+        check:    bool=None,
         lazy:     bool=None,
         defaults: bool=None,
         envs:     list[str]=None
     ):
+        if check is None:
+            from typed.mods.init import __typecheck__
+            check = getattr(__typecheck__, 'check', True)
+
         if lazy is None:
             from typed.mods.init import __typecheck__
-            lazy = __typecheck__.lazy
+            lazy = getattr(__typecheck__, 'lazy', True)
 
         if defaults is None:
             from typed.mods.init import __typecheck__
-            defaults = __typecheck__.defaults
+            defaults = getattr(__typecheck__, 'defaults', False)
 
         if envs is None:
             from typed.mods.init import __typecheck__
-            envs = __typecheck__.envs
+            envs = getattr(__typecheck__, 'envs', [])
 
-        from typed.mods.check import check
-        check.isinstance(lazy, bool)
-        check.isinstance(defaults, bool)
-        check.isinstance(envs, list, tuple, set)
+        from typed.mods.check import check as _check
+        _check.isinstance(check, bool)
+        _check.isinstance(lazy, bool)
+        _check.isinstance(defaults, bool)
+        _check.isinstance(envs, list, tuple, set)
 
+        self.check = check
         self.lazy = lazy
         self.defaults = defaults
         self.envs = envs

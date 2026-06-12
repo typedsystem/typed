@@ -159,3 +159,48 @@ class resolve:
                 from typed.mods.init import __kinds__
                 return __kinds__
             return _resolve(provided=kinds, default=c.typesystem.kinds)
+
+    class typecheck:
+        @resolver
+        def check(check=None, envs=None, conf=None):
+            from typed.mods.err import NotDefined
+            c = resolve.conf(conf)
+
+            if check is not None and check is not NotDefined:
+                chk = check
+            else:
+                chk = _resolve(provided=check, default=getattr(c.typecheck, 'check', True) if c else True)
+
+            if envs is not None and envs is not NotDefined:
+                resolved_envs = envs
+            else:
+                resolved_envs = _resolve(provided=envs, default=getattr(c.typecheck, 'envs', ()) if c else ())
+
+            if chk and resolved_envs:
+                import os
+                current_env = os.getenv("TYPED_ENV", "").upper()
+                allowed_envs = {str(e).upper() for e in resolved_envs}
+                if current_env not in allowed_envs:
+                    chk = False
+
+            return chk
+
+        @resolver
+        def lazy(lazy=None, conf=None):
+            from typed.mods.err import NotDefined
+            if lazy is not None and lazy is not NotDefined:
+                return lazy
+            c = resolve.conf(conf)
+            if c is None:
+                return True
+            return _resolve(provided=lazy, default=c.typecheck.lazy)
+
+        @resolver
+        def defaults(defaults=None, conf=None):
+            from typed.mods.err import NotDefined
+            if defaults is not None and defaults is not NotDefined:
+                return defaults
+            c = resolve.conf(conf)
+            if c is None:
+                return False
+            return _resolve(provided=defaults, default=c.typecheck.defaults) 

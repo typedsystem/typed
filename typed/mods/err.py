@@ -1,4 +1,5 @@
 def notify(message, __notifier__=None, __multiline__=False, **kwargs) -> None:
+    from typed.mods.err import NotDefined
     full_message = str(message)
 
     filtered_kwargs = {k: str(v) for k, v in kwargs.items() if v is not NotDefined}
@@ -40,6 +41,7 @@ def iserr(*errs: tuple, quantifier=None) -> bool:
         quantifier = some
     from typed.mods.logic import Quantifier
     if not isinstance(quantifier, Quantifier):
+        from typed.mods.err import TypeErr
         raise TypeErr(
             term=quantifier,
             expected=Quantifier,
@@ -110,10 +112,10 @@ class NotSatisfied(Err, metaclass=ERR):
         __multiline__ = resolve.err.multiline(__multiline__)
 
         if condition is NotDefined:
-            raise MissingErr("Missing 'condition' in 'MissingErr'.")
+            raise MissingErr("Missing 'condition' in 'MissingErr'.", where="NotSatisfied", what="condition")
 
         if args is NotDefined:
-            raise MissingErr("Missing 'args' in 'MissingErr'.")
+            raise MissingErr("Missing 'args' in 'MissingErr'.", where="NotSatisfied", what="args")
 
         from typed.mods.typesystem import nameof
 
@@ -144,7 +146,7 @@ class FuncErr(Err, metaclass=ERR):
         if func is NotDefined:
             raise MissingErr(
                 where=FuncErr,
-                what=func
+                what="func"
             )
 
         from typed.mods.typesystem import nameof
@@ -178,7 +180,7 @@ class HintErr(Err, metaclass=ERR):
         if all(x is NotDefined for x in (term, func)):
             raise MissingErr(
                 where=HintErr,
-                what=(term, func)
+                what="(term, func)"
             )
 
         from typed.mods.typesystem import nameof
@@ -243,13 +245,9 @@ class TypeErr(Err, metaclass=ERR):
             func = nameof(func)
 
         term_type = typeof(term)
-        term_typesystems = getattr(term_type, "__typesystems__", [])
 
         if received is NotDefined:
             received = term_type
-
-        if not term_typesystems:
-            raise MissingErr(where=term_type, what="__typesystems__")
 
         if args is not NotDefined or arg is not NotDefined:
             message = "Wrong argument type identified"
@@ -295,7 +293,6 @@ class TypeErr(Err, metaclass=ERR):
             quantifier = nameof(quantifier)
 
         term = nameof(term)
-        typesystems = ", ".join(nameof(t) for t in term_typesystems)
 
         super().__init__(
             message=message,
@@ -408,13 +405,13 @@ class TypeSystemErr(Err, metaclass=ERR):
         if all(x is NotDefined for x in (typesystem, typesystems)):
             raise MissingErr(
                 where=TypeSystemErr,
-                what=(typesystem, typesystems)
+                what="(typesystem, typesystems)"
             )
 
         if all(x is NotDefined for x in (type, types)):
             raise MissingErr(
                 where=TypeSystemErr,
-                what=(type, types)
+                what="(type, types)"
             )
 
         from typed.mods.typesystem import nameof

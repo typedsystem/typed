@@ -15,11 +15,47 @@ class Signature:
         self.args = args
 
     def bind(self, *args, **kwargs):
-        from inspect import signature as _signature
-        sig = _signature(self.func)
-        b = sig.bind(*args, **kwargs)
-        b.apply_defaults()
-        return b
+        return self.func(*args, **kwargs)
+
+    def reduce(self, *reduce_args, **reduce_kwargs):
+        fixed_values = {}
+
+        for i, arg_val in enumerate(reduce_args):
+            if arg_val is not Ellipsis:
+                if i < len(self.args):
+                    fixed_values[self.args[i].name] = arg_val
+
+        for k, v in reduce_kwargs.items():
+            if v is not Ellipsis:
+                fixed_values[k] = v
+
+        new_args = []
+        new_dom = []
+        for i, arg in enumerate(self.args):
+            if arg.name not in fixed_values:
+                new_args.append(arg)
+                if i < len(self.dom):
+                    new_dom.append(self.dom[i])
+
+        new_sig = Signature(
+            func=self.func,
+            dom=tuple(new_dom),
+            cod=self.cod,
+            args=tuple(new_args)
+        )
+        return new_sig, fixed_values
+
+def compose(f, g):
+    def composed(*args, **kwargs):
+        return f(g(*args, **kwargs))
+
+    if hasattr(g, 'dom'):
+        composed.dom = g.dom
+    if hasattr(f, 'cod'):
+        composed.cod = f.cod
+
+    composed.__name__ = f"({getattr(f, '__name__', str(f))} << {getattr(g, '__name__', str(g))})"
+    return composed
 
 @cache
 def hints(func):
@@ -55,7 +91,6 @@ def args(func: callable) -> tuple[Arg, ...]:
 def signature(func: callable) -> Signature:
     from typed.mods.meta.atomic import TYPE
     from typed.mods.err import NotDefined
-    from typed.mods.general import _
 
     target = unwrap(func)
 
@@ -63,7 +98,6 @@ def signature(func: callable) -> Signature:
     hints_dict = hints(target)
 
     hint_dom = tuple(a.hint for a in target_args if a.hint is not None and a.hint is not NotDefined)
-    has_return_hint = 'return' in hints_dict
     hint_cod = hints_dict.get('return', None)
 
     if not isinstance(hint_cod, TYPE):
@@ -87,38 +121,46 @@ def signature(func: callable) -> Signature:
     from typed.mods.check import check
     check.hint.dom(func, orig_dom, hint_dom)
 
-    if has_return_hint:
+    if hint_cod is not None:
         check.hint.cod(func, orig_cod, hint_cod)
-
-    dom, cod = (), None
-
-    if hasattr(func, "bound_args"):
-        param_names = [a.name for a in target_args]
-        if not param_names:
-            remaining = [
-                t for arg, t in zip(func.bound_args, orig_dom)
-                if arg is _
-            ]
-            dom = tuple(remaining)
-        else:
-            remaining_types = []
-            for idx, (name, typ) in enumerate(zip(param_names, orig_dom)):
-                pos_bound = idx < len(func.bound_args) and func.bound_args[idx] is not _
-                kw_bound = name in getattr(func, "bound_kwargs", {})
-                if not pos_bound and not kw_bound:
-                    remaining_types.append(typ)
-            dom = tuple(remaining_types)
-        cod = orig_cod
-    else:
-        dom = orig_dom
-        cod = orig_cod
 
     return Signature(
         func=target,
-        dom=dom,
-        cod=cod,
+        dom=orig_dom,
+        cod=orig_cod,
         args=target_args
     )
+
+def reduce(func, *reduce_args, **reduce_kwargs):
+    sig = signature(func)
+    new_sig, fixed_values = sig.reduce(*reduce_args, **reduce_kwargs)
+
+    def reduced(*args, **kwargs):
+        call_kwargs = dict(fixed_values)
+        for i, arg_val in enumerate(args):
+            if i < len(new_sig.args):
+                call_kwargs[new_sig.args[i].name] = arg_val
+        call_kwargs.update(kwargs)
+
+        final_args = []
+        final_kwargs = dict(call_kwargs)
+        for arg in sig.args:
+            if arg.name in final_kwargs:
+                final_args.append(final_kwargs.pop(arg.name))
+
+        return func(*final_args, **final_kwargs)
+
+    reduced.__name__ = getattr(func, "__name__", "reduced")
+    reduced._dom = new_sig.dom
+    reduced._cod = new_sig.cod
+
+    hints_dict = getattr(func, "__annotations__", {}).copy()
+    for k in fixed_values:
+        if k in hints_dict:
+            del hints_dict[k]
+    reduced.__annotations__ = hints_dict
+
+    return reduced
 
 __wrap_attrs__ = ["__func__", "__wrapped__", "func", "original_func"]
 

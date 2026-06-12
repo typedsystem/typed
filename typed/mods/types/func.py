@@ -16,8 +16,12 @@ from typed.mods.meta.func import (
     CONDITION,
     FAMILY,
     CONSTRUCTOR,
+    LAZY_FUNC,
+    LAZY_HINTED,
     LAZY_TYPED,
-    PARTIAL
+    LAZY_CONDITION,
+    LAZY_FAMILY,
+    LAZY_CONSTRUCTOR,
 )
 from typed.mods.nill import nill
 
@@ -30,8 +34,34 @@ class Callable(metaclass=CALLABLE):
     : nullof(Callable)    is  nill
     """
 
-    def __call__(self, *a, **kw):
-        return self.__func__(*a, **kw)
+    def __call__(self, *args, **kwargs):
+
+        if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
+            return self.reduce(*args, **kwargs)
+        return self.__func__(*args, **kwargs)
+
+    def reduce(self, *args, **kwargs):
+        from typed.mods.func import reduce as _reduce
+        reduced = _reduce(self.__func__, *args, **kwargs)
+
+        inst = type(self)(reduced)
+
+        try:
+            from typed.mods.typesystem import nameof
+            base_name = nameof(self)
+            from typed.helper.func import _repr_arg
+
+            pos = ", ".join(_repr_arg(a) for a in args)
+            kw  = ", ".join(f"{k}={_repr_arg(v)}" for k, v in kwargs.items())
+            inside = ", ".join(p for p in (pos, kw) if p)
+            if inside:
+                inst.__display__ = f"{base_name}({inside})"
+            else:
+                inst.__display__ = base_name
+        except Exception:
+            inst.__display__ = reduced.__name__
+
+        return inst
 
     @property
     def signature(self):
@@ -54,11 +84,11 @@ class Callable(metaclass=CALLABLE):
 
     @property
     def dom(self):
-        return self.signature.dom
+        return getattr(self, "_lazy_dom", self.signature.dom)
 
     @property
     def cod(self):
-        return self.signature.cod
+        return getattr(self, "_lazy_cod", self.signature.cod)
 
     @property
     def unwrap(self):
@@ -129,15 +159,15 @@ class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
         """
         (self << other)(*args, **kwargs) == self(other(*args, **kwargs)).
         """
-        from typed.helper.func import _compose_functions
-        return _compose_functions(self, other)
+        from typed.mods.func import compose
+        return compose(self, other)
 
     def __rshift__(self, other):
         """
         (self >> other)(*args, **kwargs) == other(self(*args, **kwargs)).
         """
-        from typed.helper.func import _compose_functions
-        return _compose_functions(other, self)
+        from typed.mods.func import compose
+        return compose(other, self)
 
 class DomHinted(DomFunc, metaclass=DOM_HINTED):
     __null__ = nill.dom.hinted
@@ -152,31 +182,35 @@ class DomTyped(DomHinted, metaclass=DOM_TYPED):
     __null__ = nill.dom.typed
 
     def __call__(self, *args, check: bool=True, **kwargs):
-        from typed.mods.func import signature
-        from typed.mods.check import check as _check
+        if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
+            return self.reduce(*args, **kwargs)
 
-        sig_data = signature(self.__func__)
-        b = sig_data.bind(*args, **kwargs)
+        effective_check = check and getattr(self, '_check', True)
 
-        if check:
-            _check.bind.dom(self.__func__, list(b.arguments.keys()), list(b.arguments.values()), sig_data.dom)
+        if effective_check:
+            from typed.mods.check import check as _check
+            from typed.mods.func import signature
+            sig = signature(self.__func__)
+            _check.bind.dom(self.__func__, sig, args, kwargs)
 
-        return self.__func__(*b.args, **b.kwargs)
+        return self.__func__(*args, **kwargs)
 
 class CodTyped(CodHinted, metaclass=COD_TYPED):
     __null__ = nill.cod.typed
 
     def __call__(self, *args, check: bool=True, **kwargs):
-        from typed.mods.func import signature
-        from typed.mods.check import check as _check
+        if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
+            return self.reduce(*args, **kwargs)
 
-        sig_data = signature(self.__func__)
-        b = sig_data.bind(*args, **kwargs)
+        r = self.__func__(*args, **kwargs)
 
-        r = self.__func__(*b.args, **b.kwargs)
+        effective_check = check and getattr(self, '_check', True)
 
-        if check:
-            _check.bind.cod(self.__func__, r, sig_data.cod)
+        if effective_check:
+            from typed.mods.check import check as _check
+            from typed.mods.func import signature
+            sig = signature(self.__func__)
+            _check.bind.cod(self.__func__, sig, r)
 
         return r
 
@@ -184,16 +218,26 @@ class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
     __null__ = nill.cod.typed
 
     def __call__(self, *args, check: bool=True, **kwargs):
-        from typed.mods.func import signature
-        from typed.mods.check import check as _check
+        if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
+            return self.reduce(*args, **kwargs)
 
-        sig_data = signature(self.__func__)
-        b = sig_data.bind(*args, **kwargs)
+        effective_check = check and getattr(self, '_check', True)
 
-        r = self.__func__(*b.args, **b.kwargs)
+        if effective_check:
+            from typed.mods.check import check as _check
+            from typed.mods.func import signature
+            sig = signature(self.__func__)
+            _check.bind.dom(self.__func__, sig, args, kwargs)
 
-        if check:
-            _check.issafe(self.__func__, list(b.arguments.keys()), list(b.arguments.values()), sig_data.dom, r, sig_data.cod)
+        r = self.__func__(*args, **kwargs)
+
+        if effective_check:
+            if 'sig' not in locals():
+                from typed.mods.func import signature
+                sig = signature(self.__func__)
+
+            from typed.mods.check import check as _check
+            _check.bind.cod(self.__func__, sig, r)
 
         return r
 
@@ -206,125 +250,44 @@ class Family(Typed, metaclass=FAMILY):
 class Constructor(Family, metaclass=CONSTRUCTOR):
     __null__ = nill.constructor
 
-class LazyTyped(Hinted, metaclass=LAZY_TYPED):
+
+class LazyFunc(Callable, metaclass=LAZY_FUNC):
     def materialize(self):
         if self._wrapped is None:
-            self._wrapped = Typed(self.__func__)
+            target_type = getattr(self, '_target_type', None)
+            if target_type is None:
+                target_type = Func
+
+            self._wrapped = target_type(
+                self.__func__, 
+                check=self._check, 
+                defaults=self._defaults, 
+                envs=self._envs
+            )
         return self._wrapped
 
-    def __call__(self, *a, check: bool=True, **kw):
-        return self.materialize()(*a, check=check, **kw)
+    def __call__(self, *args, check: bool=True, **kwargs):
+        if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
+            return self.reduce(*args, **kwargs)
+
+        return self.materialize()(*args, check=check, **kwargs)
 
     def __getattr__(self, name):
-        if name in ('__flags__', '__func__', '__wrapped__', '_wrapped', 'is_lazy'):
+        if name in ('__flags__', '__func__', '__wrapped__', '_wrapped', 'is_lazy', '_target_type', '_check', '_defaults', '_envs', '_lazy_dom', '_lazy_cod'):
             return super().__getattribute__(name)
         return getattr(self.materialize(), name)
 
-class Partial(Func, metaclass=PARTIAL):
-    def __call__(self, *new_args, **new_kwargs):
-        from typed.mods.general import _
-        from typed.mods.typesystem import nameof
-        from typed.mods.func import signature
-        from typed.mods.err import TypeErr
+class LazyHinted(LazyFunc, Hinted, metaclass=LAZY_HINTED):
+    __null__ = nill.hinted
 
-        effective_new_pos = [a for a in new_args if a is not _]
-        effective_new_kw  = [v for v in new_kwargs.values() if v is not _]
-        num_effective_new = len(effective_new_pos) + len(effective_new_kw)
+class LazyTyped(LazyFunc, Typed, metaclass=LAZY_TYPED):
+    __null__ = nill.cod.typed
 
-        expected_remaining = len(self.dom)
+class LazyCondition(LazyFunc, Condition, metaclass=LAZY_CONDITION):
+    __null__ = nill.condition
 
-        if num_effective_new > expected_remaining:
-            if len(new_args) == 1 and not new_kwargs:
-                input_val = new_args[0]
-            else:
-                input_val = tuple(new_args) if not new_kwargs else (tuple(new_args), new_kwargs)
+class LazyFamily(LazyFunc, Family, metaclass=LAZY_FAMILY):
+    __null__ = nill.family
 
-            if len(self.dom) == 1:
-                expected_type = self.dom[0]
-            else:
-                expected_type = self.dom
-
-            from typed.mods.meta.atomic import TYPE
-            actual_type = TYPE(input_val)
-
-            raise TypeErr(
-                message=f"Domain mismatch in partial application '{nameof(self)}'",
-                received=actual_type,
-                expected=expected_type,
-            )
-
-        arg_list = list(self.bound_args)
-        kwarg_dict = dict(self.bound_kwargs)
-
-        new_args_iter = iter(new_args)
-        for i, arg in enumerate(arg_list):
-            if arg is _:
-                try:
-                    arg_list[i] = next(new_args_iter)
-                except StopIteration:
-                    break
-
-        for extra in new_args_iter:
-            arg_list.append(extra)
-
-        try:
-            sig = signature(self.__func__)
-            param_names = [a.name for a in sig.args]
-        except Exception:
-            sig = None
-            param_names = []
-
-        for kwarg_name, kwarg_value in new_kwargs.items():
-            if kwarg_name in kwarg_dict and kwarg_dict[kwarg_name] is not _:
-                raise TypeErr(
-                    message=f"Argument '{kwarg_name}' is already bound in this partial and cannot be provided again."
-                )
-
-            if kwarg_name in param_names:
-                param_index = param_names.index(kwarg_name)
-                if param_index < len(arg_list) and arg_list[param_index] is not _:
-                    raise TypeErr(
-                        message=f"Argument '{kwarg_name}' is already bound in this partial and cannot be provided again."
-                    )
-
-        if param_names:
-            for kwarg_name, kwarg_value in new_kwargs.items():
-                if kwarg_name in param_names:
-                    param_index = param_names.index(kwarg_name)
-                    if param_index < len(arg_list) and arg_list[param_index] is _:
-                        arg_list[param_index] = kwarg_value
-
-        if _ in arg_list:
-            new_partial = object.__new__(self.__class__)
-            return PARTIAL(self.__func__, arg_list, kwarg_dict)
-
-        cleaned_args = [arg for arg in arg_list if arg is not _]
-
-        final_kwargs = kwarg_dict.copy()
-        final_kwargs.update(new_kwargs)
-
-        if sig is not None:
-            for i in range(min(len(cleaned_args), len(param_names))):
-                param_name = param_names[i]
-                if param_name in final_kwargs:
-                    del final_kwargs[param_name]
-
-        return self.__func__(*cleaned_args, **final_kwargs)
-
-    def __repr__(self):
-        return (
-            f"<Partial: {getattr(self.__func__, '__name__', 'func')} "
-            f"with bound args {self.bound_args} and kwargs {self.bound_kwargs}>"
-        )
-
-    def __lshift__(self, other):
-        return CompFunc.__lshift__(self, other)
-
-    def __rlshift__(self, other):
-        return CompFunc.__lshift__(other, self)
-
-    def __rshift__(self, other):
-        return CompFunc.__rshift__(self, other)
-
-    def __rrshift__(self, other):
-        return CompFunc.__rshift__(other, self)
+class LazyConstructor(LazyFunc, Constructor, metaclass=LAZY_CONSTRUCTOR):
+    __null__ = nill.constructor

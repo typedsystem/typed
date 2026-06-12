@@ -76,38 +76,45 @@ class Checker:
             return False
         return True
 
-    def bind_dom(self, func, arg_names, arg_values, expected_dom) -> bool:
+    def bind_dom(self, func, sig, args, kwargs) -> bool:
         from typed.mods.typesystem import typeof, isterm
-        for p_name, expected_type, actual_value in zip(arg_names, expected_dom, arg_values):
-            if not isterm(actual_value, expected_type):
+        arguments = sig.extract_arguments(*args, **kwargs)
+
+        for i, arg in enumerate(sig.args):
+            if i < len(sig.dom):
+                expected_type = sig.dom[i]
+                if arg.name in arguments:
+                    actual_value = arguments[arg.name]
+                    if not isterm(actual_value, expected_type):
+                        if self.explode:
+                            from typed.mods.err import DomErr
+                            raise DomErr(
+                                func=func,
+                                arg=arg.name,
+                                expected=expected_type,
+                                received=typeof(actual_value)
+                            )
+                        return False
+        return True
+
+    def bind_cod(self, func, sig, result) -> bool:
+        from typed.mods.typesystem import typeof, isterm
+        if sig.cod is not None:
+            if not isterm(result, sig.cod):
                 if self.explode:
-                    from typed.mods.err import DomErr
-                    raise DomErr(
+                    from typed.mods.err import CodErr
+                    raise CodErr(
                         func=func,
-                        arg=p_name,
-                        expected=expected_type,
-                        received=typeof(actual_value)
+                        expected=sig.cod,
+                        received=typeof(result)
                     )
                 return False
         return True
 
-    def bind_cod(self, func, result, expected_cod) -> bool:
-        from typed.mods.typesystem import typeof, isterm
-        if not isterm(result, expected_cod):
-            if self.explode:
-                from typed.mods.err import CodErr
-                raise CodErr(
-                    func=func,
-                    expected=expected_cod,
-                    received=typeof(result)
-                )
+    def issafe(self, func, sig, args, kwargs, result) -> bool:
+        if not self.bind_dom(func, sig, args, kwargs):
             return False
-        return True
-
-    def issafe(self, func, arg_names, arg_values, expected_dom, result, expected_cod) -> bool:
-        if not self.bind_dom(func, arg_names, arg_values, expected_dom):
-            return False
-        if not self.bind_cod(func, result, expected_cod):
+        if not self.bind_cod(func, sig, result):
             return False
         return True
 
@@ -316,39 +323,6 @@ class Checker:
             return False
         return True
 
-    def ispartial(self, objs) -> bool:
-        from typed.mods.types.func import Partial
-        from typed.mods.typesystem import isterm
-        q = self.quantifier
-
-        if q is None:
-            res = isterm(objs, Partial)
-            if not res:
-                if self.explode:
-                    from typed.mods.err import TypeErr
-                    raise TypeErr(
-                        func="ispartial",
-                        term=objs,
-                        expected=(Partial,),
-                        received=type(objs)
-                    )
-                return False
-            return True
-
-        res = q(isterm(obj, Partial) for obj in objs)
-        if not res:
-            if self.explode:
-                from typed.mods.err import TypeErr
-                raise TypeErr(
-                    func="ispartial",
-                    term=objs,
-                    expected=(Partial,),
-                    quantifier=q,
-                    received=type(objs) if not hasattr(objs, '__iter__') or isinstance(objs, str) else tuple(type(obj) for obj in objs)
-                )
-            return False
-        return True
-
     def ishinted(self, objs, dom: bool = True, cod: bool = True) -> bool:
         from typed.mods.func import signature
         from typed.mods.err import NotDefined
@@ -367,7 +341,7 @@ class Checker:
                         )
                     return False
             if cod:
-                if not sig.has_return_hint:
+                if sig.cod is None:
                     if self.explode:
                         from typed.mods.err import HintErr
                         raise HintErr(
@@ -386,7 +360,7 @@ class Checker:
                 if any(a.hint is None or a.hint is NotDefined for a in sig.args):
                     return False
             if cod:
-                if not sig.has_return_hint:
+                if sig.cod is None:
                     return False
             return True
 
@@ -470,11 +444,29 @@ class Checker:
         return True
 
     def iscomposable(self, *funcs, revert=False) -> bool:
-        from typed.helper.func import _is_composable
         q = self.quantifier
 
+        def _check(f_tuple):
+            if len(f_tuple) < 2: return False
+            seq = f_tuple[::-1] if revert else f_tuple
+            from typed.mods.func import signature
+            from typed.mods.typesystem import issub
+            for f, g in zip(seq, seq[1:]):
+                try:
+                    cod = signature(f).cod
+                    dom = signature(g).dom
+                except Exception:
+                    return False
+
+                if cod is None or dom is None: return False
+
+                dom_tuple = tuple(dom) if hasattr(dom, "__iter__") and not isinstance(dom, str) else (dom,)
+                if not dom_tuple or not issub(cod, dom_tuple[0]):
+                    return False
+            return True
+
         if q is None:
-            res = _is_composable(*funcs, revert=revert)
+            res = _check(funcs)
             if not res:
                 if self.explode:
                     from typed.mods.err import FuncErr
@@ -486,7 +478,7 @@ class Checker:
                 return False
             return True
 
-        res = q(_is_composable(*f_tuple, revert=revert) for f_tuple in funcs)
+        res = q(_check(f_tuple) for f_tuple in funcs)
         if not res:
             if self.explode:
                 from typed.mods.err import FuncErr
@@ -842,6 +834,56 @@ class Checker:
             return False
         return True
 
+    def defaults(self, objs) -> bool:
+        from typed.mods.func import signature
+        from typed.mods.typesystem import isterm
+        from typed.mods.err import NotDefined
+        q = self.quantifier
+
+        if q is None:
+            try:
+                sig = signature(objs)
+            except Exception:
+                return True
+
+            for arg in sig.args:
+                if arg.default is not NotDefined and arg.hint is not NotDefined and arg.hint is not None:
+                    if not isterm(arg.default, arg.hint):
+                        if self.explode:
+                            from typed.mods.err import TypeErr
+                            raise TypeErr(
+                                func="defaults",
+                                message=f"Default value for argument '{arg.name}' does not match its type hint",
+                                term=arg.default,
+                                expected=arg.hint
+                            )
+                        return False
+            return True
+
+        def _check(f):
+            try:
+                sig = signature(f)
+            except Exception:
+                return True
+            for arg in sig.args:
+                if arg.default is not NotDefined and arg.hint is not NotDefined and arg.hint is not None:
+                    if not isterm(arg.default, arg.hint):
+                        return False
+            return True
+
+        res = q(_check(f) for f in objs)
+        if not res:
+            if self.explode:
+                from typed.mods.err import TypeErr
+                raise TypeErr(
+                    func="defaults",
+                    term=objs,
+                    quantifier=q,
+                    message="Default values do not match type hints in one or more quantified functions"
+                )
+            return False
+        return True
+
     def satisfy(self, conditions, *args) -> bool:
         from typed.mods.err import NotSatisfied
         q = self.quantifier
@@ -892,6 +934,7 @@ class check:
     class bind:
         dom = __checker__.bind_dom
         cod = __checker__.bind_cod
+        defaults = __checker__.defaults
 
     issafe = __checker__.issafe
 
@@ -917,7 +960,6 @@ class check:
 
     isfunc = __checker__.isfunc
     iscomposable = __checker__.iscomposable
-    ispartial = __checker__.ispartial
     ishinted = __checker__.ishinted
     istyped = __checker__.istyped
     islazy = __checker__.islazy
@@ -936,6 +978,7 @@ class true:
     class bind:
         dom = __true__.bind_dom
         cod = __true__.bind_cod
+        defaults = __true__.defaults
 
     issafe = __true__.issafe
 
@@ -961,7 +1004,6 @@ class true:
 
     isfunc = __true__.isfunc
     iscomposable = __true__.iscomposable
-    ispartial = __true__.ispartial
     ishinted = __true__.ishinted
     istyped = __true__.istyped
     islazy = __true__.islazy
