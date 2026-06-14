@@ -1,5 +1,5 @@
 from functools import lru_cache as cache
-from typed.mods.types.atomic import Dom, Cod
+from typed.mods.types.atomic import Dom, Cod, Nill, Bool, Type
 
 class Arg:
     def __init__(self, name: str, hint: object, default: object):
@@ -281,81 +281,48 @@ def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool
         return decorator
     return decorator(f)
 
-def prod(f, g):
-    def prod_func(args_tuple):
-        x, y = args_tuple
-        return (f(x), g(y))
+class nill:
+    def func():
+        return None
 
-    prod_func.__name__ = f"({getattr(f, '__name__', str(f))} x {getattr(g, '__name__', str(g))})"
+    class cls:
+        def nill(self):
+            return None
 
-    from typed.mods.types.constructor import Prod
-    from typed.mods.meta.func import Hinted, Typed
+    def comp():
+        return None
 
-    try:
-        sig_f = signature(f)
-        sig_g = signature(g)
+    class dom:
+        def func():
+            return None
 
-        f_dom = sig_f.dom[0] if sig_f.dom else None
-        g_dom = sig_g.dom[0] if sig_g.dom else None
+        def hinted(x: Nill):
+            return None
 
-        if f_dom and g_dom and sig_f.cod and sig_g.cod:
-            dom_type = Prod(f_dom, g_dom)
-            cod_type = Prod(sig_f.cod, sig_g.cod)
+        def typed(x: Nill):
+            return None
 
-            prod_func._dom = (dom_type,)
-            prod_func._cod = cod_type
+    class cod:
+        def func():
+            pass
 
-            is_f_typed = getattr(type(f), "__flags__", None) and type(f).__flags__.is_typed
-            is_g_typed = getattr(type(g), "__flags__", None) and type(g).__flags__.is_typed
-            is_f_hinted = getattr(type(f), "__flags__", None) and type(f).__flags__.is_hinted
-            is_g_hinted = getattr(type(g), "__flags__", None) and type(g).__flags__.is_hinted
+        def hinted() -> Nill:
+            return None
 
-            if is_f_typed and is_g_typed:
-                return Typed(dom_type, cod=cod_type)(prod_func)
-            elif is_f_hinted and is_g_hinted:
-                return Hinted(dom_type, cod=cod_type)(prod_func)
-    except Exception:
-        pass
+        def typed() -> Nill:
+            return None
 
-    return prod_func
+    def hinted(x: Nill) -> Nill:
+        return None
 
-def coprod(f, g):
-    def coprod_func(args_tuple):
-        i, val = args_tuple
-        if i == 0:
-            return (0, f(val))
-        elif i == 1:
-            return (1, g(val))
-        raise ValueError(f"Invalid coproduct index: {i}")
+    def typed(x: Nill) -> Nill:
+        return None
 
-    coprod_func.__name__ = f"({getattr(f, '__name__', str(f))} + {getattr(g, '__name__', str(g))})"
+    def condition(x: Nill) -> Bool:
+        return False
 
-    from typed.mods.types.constructor import Coprod
-    from typed.mods.meta.func import Hinted, Typed
-    try:
-        sig_f = signature(f)
-        sig_g = signature(g)
+    def family(x: Nill) -> Type:
+        return Nill
 
-        f_dom = sig_f.dom[0] if sig_f.dom else None
-        g_dom = sig_g.dom[0] if sig_g.dom else None
-
-        if f_dom and g_dom and sig_f.cod and sig_g.cod:
-            dom_type = Coprod(f_dom, g_dom)
-            cod_type = Coprod(sig_f.cod, sig_g.cod)
-
-            coprod_func._dom = (dom_type,)
-            coprod_func._cod = cod_type
-
-            is_f_typed = getattr(type(f), "__flags__", None) and type(f).__flags__.is_typed
-            is_g_typed = getattr(type(g), "__flags__", None) and type(g).__flags__.is_typed
-            is_f_hinted = getattr(type(f), "__flags__", None) and type(f).__flags__.is_hinted
-            is_g_hinted = getattr(type(g), "__flags__", None) and type(g).__flags__.is_hinted
-
-            if is_f_typed and is_g_typed:
-                return Typed(dom_type, cod=cod_type)(coprod_func)
-            elif is_f_hinted and is_g_hinted:
-                return Hinted(dom_type, cod=cod_type)(coprod_func)
-    except Exception:
-        pass
-
-    return coprod_func
+    def constructor(x: Type) -> Type:
+        return Nill

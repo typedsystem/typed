@@ -23,7 +23,7 @@ from typed.mods.meta.func import (
     LAZY_FAMILY,
     LAZY_CONSTRUCTOR,
 )
-from typed.mods.nill import nill
+from typed.mods.func import nill
 
 class Callable(metaclass=CALLABLE):
     """

@@ -37,7 +37,7 @@ __imports__ = {
         "prod", "coprod", "include", "join", "split"
     ],
     "typed.mods.prop": [
-        ""
+        "get", "set", "prop"
     ]
 }
 
@@ -75,4 +75,4 @@ if lazy(__imports__):
     from typed.mods.poly import (
         prod, coprod, include, join, split
     )
-    from typed.mods.prop import get, set, 
+    from typed.mods.prop import get, set, has, prop

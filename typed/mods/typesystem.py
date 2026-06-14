@@ -215,6 +215,15 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
             from typed.mods.types.constructor import Coprod
             return Coprod(self, other)
 
+        def _size(self):
+            from typed.mods.err import NotDefined
+            if hasattr(self, "__terms__"):
+                try:
+                    return len(self.__terms__)
+                except Exception:
+                    pass
+            return NotDefined
+
         attrs = {
             "__kind__": "universe",
             "__level__": -1,
@@ -235,7 +244,8 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
             "__hash__": type.__hash__,
             "__display__": name,
             "__mul__": _mul,
-            "__add__": _add
+            "__add__": _add,
+            "__size__": _size
         }
         attrs.update(dct)
         attrs.update(kwargs)
@@ -338,6 +348,15 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
             from typed.mods.types.constructor import Coprod
             return Coprod(self, other)
 
+        def _size(self):
+            from typed.mods.err import NotDefined
+            if hasattr(self, "__terms__"):
+                try:
+                    return len(self.__terms__)
+                except Exception:
+                    pass
+            return NotDefined
+
         attrs = {
             "__kind__": "abstract",
             "__level__": -1,
@@ -358,7 +377,8 @@ class __ABSTRACT__(__UNIVERSE__, metaclass=___ABSTRACT___):
             "__hash__": type.__hash__,
             "__display__": name,
             "__mul__": _mul,
-            "__add__": _add
+            "__add__": _add,
+            "__size__": _size
         }
         attrs.update(dct)
         attrs.update(kwargs)

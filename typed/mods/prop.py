@@ -63,11 +63,8 @@ def set(entity: object, prop: str, value: object, typesystem=None) -> object:
 
     return entity
 
-class Prop:
-    def __init__(self, name):
-        self.name = name
-
-    def typeof(self, entity: object, level: int=-1, typesystem=None) -> object:
+class prop:
+    def typeof(entity: object, level: int=-1, typesystem=None) -> object:
         from typed.mods.typesystem import typeof as _typeof
         return _typeof(
             entity=entity,
@@ -75,26 +72,29 @@ class Prop:
             typesystem=typesystem
         )
 
-    def kindof(self, entity: object, typesystem=None) -> object:
+    def kindof(entity: object, typesystem=None) -> object:
         from typed.mods.typesystem import kindof as _kindof
         return _kindof(
             entity=entity,
             typesystem=typesystem
         )
 
-    def nameof(self, *entities: tuple[object], typesystem=None) -> object:
+    def nameof(*entities: tuple[object], typesystem=None) -> object:
         from typed.mods.typesystem import nameof as _nameof
         return _nameof(
             *entities,
             typesystem=typesystem
         )
 
-    def termsof(self, entity: object) -> object:
-        from typed.mods.poly import termsof as _termsof
-        return _termsof(entity=entity
-        )
+    def sizeof(entity: object) -> object:
+        from typed.mods.poly import sizeof as _sizeof
+        return _sizeof(entity=entity)
 
-    def get(self, entity: object, prop: str="", default: object=None, typesystem=None) -> object:
+    def termsof(entity: object) -> object:
+        from typed.mods.poly import termsof as _termsof
+        return _termsof(entity=entity)
+
+    def get(entity: object, prop: str="", default: object=None, typesystem=None) -> object:
         return get(
             entity=entity,
             prop=prop,
@@ -102,12 +102,9 @@ class Prop:
             typesystem=typesystem
         )
 
-    def set(self, entity: object, prop: str, value: object) -> object:
+    def set(entity: object, prop: str, value: object) -> object:
         return set(
             entity=entity,
             prop=prop,
             value=value
         )
-
-
-

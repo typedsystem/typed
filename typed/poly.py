@@ -5,7 +5,6 @@ __imports__ = {
         "Poly",
         "prod", "coprod",
         "nullof", "termsof",
-
         "join", "split"
     ]
 }
@@ -15,5 +14,5 @@ if lazy(__imports__):
         Poly,
         prod, coprod,
         nullof, termsof, sizeof, builtin,
-        include, join, split,
+        include, join, split
     )
