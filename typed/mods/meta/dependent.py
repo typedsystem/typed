@@ -176,7 +176,8 @@ class BOUNDED(FINITE):
         if not isterm(trm, base_type):
             return False
         try:
-            return op(len(trm), bound)
+            from typed.mods.poly import sizeof
+            return op(sizeof(trm), bound)
         except Exception:
             return False
 

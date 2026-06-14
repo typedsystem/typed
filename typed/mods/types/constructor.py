@@ -20,6 +20,40 @@ class Tuple(metaclass=TUPLE):
     __null__    = tuple()
     __builtin__ = tuple
 
+    def __size__(trm):
+        return len(trm)
+
+    def __include__(trm, *args, **kwargs):
+        return trm + tuple(args)
+
+    def __join__(trm, *args, **kwargs):
+        res = tuple(trm)
+        for a in args:
+            res += tuple(a)
+        return res
+
+    def __split__(trm, by=None, size=None, key=None, predicate=None):
+        from typed.mods.err import Err
+        seq = tuple(trm)
+        if size is not None:
+            if size <= 0:
+                raise Err(message="split(seq): 'size' must be positive")
+            chunks = [seq[i : i + size] for i in range(0, len(seq), size)]
+            return [type(trm)(chunk) for chunk in chunks]
+
+        if predicate is not None:
+            left = tuple(x for x in seq if predicate(x))
+            right = tuple(x for x in seq if not predicate(x))
+            return [type(trm)(left), type(trm)(right)]
+
+        if key is not None:
+            groups = {}
+            for x in seq:
+                groups.setdefault(key(x), []).append(x)
+            return {k: type(trm)(tuple(v)) for k, v in groups.items()}
+
+        raise Err(message="split(seq): must specify at least one of 'size', 'predicate', or 'key'")
+
 class List(metaclass=LIST):
     """
     The constructor type of lists.
@@ -34,6 +68,43 @@ class List(metaclass=LIST):
     __flags__   = Flags(is_constructor=True)
     __null__    = []
     __builtin__ = list
+
+    def __size__(trm):
+        return len(trm)
+
+    def __include__(trm, *args, **kwargs):
+        for v in args:
+            trm.append(v)
+        return trm
+
+    def __join__(trm, *args, **kwargs):
+        res = list(trm)
+        for a in args:
+            res.extend(a)
+        return res
+
+    def __split__(trm, by=None, size=None, key=None, predicate=None):
+        from typed.mods.err import Err
+        seq = list(trm)
+        if size is not None:
+            if size <= 0:
+                raise Err(message="split(seq): 'size' must be positive")
+            chunks = [seq[i : i + size] for i in range(0, len(seq), size)]
+            return [type(trm)(chunk) for chunk in chunks]
+
+        if predicate is not None:
+            left = [x for x in seq if predicate(x)]
+            right = [x for x in seq if not predicate(x)]
+            return [type(trm)(left), type(trm)(right)]
+
+        if key is not None:
+            groups = {}
+            for x in seq:
+                k = key(x)
+                groups.setdefault(k, []).append(x)
+            return {k: type(trm)(v) for k, v in groups.items()}
+
+        raise Err(message="split(seq): must specify at least one of 'size', 'predicate', or 'key'") 
 
 class Set(metaclass=SET):
     """
@@ -50,6 +121,36 @@ class Set(metaclass=SET):
     __null__    = set()
     __builtin__ = set
 
+    def __size__(trm):
+        return len(trm)
+
+    def __include__(trm, *args, **kwargs):
+        for v in args:
+            trm.add(v)
+        return trm
+
+    def __join__(trm, *args, **kwargs):
+        res = set(trm)
+        for a in args:
+            res |= set(a)
+        return res
+
+    def __split__(trm, by=None, size=None, key=None, predicate=None):
+        from typed.mods.err import Err
+        if predicate is not None:
+            left = {x for x in trm if predicate(x)}
+            right = {x for x in trm if not predicate(x)}
+            return [type(trm)(left), type(trm)(right)]
+
+        if key is not None:
+            groups = {}
+            for x in trm:
+                k = key(x)
+                groups.setdefault(k, set()).add(x)
+            return {k: type(trm)(v) for k, v in groups.items()}
+
+        raise Err(message="split(set): must specify 'predicate' or 'key'") 
+
 class Dict(metaclass=DICT):
     """
     The constructor type of dicts.
@@ -65,12 +166,74 @@ class Dict(metaclass=DICT):
     __null__    = {}
     __builtin__ = dict
 
+    def __size__(trm):
+        return len(trm)
+
     def __getitem__(trm, key):
         return trm.__dict__[key]
     def __setitem__(trm, key, value):
         trm.__dict__[key] = value
     def __contains__(trm, key):
         return key in trm.__dict__
+
+    def __include__(trm, *args, **kwargs):
+        if args:
+            if len(args) == 1 and isinstance(args[0], dict):
+                trm.update(args[0])
+            else:
+                for k, v in args:
+                    trm[k] = v
+        if kwargs:
+            trm.update(kwargs)
+        return trm
+
+    def __join__(trm, *args, on_conflict="error", **kwargs):
+        from typed.mods.err import Err
+        result = dict(trm)
+        for d in args:
+            for k, v in d.items():
+                if k not in result:
+                    result[k] = v
+                else:
+                    if on_conflict == "error":
+                        raise Err(message=f"duplicate key {k!r}")
+                    elif on_conflict == "first":
+                        continue
+                    elif on_conflict == "last":
+                        result[k] = v
+                    elif callable(on_conflict):
+                        result[k] = on_conflict(k, result[k], v)
+                    else:
+                        raise Err(message=f"Unknown on_conflict={on_conflict!r}")
+        return result
+
+    def __split__(trm, by=None, size=None, key=None, predicate=None):
+        from typed.mods.err import Err, TypeErr
+        if by is not None:
+            if not isinstance(by, (set, list, tuple)):
+                raise TypeErr(message="split(dict): 'by' must be an iterable of keys", term=by, expected=(set, list, tuple))
+            keyset = set(by)
+            left = {k: v for k, v in trm.items() if k in keyset}
+            right = {k: v for k, v in trm.items() if k not in keyset}
+            return [left, right]
+
+        if predicate is not None:
+            left, right = {}, {}
+            for k, v in trm.items():
+                if predicate(k, v):
+                    left[k] = v
+                else:
+                    right[k] = v
+            return [left, right]
+
+        if key is not None:
+            groups = {}
+            for k, v in trm.items():
+                g = key(k, v)
+                groups.setdefault(g, {})[k] = v
+            return groups
+
+        raise Err(message="split(dict): must specify one of 'by', 'predicate', or 'key'")
 
 class Extensional(metaclass=EXTENSIONAL):
     """

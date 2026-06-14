@@ -78,7 +78,8 @@ class Checker:
 
     def bind_dom(self, func, sig, args, kwargs) -> bool:
         from typed.mods.typesystem import typeof, isterm
-        arguments = sig.extract_arguments(*args, **kwargs)
+        from typed.helper.func import _reduce_args
+        arguments = _reduce_args(sig.args, *args, **kwargs)
 
         for i, arg in enumerate(sig.args):
             if i < len(sig.dom):

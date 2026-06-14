@@ -137,11 +137,41 @@ class Str(metaclass=STR):
     : nullof(Str)    is ""
     : builtin(Str)   is str
     """
+    __null__        = ""
+    __builtin__     = str
+
     def __len__(self, obj):
         return len(obj)
 
-    __null__        = ""
-    __builtin__     = str
+    def __size__(obj):
+        return len(obj)
+
+    def __include__(obj, *args, **kwargs):
+        return obj + "".join(str(a) for a in args)
+
+    def __join__(obj, *args, **kwargs):
+        if not args:
+            return obj
+        if len(args) == 1 and isinstance(args[0], (list, tuple, set)):
+            return obj.join(args[0])
+        if all(isinstance(a, str) for a in args):
+            return obj + "".join(args)
+
+        from typed.mods.err import TypeErr
+        raise TypeErr(message="Unsupported argument types for Str.__join__", term=args)
+
+    def __split__(obj, by=None, size=None, key=None, predicate=None):
+        from typed.mods.err import Err
+
+        if by is not None and size is not None:
+            raise Err(message="split(str): specify either 'by' or 'size', not both")
+        if by is not None:
+            return obj.split(by)
+        if size is not None:
+            if size <= 0:
+                raise Err(message="split(str): 'size' must be positive")
+            return [obj[i : i + size] for i in range(0, len(obj), size)]
+        return obj.split()
 
 class Byte(metaclass=BYTE):
     """
