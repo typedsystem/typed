@@ -75,4 +75,4 @@ if lazy(__imports__):
     from typed.mods.poly import (
         prod, coprod, include, join, split
     )
-    from typed.mods.prop import get, set, has, prop
+    from typed.mods.prop import get, set, prop
