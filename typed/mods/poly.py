@@ -1,61 +1,113 @@
-from typed.mods.err import NotDefined
+class Poly:
+    def __new__(self, attr: str, *args, cod=None, typesystem=None, callable: bool=False):
+        from typed.mods.resolve import resolve
+        typesystem = resolve.typesystem.entity(typesystem)
 
-def get(obj: object, what: str="", default: object=NotDefined) -> object:
-    keys = entry.split('.')
-    value = obj
-    for key in keys:
-        if isinstance(value, Dict):
-            if key not in value:
-                return std
-            value = value[key]
-        elif isinstance(value, List):
-            try:
-                index = int(key)
-            except ValueError:
-                return std
-            if index < 1 or index >= len(value):
-                return std
-            value = value[index]
-        else:
-            return std
-    from typed.mods.typesystem import typeof
+        if (args or cod is not None) or callable is True:
+            import builtins
+
+            def __poly__(obj, *call_args):
+                from typed.mods.err import NotDefined
+
+                final_args = list(call_args)
+
+                if args:
+                    from typed.mods.check import check
+
+                    for i, arg in enumerate(args):
+                        if i < len(call_args):
+                            val = call_args[i]
+                        else:
+                            if hasattr(arg, 'default') and arg.default is not NotDefined:
+                                val = arg.default
+                                final_args.append(val)
+                            else:
+                                break
+
+                        if hasattr(arg, 'hint') and arg.hint not in (None, NotDefined):
+                            check.isterm(val, arg.hint)
+
+                obj_type = typesystem.typeof(obj)
+                if not hasattr(obj_type, attr):
+                    raise AttributeError(f"type '{obj_type.__name__}' has no attribute '{attr}'")
+
+                method = getattr(obj_type, attr)
+                if not builtins.callable(method):
+                    raise TypeError(f"'{attr}' is not callable on type '{obj_type.__name__}'")
+
+                res = method(obj, *final_args)
+
+                if cod is not None:
+                    from typed.mods.check import check
+                    check.isterm(res, cod)
+
+                return res
+
+            __poly__.__name__ = attr
+            return __poly__
+
+        def __poly__(obj: object) -> object:
+            f"""
+            The '{attr}' parametric polymorphism.
+            """
+            from typed.mods.err import NotDefined
+            return getattr(obj, attr, NotDefined)
+
+        __poly__.__name__ = attr
+        return __poly__
+
+prod    = Poly("__prod__",   callable=True)
+coprod  = Poly("__coprod__", callable=True)
+null    = Poly("__null__")
+display = Poly("__display__")
+builtin = Poly("__display__")
+
+def get(obj: object, what: str="", default: object=None, typesystem=None) -> object:
+    if default is None:
+        from typed.mods.err import NotDefined
+        default = NotDefined
+
+    from typed.mods.resolve import resolve
+    typesystem = resolve.typesystem.entity(typesystem)
+
     if not what:
         return obj
 
-    if len(what) == 1:
-        what = what[0]
+    keys = what.split('.')
+    value = obj
 
-    getattr_ = getattr(typeof(obj), "")
+    for key in keys:
+        typ = typesystem.typeof(value)
 
+        if hasattr(typ, "__get__"):
+            try:
+                value = getattr(typ, "__get__")(value, key)
+            except Exception:
+                return default
 
+        elif hasattr(typ, "__getitem__"):
+            try:
+                value = getattr(typ, "__getitem__")(value, key)
+            except Exception:
+                try:
+                    value = getattr(typ, "__getitem__")(value, int(key))
+                except Exception:
+                    return default
 
-def null(obj: object) -> object:
-    """
-    The 'null' parametric polymorphism.
-    """
-    from typed.mods.err import NotDefined
-    return getattr(obj, "__null__", NotDefined)
+        else:
+            try:
+                value = getattr(value, key)
+            except AttributeError:
+                return default
 
-def display(obj: object) -> str:
-    """
-    The 'display' parametric polymorphism.
-    """
-    from typed.mods.err import NotDefined
-    return getattr(obj, "__display__", NotDefined)
+    return value
 
-def builtin(type: type) -> type:
-    """
-    The 'builtin' parametric polymorphism.
-    """
-    from typed.mods.err import NotDefined
-    return getattr(type, "__builtin__", NotDefined)
-
-def terms(t: type) -> set:
+def terms(type: object) -> set:
     """
     The 'terms' polymorphism.
     """
     from typed.mods.err import NotDefined
-    __terms__ = getattr(t, "__terms__", NotDefined)
+    __terms__ = getattr(type, "__terms__", NotDefined)
     if __terms__ is not NotDefined:
         return set(__terms__)
     return NotDefined
@@ -115,16 +167,3 @@ def split(container, *args, **kwargs):
         return func
 
     return _split(container, *args, **kwargs)
-
-def poly(attr: str):
-    def polymorphic_function(obj, *args, **kwargs):
-        obj_type = type(obj)
-        if not hasattr(obj_type, attr):
-            raise AttributeError(f"type '{obj_type.__name__}' has no attribute '{attr}'")
-        method = getattr(obj_type, attr)
-        if not callable(method):
-            raise TypeError(f"'{attr}' is not callable on type '{obj_type.__name__}'")
-        return method(obj, *args, **kwargs)
-    return polymorphic_function
-
-convert = poly("__convert__")

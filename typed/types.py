@@ -24,7 +24,8 @@ __imports__ = {
         "DomHinted", "CodHinted", "Hinted",
         "DomTyped", "CodTyped", "Typed",
         "Condition", "Family", "Constructor",
-        "LazyTyped"
+        "LazyTyped", "LazyFunc", "LazyHinted",
+        "LazyCondition", "LazyFamily", "LazyConstructor"
     ]
 }
 
@@ -52,5 +53,6 @@ if lazy(__imports__):
         DomHinted, CodHinted, Hinted,
         DomTyped, CodTyped, Typed,
         Condition, Family, Constructor,
-        LazyTyped 
+        LazyTyped, LazyFunc, LazyHinted,
+        LazyCondition, LazyFamily, LazyConstructor
     )

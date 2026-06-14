@@ -24,7 +24,8 @@ __imports__ = {
         "DOM_HINTED", "COD_HINTED", "HINTED",
         "COD_TYPED", "DOM_TYPED", "TYPED",
         "CONDITION", "FAMILY", "CONSTRUCTOR",
-        "LAZY_TYPED"
+        "LAZY_TYPED", "LAZY_FUNC", "LAZY_HINTED",
+        "LAZY_CONDITION", "LAZY_FAMILY", "LAZY_CONSTRUCTOR"
     ]
 }
 
@@ -34,7 +35,8 @@ if lazy(__imports__):
         EMPTY, ANY, NILL,
         INT, FLOAT, BOOL, STR,
         ENUMERABLE, FINITE,
-        MEMBER, DOM, COD
+        MEMBER, DOM, COD,
+        LAZY
     )
     from typed.mods.meta.constructor import (
         LIST, TUPLE, SET, DICT,
@@ -52,5 +54,6 @@ if lazy(__imports__):
         DOM_HINTED, COD_HINTED, HINTED,
         COD_TYPED, DOM_TYPED, TYPED,
         CONDITION, FAMILY, CONSTRUCTOR,
-        LAZY_TYPED
+        LAZY_TYPED, LAZY_FUNC, LAZY_HINTED, 
+        LAZY_CONDITION, LAZY_FAMILY, LAZY_CONSTRUCTOR
     )

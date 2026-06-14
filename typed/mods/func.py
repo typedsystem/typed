@@ -267,7 +267,6 @@ def family(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = No
         return decorator
     return decorator(f)
 
-
 def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
     def decorator(fn):
         from typed.mods.resolve import resolve
@@ -281,3 +280,82 @@ def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool
     if f is None:
         return decorator
     return decorator(f)
+
+def prod(f, g):
+    def prod_func(args_tuple):
+        x, y = args_tuple
+        return (f(x), g(y))
+
+    prod_func.__name__ = f"({getattr(f, '__name__', str(f))} x {getattr(g, '__name__', str(g))})"
+
+    from typed.mods.types.constructor import Prod
+    from typed.mods.meta.func import Hinted, Typed
+
+    try:
+        sig_f = signature(f)
+        sig_g = signature(g)
+
+        f_dom = sig_f.dom[0] if sig_f.dom else None
+        g_dom = sig_g.dom[0] if sig_g.dom else None
+
+        if f_dom and g_dom and sig_f.cod and sig_g.cod:
+            dom_type = Prod(f_dom, g_dom)
+            cod_type = Prod(sig_f.cod, sig_g.cod)
+
+            prod_func._dom = (dom_type,)
+            prod_func._cod = cod_type
+
+            is_f_typed = getattr(type(f), "__flags__", None) and type(f).__flags__.is_typed
+            is_g_typed = getattr(type(g), "__flags__", None) and type(g).__flags__.is_typed
+            is_f_hinted = getattr(type(f), "__flags__", None) and type(f).__flags__.is_hinted
+            is_g_hinted = getattr(type(g), "__flags__", None) and type(g).__flags__.is_hinted
+
+            if is_f_typed and is_g_typed:
+                return Typed(dom_type, cod=cod_type)(prod_func)
+            elif is_f_hinted and is_g_hinted:
+                return Hinted(dom_type, cod=cod_type)(prod_func)
+    except Exception:
+        pass
+
+    return prod_func
+
+def coprod(f, g):
+    def coprod_func(args_tuple):
+        i, val = args_tuple
+        if i == 0:
+            return (0, f(val))
+        elif i == 1:
+            return (1, g(val))
+        raise ValueError(f"Invalid coproduct index: {i}")
+
+    coprod_func.__name__ = f"({getattr(f, '__name__', str(f))} + {getattr(g, '__name__', str(g))})"
+
+    from typed.mods.types.constructor import Coprod
+    from typed.mods.meta.func import Hinted, Typed
+    try:
+        sig_f = signature(f)
+        sig_g = signature(g)
+
+        f_dom = sig_f.dom[0] if sig_f.dom else None
+        g_dom = sig_g.dom[0] if sig_g.dom else None
+
+        if f_dom and g_dom and sig_f.cod and sig_g.cod:
+            dom_type = Coprod(f_dom, g_dom)
+            cod_type = Coprod(sig_f.cod, sig_g.cod)
+
+            coprod_func._dom = (dom_type,)
+            coprod_func._cod = cod_type
+
+            is_f_typed = getattr(type(f), "__flags__", None) and type(f).__flags__.is_typed
+            is_g_typed = getattr(type(g), "__flags__", None) and type(g).__flags__.is_typed
+            is_f_hinted = getattr(type(f), "__flags__", None) and type(f).__flags__.is_hinted
+            is_g_hinted = getattr(type(g), "__flags__", None) and type(g).__flags__.is_hinted
+
+            if is_f_typed and is_g_typed:
+                return Typed(dom_type, cod=cod_type)(coprod_func)
+            elif is_f_hinted and is_g_hinted:
+                return Hinted(dom_type, cod=cod_type)(coprod_func)
+    except Exception:
+        pass
+
+    return coprod_func
