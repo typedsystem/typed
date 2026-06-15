@@ -5,7 +5,7 @@ __imports__ = {
         "TYPESYSTEM", "UNIVERSE", "ABSTRACT",
         "some", "every", "none", "only", "conf"
     ],
-    "typed.mods.types": [
+    "typed.types": [
         "Type", "Meta", "Family", "Member",
         "Empty", "Any", "Nill",
         "Int", "Float", "Bool", "Str", "Byte",
@@ -46,7 +46,7 @@ if lazy(__imports__):
         TYPESYSTEM, UNIVERSE, ABSTRACT,
         some, every, none, only, conf
     )
-    from typed.mods.types import (
+    from typed.types import (
         Type, Meta, Family, Member, 
         Empty, Any, Nill,
         Int, Float, Bool, Str, Byte,

@@ -61,8 +61,9 @@ coprod  = Poly("__coprod__",  callable=True)
 include = Poly("__include__", callable=True)
 join    = Poly("__join__",    callable=True)
 split   = Poly("__split__",   callable=True)
+sizeof  = Poly("__size__",    callable=True)
 nullof  = Poly("__null__")
-sizeof  = Poly("__size__")
+displayof  = Poly("__display__")
 builtin = Poly("__builtin__")
 
 def termsof(entity: object) -> set:

@@ -1,3 +1,5 @@
+from functools import lru_cache as cache
+
 class __SAMENESS__:
     def __init__(self, suffices: tuple[callable]=(), needed: tuple[callable]=(), use_name: bool=True, use_duck: bool=False):
         if suffices:
@@ -656,6 +658,7 @@ class __TYPESYSTEM__:
     def isuniverse(self, entity):
         return isuniverse(entity, self)
 
+@cache
 def typemap(type, typesystem: __TYPESYSTEM__=None):
     from builtins import type as __type__
     from typed.mods.resolve import resolve
@@ -683,24 +686,13 @@ def typemap(type, typesystem: __TYPESYSTEM__=None):
     from typed.mods.err import NotDefined
     return NotDefined
 
-def typeof(entity: object, level: int=1, typesystem: __TYPESYSTEM__=None):
+def typeof(entity: object, level: int=1, typesystem=None):
+    from typed.helper.typesystem import _typeof_cache
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
-    from typed.mods.check import check
-    check.isinstance(level, int)
+    return _typeof_cache(type(entity), level, typesystem)
 
-    if level <= 0:
-        from typed.mods.err import NotDefined
-        return NotDefined
-
-    base = typemap(type(entity), typesystem=typesystem)
-    if level == 1:
-        return base
-
-    for i in range(2, level+1):
-        base = typeof(base)
-    return base
-
+@cache
 def kindof(entity, typesystem: __TYPESYSTEM__=None):
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
@@ -725,10 +717,11 @@ def nameof(*entities, typesystem: __TYPESYSTEM__=None):
     typesystem = resolve.typesystem.entity(typesystem)
 
     from typed.mods.err import NotDefined
-    from typed.mods.poly import display
+    from typed.mods.poly import displayof
 
+    @cache
     def __nameof__(entity):
-        d = display(entity)
+        d = displayof(entity)
         if d is not NotDefined:
             return d
 
@@ -747,6 +740,7 @@ def nameof(*entities, typesystem: __TYPESYSTEM__=None):
 
     return ', '.join(__nameof__(entity) for entity in entities)
 
+@cache
 def trackof(type: type, typesystem: __TYPESYSTEM__=None) -> type:
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
@@ -765,6 +759,7 @@ def trackof(type: type, typesystem: __TYPESYSTEM__=None) -> type:
 
     return NotDefined
 
+@cache
 def isentity(obj: type) -> bool:
     if not isinstance(obj, type):
         return False
@@ -777,6 +772,7 @@ def isentity(obj: type) -> bool:
     from typed.mods.init import every
     return every(kind in ts.__kinds__ for ts in typesystems)
 
+@cache
 def iscognate(entity: type, *others: tuple[type], quantifier=None) -> bool:
     if not isentity(entity): return False
     if not all(isentity(o) for o in others): return False
@@ -787,12 +783,14 @@ def iscognate(entity: type, *others: tuple[type], quantifier=None) -> bool:
         for other in others
     )
 
+@cache
 def iscongruent(entity: type, *others: tuple[type], quantifier=None) -> bool:
     if not iscognate(entity, *others, quantifier=quantifier): return False
     from typed.mods.resolve import resolve
     quantifier = resolve.logic.quantifier(quantifier)
     return quantifier(entity.__kind__ == other.__kind__ for other in others)
 
+@cache
 def ismember(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     if not isentity(entity): return False
     if not typesystems:
@@ -802,6 +800,7 @@ def ismember(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None)
     quantifier = resolve.logic.quantifier(quantifier)
     return quantifier(entity in typesystem for typesystem in typesystems)
 
+@cache
 def istype(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     if not isentity(entity): return False
     if not entity.__kind__ == "type":
@@ -813,6 +812,7 @@ def istype(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -
     quantifier = resolve.logic.quantifier(quantifier)
     return quantifier(any(entity is t for t in ts.__members__["type"]) for ts in typesystems)
 
+@cache
 def ismeta(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     if not isentity(entity): return False
     if not entity.__kind__ == "meta":
@@ -824,6 +824,7 @@ def ismeta(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -
     quantifier = resolve.logic.quantifier(quantifier)
     return quantifier(any(entity is t for t in ts.__members__["meta"]) for ts in typesystems)
 
+@cache
 def isabstract(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     if not isinstance(entity, type): return False
     if getattr(entity, "__kind__", None) != "abstract":
@@ -835,6 +836,7 @@ def isabstract(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=Non
     quantifier = resolve.logic.quantifier(quantifier)
     return quantifier(any(entity is t for t in ts.__members__["abstract"].values()) for ts in typesystems)
 
+@cache
 def isuniverse(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
     if not isentity(entity): return False
     if not entity.__kind__ == "universe":
@@ -846,6 +848,7 @@ def isuniverse(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=Non
     quantifier = resolve.logic.quantifier(quantifier)
     return quantifier(any(entity is t for t in ts.__members__["universe"].values()) for ts in typesystems)
 
+@cache
 def issame(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
@@ -854,6 +857,7 @@ def issame(entity: type, *others: tuple[type], quantifier=None, typesystem: __TY
 
     return quantifier(__issame__(other, entity) for other in others)
 
+@cache
 def issup(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
@@ -862,6 +866,7 @@ def issup(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYP
 
     return quantifier(__issup__(other, entity) for other in others)
 
+@cache
 def issub(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
@@ -870,6 +875,7 @@ def issub(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYP
 
     return quantifier(__issub__(other, entity) for other in others)
 
+@cache
 def isterm(term: object, *types: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
@@ -878,6 +884,7 @@ def isterm(term: object, *types: tuple[type], quantifier=None, typesystem: __TYP
 
     return quantifier(__isterm__(type, term) for type in types)
 
+@cache
 def isequiv(entity: type, *others: tuple[type],  quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)

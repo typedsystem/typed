@@ -130,17 +130,17 @@ class Reducer:
             from typed.mods.err import TypeErr
             raise TypeErr(term=func, expected=("callable",), received=(type(func),))
 
-        self.__func__ = func
+        self.func = func
 
         from typed.mods.flags import Flags
-        self.__flags = Flags(is_reducer=True)
+        self.__flags__ = Flags(is_reducer=True)
 
     def __call__(self, discourse):
         if not isinstance(discourse, Discourse):
             from typed.mods.err import TypeErr
             raise TypeErr(term=discourse, expected=(Discourse,), received=(type(discourse),))
 
-        return self.__func__(discourse)
+        return self.func(discourse)
 
 class __QUANTIFIER__(type):
     """
@@ -252,6 +252,7 @@ class Quantifier(metaclass=__QUANTIFIER__):
             return self.reducer(Discourse(bool_values))
 
         return self.evaluator(values, self.reducer, quantifier=self)
+
     def __contains__(self, instance):
         return isinstance(instance, type(self))
 
@@ -362,21 +363,21 @@ class Predicate:
     def __init__(self, func: callable):
         flags = getattr(func, '__flags__', None)
         if flags is not None and flags.is_predicate:
-            self.__func__ = getattr(func, '__func__', func)
+            self.func = getattr(func, 'func', func)
             self.__name__ = getattr(func, '__name__', 'predicate')
         else:
             if not callable(func):
                 from typed.mods.err import TypeErr
                 raise TypeErr(term=func, expected=("callable",), received=(type(func),))
 
-            self.__func__ = func
+            self.func = func
             self.__name__ = getattr(func, '__name__', 'predicate')
 
             from typed.mods.flags import Flags
             self.__flags__ = Flags(is_predicate=True)
 
     def __call__(self, *args, **kwargs) -> bool:
-        return bool(self.__func__(*args, **kwargs))
+        return bool(self.func(*args, **kwargs))
 
 class __EXPRESSION__(type):
     """
@@ -422,7 +423,7 @@ class Expression(metaclass=__EXPRESSION__):
         self.discourse = discourse
         self.predicate = predicate
         self.quantifier = quantifier
-        self.__func__ = func
+        self.func = func
         self.evaluator = evaluator
         self.__name__ = getattr(func, '__name__', 'expression') if func else 'expression'
 
@@ -444,8 +445,8 @@ class Expression(metaclass=__EXPRESSION__):
         if isinstance(engine, bool):
             return engine
 
-        if self.__func__ is not None:
-            op = lambda x: self.predicate(self.__func__(x))
+        if self.func is not None:
+            op = lambda x: self.predicate(self.func(x))
         else:
             op = self.predicate
 

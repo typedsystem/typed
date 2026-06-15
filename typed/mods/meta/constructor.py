@@ -10,6 +10,7 @@ class TUPLE(TYPE):
     : nullof(TUPLE)    is  NotDefined
     : builtin(TUPLE)   is  NotDefined
     """
+    _type_cache = {}
 
     def __isterm__(typ, trm):
         from typed.mods.typesystem import typeof, issub, isterm
@@ -41,6 +42,11 @@ class TUPLE(TYPE):
         from typed.mods.check import check
 
         typesystem = resolve.typesystem.entity(typesystem)
+
+        cache_key = (typ, tuple(types), id(typesystem))
+        if cache_key in typ._type_cache:
+            return typ._type_cache[cache_key]
+
         check.every.ismember(types, typesystem)
 
         display_name = f"Tuple({typesystem.nameof(*types)})" if types else "Tuple"
@@ -55,6 +61,7 @@ class TUPLE(TYPE):
             __types__ = types
 
         Tuple.__name__ = display_name
+        typ._type_cache[cache_key] = Tuple
         return Tuple
 
 class LIST(TYPE):
@@ -67,6 +74,7 @@ class LIST(TYPE):
     : nullof(LIST)    is  NotDefined
     : builtin(LIST)   is  NotDefined
     """
+    _type_cache = {}
 
     def __isterm__(typ, trm):
         from typed.mods.typesystem import typeof, issub, isterm
@@ -98,8 +106,13 @@ class LIST(TYPE):
         from typed.mods.check import check
         typesystem = resolve.typesystem.entity(typesystem)
 
-        types = set(types)
-        check.every.ismember(types, typesystem)
+        types_set = set(types)
+        
+        cache_key = (typ, frozenset(types_set), id(typesystem))
+        if cache_key in typ._type_cache:
+            return typ._type_cache[cache_key]
+
+        check.every.ismember(types_set, typesystem)
 
         display_name = f"List({typesystem.nameof(*types)})" if types else "List"
         from typed.mods.flags import Flags
@@ -109,9 +122,10 @@ class LIST(TYPE):
             __flags__ = Flags(is_constructor=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
-            __types__ = types
+            __types__ = types_set
 
         List.__name__ = display_name
+        typ._type_cache[cache_key] = List
         return List
 
 class SET(TYPE):
@@ -124,6 +138,8 @@ class SET(TYPE):
     : nullof(SET)    is  NotDefined
     : builtin(SET)   is  NotDefined
     """
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         from typed.mods.typesystem import typeof, issub, isterm
 
@@ -154,8 +170,13 @@ class SET(TYPE):
         from typed.mods.check import check
         typesystem = resolve.typesystem.entity(typesystem)
 
-        types = set(types)
-        check.every.ismember(types, typesystem)
+        types_set = set(types)
+
+        cache_key = (typ, frozenset(types_set), id(typesystem))
+        if cache_key in typ._type_cache:
+            return typ._type_cache[cache_key]
+
+        check.every.ismember(types_set, typesystem)
 
         display_name = f"Set({typesystem.nameof(*types)})" if types else "Set"
 
@@ -166,9 +187,10 @@ class SET(TYPE):
             __flags__ = Flags(is_constructor=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
-            __types__ = types
+            __types__ = types_set
 
         Set.__name__ = display_name
+        typ._type_cache[cache_key] = Set
         return Set
 
 class DICT(TYPE):
@@ -181,6 +203,8 @@ class DICT(TYPE):
     : nullof(DICT)    is  NotDefined
     : builtin(DICT)   is  NotDefined
     """
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         from typed.mods.typesystem import typeof, issub, isterm
 
@@ -231,7 +255,11 @@ class DICT(TYPE):
         from typed.mods.check import check
         typesystem = resolve.typesystem.entity(typesystem)
 
-        types = set(types)
+        types_set = set(types)
+
+        cache_key = (met, frozenset(types_set), key, id(typesystem))
+        if cache_key in met._type_cache:
+            return met._type_cache[cache_key]
 
         if key is not None:
             display_name = f"Dict({typesystem.nameof(*types)}, key={typesystem.nameof(key)})" if types else f"Dict(key={typesystem.nameof(key)})"
@@ -239,7 +267,7 @@ class DICT(TYPE):
             display_name = f"Dict({typesystem.nameof(*types)})" if types else "Dict"
 
         check.ismember(key, typesystem)
-        check.every.ismember(types, typesystem)
+        check.every.ismember(types_set, typesystem)
 
         from typed.mods.flags import Flags
         from typed.mods.init import TYPESYSTEM
@@ -248,13 +276,16 @@ class DICT(TYPE):
             __flags__ = Flags(is_constructor=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
-            __types__ = types
+            __types__ = types_set
             __key_type__ = key
 
         Dict.__name__ = display_name
+        met._type_cache[cache_key] = Dict
         return Dict
 
 class EXTENSIONAL(TYPE):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         quantifier = getattr(typ, "__quantifier__", None)
         types = set(getattr(typ, "__types__", (typ,)))
@@ -277,18 +308,22 @@ class EXTENSIONAL(TYPE):
         from typed.mods.check import check
         typesystem = resolve.typesystem.entity(typesystem)
 
+        types_tuple = tuple(set(types))
+
+        cache_key = (met, name, types_tuple, tuple(bases), base, quantifier, id(typesystem))
+        if cache_key in met._type_cache:
+            return met._type_cache[cache_key]
+
         check.ismember(base, typesystem)
-        check.every.ismember(types, typesystem)
+        check.every.ismember(types_tuple, typesystem)
 
-        types = tuple(set(types))
-
-        if not types:
+        if not types_tuple:
             return base
 
-        if len(types) == 1:
-            return types[0]
+        if len(types_tuple) == 1:
+            return types_tuple[0]
 
-        display_name = f"{name}({typesystem.nameof(*types)})"
+        display_name = f"{name}({typesystem.nameof(*types_tuple)})"
 
         from typed.mods.flags import Flags
         from typed.mods.init import TYPESYSTEM
@@ -297,9 +332,10 @@ class EXTENSIONAL(TYPE):
             __typesystems__ = {TYPESYSTEM, typesystem}
             __quantifier__ = quantifier
             __display__ = display_name
-            __types__ = types
+            __types__ = types_tuple
 
         Extensional.__name__ = display_name
+        met._type_cache[cache_key] = Extensional
         return Extensional
 
 class UNION(EXTENSIONAL):
@@ -323,6 +359,8 @@ class ALGEBRAIC(TYPE):
     The base metaclass for types built over a discourse of other types,
     abstracting factory logic for Algebraic Data Types (Products and Coproducts).
     """
+    _type_cache = {}
+
     def __call__(met, name, *types, base=None, typesystem=None):
         from typed.mods.resolve import resolve
         typesystem = resolve.typesystem.entity(typesystem)
@@ -334,13 +372,18 @@ class ALGEBRAIC(TYPE):
         if not types:
             return base
 
+        types_tuple = tuple(types)
+
+        cache_key = (met, name, types_tuple, base, id(typesystem))
+        if cache_key in met._type_cache:
+            return met._type_cache[cache_key]
+
         from typed.mods.check import check
-        check.every.ismember(types, typesystem)
-        types = tuple(types)
+        check.every.ismember(types_tuple, typesystem)
 
-        from typed.mods.poly import null
+        from typed.mods.poly import nullof
 
-        display_name = f"{name}({typesystem.nameof(*types)})"
+        display_name = f"{name}({typesystem.nameof(*types_tuple)})"
 
         is_prod = getattr(type(met), '__name__', '') == 'PROD' or getattr(met, '__name__', '') == 'PROD'
         is_coprod = getattr(type(met), '__name__', '') == 'COPROD' or getattr(met, '__name__', '') == 'COPROD'
@@ -350,10 +393,10 @@ class ALGEBRAIC(TYPE):
         from typed.mods.init import TYPESYSTEM
 
         if is_prod:
-            nulls = tuple(null(t) for t in types if null(t) is not NotDefined)
-            canonical_null = nulls if len(nulls) == len(types) else NotDefined
+            nulls = tuple(nullof(t) for t in types_tuple if nullof(t) is not NotDefined)
+            canonical_null = nulls if len(nulls) == len(types_tuple) else NotDefined
         elif is_coprod:
-            first_null = null(types[0]) if types else NotDefined
+            first_null = nullof(types_tuple[0]) if types_tuple else NotDefined
             canonical_null = (0, first_null) if first_null is not NotDefined else NotDefined
         else:
             canonical_null = NotDefined
@@ -368,10 +411,11 @@ class ALGEBRAIC(TYPE):
             )
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
-            __types__ = types
+            __types__ = types_tuple
             __null__ = canonical_null
 
         Algebraic.__name__ = display_name
+        met._type_cache[cache_key] = Algebraic
         return Algebraic
 
 
@@ -483,6 +527,8 @@ class COPROD(ALGEBRAIC, TUPLE):
         return super().__call__("Coprod", *types, typesystem=typesystem)
 
 class DIAG(TYPE):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         from typed.mods.typesystem import isterm
         base = getattr(typ, "__base_type__", None)
@@ -503,6 +549,11 @@ class DIAG(TYPE):
     def __call__(met, base_type, typesystem=None):
         from typed.mods.resolve import resolve
         typesystem = resolve.typesystem.entity(typesystem)
+
+        cache_key = (met, base_type, id(typesystem))
+        if cache_key in met._type_cache:
+            return met._type_cache[cache_key]
+
         display_name = f"Diag({typesystem.nameof(base_type)})"
 
         from typed.mods.flags import Flags
@@ -516,9 +567,12 @@ class DIAG(TYPE):
             __base_type__ = base_type
 
         Diag.__name__ = display_name
+        met._type_cache[cache_key] = Diag
         return Diag
 
 class CODIAG(TYPE):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         from typed.mods.typesystem import isterm
         base = getattr(typ, "__base_type__", None)
@@ -531,6 +585,11 @@ class CODIAG(TYPE):
     def __call__(met, base_type, typesystem=None):
         from typed.mods.resolve import resolve
         typesystem = resolve.typesystem.entity(typesystem)
+
+        cache_key = (met, base_type, id(typesystem))
+        if cache_key in met._type_cache:
+            return met._type_cache[cache_key]
+
         display_name = f"Codiag({typesystem.nameof(base_type)})"
 
         from typed.mods.flags import Flags
@@ -544,4 +603,5 @@ class CODIAG(TYPE):
             __base_type__ = base_type
 
         Codiag.__name__ = display_name
+        met._type_cache[cache_key] = Codiag
         return Codiag

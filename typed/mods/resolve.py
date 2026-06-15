@@ -3,9 +3,18 @@ class Resolver:
         self.__func__ = func
         self.__name__ = name if name is not None else getattr(func, '__name__', 'resolver')
         self.__display__ = self.__name__
+        self._cache = {}
 
     def __call__(self, *args, **kwargs):
-        return self.__func__(*args, **kwargs)
+        cache_key = (
+            tuple(id(a) for a in args),
+            tuple((k, id(v)) for k, v in sorted(kwargs.items()))
+        )
+
+        if cache_key not in self._cache:
+            self._cache[cache_key] = self.__func__(*args, **kwargs)
+
+        return self._cache[cache_key]
 
 def resolver(func: callable, name: str = None):
     return staticmethod(Resolver(func=func, name=name))

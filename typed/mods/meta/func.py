@@ -134,6 +134,8 @@ class DOM_FUNC(FUNC):
     """
     The metatype of domain-specified functions.
     """
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
@@ -187,6 +189,11 @@ class DOM_FUNC(FUNC):
             return inst
 
         types = tuple(args)
+
+        cache_key = (typ, types, id(typesystem))
+        if cache_key in typ._type_cache:
+            return typ._type_cache[cache_key]
+
         from typed.mods.check import check as type_checker
         type_checker.every.ismember(types, typesystem)
 
@@ -201,6 +208,7 @@ class DOM_FUNC(FUNC):
             __flags__ = Flags(is_func=True, is_dom=True)
 
         DomFunc.__name__ = class_name
+        typ._type_cache[cache_key] = DomFunc
         return DomFunc
 
 
@@ -208,6 +216,8 @@ class COD_FUNC(FUNC):
     """
     The metatype of codomain-specified functions.
     """
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
@@ -268,6 +278,10 @@ class COD_FUNC(FUNC):
             return typ
 
         if checker.isterm(cod, TYPE, explode=False) and not args and not kwargs:
+            cache_key = (typ, cod, id(typesystem))
+            if cache_key in typ._type_cache:
+                return typ._type_cache[cache_key]
+
             checker.ismember(cod, typesystem)
 
             class_name = f"CodFunc(cod={typesystem.nameof(cod)})"
@@ -281,6 +295,7 @@ class COD_FUNC(FUNC):
                 __flags__ = Flags(is_func=True, is_cod=True)
 
             CodFunc.__name__ = class_name
+            typ._type_cache[cache_key] = CodFunc
             return CodFunc
 
         raise TypeErr(message="CodFunc(X) expects a single TYPE argument")
@@ -290,6 +305,8 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
     """
     The metatype of composable functions.
     """
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
@@ -352,6 +369,11 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
         from typed.mods.check import check as checker
         if args and checker.every.isterm(args, TYPE, explode=False) and checker.isterm(cod, TYPE, explode=False) and not kwargs:
             types = tuple(args)
+
+            cache_key = (typ, types, cod, id(typesystem))
+            if cache_key in typ._type_cache:
+                return typ._type_cache[cache_key]
+
             checker.every.ismember(types, typesystem)
             checker.ismember(cod, typesystem)
 
@@ -367,12 +389,15 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
                 __flags__ = Flags(is_func=True, is_dom=True, is_cod=True)
 
             CompFunc.__name__ = class_name
+            typ._type_cache[cache_key] = CompFunc
             return CompFunc
 
         raise TypeErr(message="CompFunc(X, Y, ..., cod=Z) expects TYPE arguments only")
 
 
 class DOM_HINTED(DOM_FUNC):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         if isinstance(trm, type) and issubclass(trm, typ):
             return True
@@ -424,6 +449,11 @@ class DOM_HINTED(DOM_FUNC):
         from typed.mods.check import check as checker
         if args and checker.every.isterm(args, TYPE, explode=False) and not kwargs:
             types = tuple(args)
+
+            cache_key = (typ, types, id(typesystem))
+            if cache_key in typ._type_cache:
+                return typ._type_cache[cache_key]
+
             checker.every.ismember(types, typesystem)
 
             class_name = f"DomHinted({typesystem.nameof(*types)})"
@@ -437,12 +467,15 @@ class DOM_HINTED(DOM_FUNC):
                 __flags__ = Flags(is_type=True, is_dom_hinted=True)
 
             DomHinted.__name__ = class_name
+            typ._type_cache[cache_key] = DomHinted
             return DomHinted
 
         raise TypeErr(message=f"{getattr(typ, '__name__', 'DOM_HINTED')}(): expected 0 args, or a callable, or TYPE arguments")
 
 
 class COD_HINTED(COD_FUNC):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         from typed.mods.typesystem import issub
         if issub(TYPE(trm), typ):
@@ -501,6 +534,10 @@ class COD_HINTED(COD_FUNC):
             return typ
 
         if checker.isterm(cod, TYPE, explode=False) and not args and not kwargs:
+            cache_key = (typ, cod, id(typesystem))
+            if cache_key in typ._type_cache:
+                return typ._type_cache[cache_key]
+
             checker.ismember(cod, typesystem)
 
             class_name = f"CodHinted(cod={typesystem.nameof(cod)})"
@@ -514,12 +551,15 @@ class COD_HINTED(COD_FUNC):
                 __flags__ = Flags(is_type=True, is_cod_hinted=True)
 
             CodHinted.__name__ = class_name
+            typ._type_cache[cache_key] = CodHinted
             return CodHinted
 
         raise TypeErr(message=f"{getattr(typ, '__name__', 'COD_HINTED')}(): expected 0 args, or a callable, or a single TYPE")
 
 
 class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
@@ -582,6 +622,11 @@ class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
         from typed.mods.check import check as checker
         if args and checker.every.isterm(args, TYPE, explode=False) and checker.isterm(cod, TYPE, explode=False) and not kwargs:
             types = tuple(args)
+            
+            cache_key = (typ, types, cod, id(typesystem))
+            if cache_key in typ._type_cache:
+                return typ._type_cache[cache_key]
+
             checker.every.ismember(types, typesystem)
             checker.ismember(cod, typesystem)
 
@@ -597,12 +642,15 @@ class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
                 __flags__ = Flags(is_func=True, is_dom=True, is_cod=True, is_hinted=True)
 
             Hinted.__name__ = class_name
+            typ._type_cache[cache_key] = Hinted
             return Hinted
 
         raise TypeErr(message=f"{getattr(typ, '__name__', 'HINTED')}(): expected 0 args, or a callable, or TYPE arguments plus cod=TYPE")
 
 
 class DOM_TYPED(DOM_HINTED):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
@@ -649,6 +697,11 @@ class DOM_TYPED(DOM_HINTED):
         from typed.mods.check import check as checker
         if args and checker.every.isterm(args, TYPE, explode=False) and not kwargs:
             types = tuple(args)
+
+            cache_key = (typ, types, id(typesystem))
+            if cache_key in typ._type_cache:
+                return typ._type_cache[cache_key]
+
             checker.every.ismember(types, typesystem)
 
             class_name = f"DomTyped({typesystem.nameof(*types)})"
@@ -662,12 +715,15 @@ class DOM_TYPED(DOM_HINTED):
                 __flags__ = Flags(is_type=True, is_dom_typed=True)
 
             DomTyped.__name__ = class_name
+            typ._type_cache[cache_key] = DomTyped
             return DomTyped
 
         raise TypeErr(message=f"{getattr(typ, '__name__', 'DOM_TYPED')}(): expected 0 args, or a callable, or TYPE arguments")
 
 
 class COD_TYPED(COD_HINTED):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         if not super().__isterm__(trm):
             return False
@@ -720,6 +776,10 @@ class COD_TYPED(COD_HINTED):
             return typ
 
         if checker.isterm(cod, TYPE, explode=False) and not args and not kwargs:
+            cache_key = (typ, cod, id(typesystem))
+            if cache_key in typ._type_cache:
+                return typ._type_cache[cache_key]
+
             checker.ismember(cod, typesystem)
 
             class_name = f"CodTyped(cod={typesystem.nameof(cod)})"
@@ -733,12 +793,15 @@ class COD_TYPED(COD_HINTED):
                 __flags__ = Flags(is_type=True, is_cod_typed=True)
 
             CodTyped.__name__ = class_name
+            typ._type_cache[cache_key] = CodTyped
             return CodTyped
 
         raise TypeErr(message=f"{getattr(typ, '__name__', 'COD_TYPED')}(): expected 0 args, or a callable, or a single TYPE")
 
 
 class TYPED(HINTED, DOM_TYPED, COD_TYPED):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         flags = getattr(trm, "__flags__", None)
         is_lazy = getattr(flags, "is_lazy", False) if flags else False
@@ -811,6 +874,11 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
         from typed.mods.check import check as checker
         if cod is not None and checker.every.isterm(args, TYPE, explode=False):
             types = tuple(args)
+
+            cache_key = (typ, types, cod, id(typesystem))
+            if cache_key in typ._type_cache:
+                return typ._type_cache[cache_key]
+
             checker.every.ismember(types, typesystem)
             checker.ismember(cod, typesystem)
 
@@ -826,12 +894,15 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
                 __flags__ = Flags(is_func=True, is_typed=True)
 
             Typed.__name__ = class_name
+            typ._type_cache[cache_key] = Typed
             return Typed
 
         raise TypeErr(message="Typed() expects a callable, or TYPE arguments plus cod=TYPE")
 
 
 class CONDITION(TYPED):
+    _type_cache = {}
+
     def __isterm__(typ, trm):
         from typed.mods.types.atomic import Bool
         from typed.mods.func import signature
@@ -884,6 +955,11 @@ class CONDITION(TYPED):
         from typed.mods.check import check as checker
         if args and checker.every.isterm(args, Type, explode=False) and not kwargs:
             types = tuple(args)
+
+            cache_key = (typ, types, id(typesystem))
+            if cache_key in typ._type_cache:
+                return typ._type_cache[cache_key]
+
             checker.every.ismember(types, typesystem)
 
             class_name = f"Condition({typesystem.nameof(*types)})"
@@ -898,6 +974,7 @@ class CONDITION(TYPED):
                 __flags__ = Flags(is_type=True, is_condition=True)
 
             Condition.__name__ = class_name
+            typ._type_cache[cache_key] = Condition
             return Condition
 
         raise TypeErr(message="Condition() expects a Bool-returning callable, or TYPE arguments")
@@ -966,7 +1043,7 @@ class CONSTRUCTOR(FAMILY):
         if len(args) == 1 and callable(args[0]) and not kwargs:
             func = args[0]
             from typed.mods.func import signature
- 
+
             if chk:
                 from typed.mods.check import check as checker
                 checker.ishinted(func)

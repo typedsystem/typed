@@ -165,33 +165,11 @@ def reduce(func, *reduce_args, **reduce_kwargs):
 __wrap_attrs__ = ["__func__", "__wrapped__", "func", "original_func"]
 
 def unwrap(func: callable, attrs: list[str]=None) -> callable:
-    if attrs is None:
-        attrs = __wrap_attrs__
-
     from typed.mods.check import check
     check.iscallable(func)
-
-    current = func
-    seen = set()
-
-    while True:
-        id_ = id(current)
-        if id_ in seen:
-            break
-        seen.add(id_)
-
-        found = False
-        for attr in attrs:
-            _func = getattr(current, attr, None)
-            if callable(_func):
-                current = _func
-                found = True
-                break
-
-        if not found:
-            break
-
-    return current
+    attrs_tuple = tuple(attrs) if attrs is not None else tuple(__wrap_attrs__)
+    from typed.helper.func import _unwrap_cache
+    return _unwrap_cache(func, attrs_tuple)
 
 def func(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
     def decorator(fn):
