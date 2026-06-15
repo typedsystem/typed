@@ -1,4 +1,4 @@
-```ruby
+```python
    /00                                         /00
   | 00                                        | 00
  /000000   /00   /00  /000000   /000000   /0000000
@@ -14,34 +14,33 @@
 
 # About
 
-`typed` is a Python framework providing type safety and allowing universal constructions.
+`typed` is the main library of [typesystem](https://github.com/typedsystem.com), a Python framework focused in providing type safety and allowing universal constructions.
 
 # Overview
 
-The framework provides a lot of _primitive types_ with a plethora of _type factories_, which can be used to build custom _derived types_. As examples of the type factories we have _type operations_, which concretely implements the annotations from the `typing` library, and flavors of _models_, which can be used to validate data. 
+The library allows the construction of custom type systems (actually, sub-type systems of Python builtin type system), being strongly influenced by the Type Theory dialect. This means:
 
-One time defined, the types can be used as type hints for _typed functions_, for which type hints are checked at runtime. 
-
-So, with `typed` you have a framework ensuring type safety by:
-1. defining custom types from _type factories_;
-2. using those custom types as type hints for _typed functions_;
-3. checking the type hints at runtime.
-
+1. to allow the definition of new _stratified universes_
+2. which extend _abstract types_
+3. from which one can create _types_
+4. being associated to _terms_.
 
 # Install
 
-With `pip`:
-```bash
-pip install git+https://github.com/ximenesyuri/typed  
-``` 
+The stable version can be installed from `pypi`:
 
-With [py](https://github.com/ximenesyuri/py)
+With `pip`:
+
 ```bash
-py i ximenesyuri/typed  
+pip install typedsystem
+```
+
+The in-development version can be obtained from this repository:
+
+```bash
+pip install git+https://github.com/typedsystem/typed
 ```
 
 # Documentation
 
-Please, see [ximenesyuri.com/libs/typed](https://ximenesyuri.com/libs/typed).
-
-
+Please, see [typedsystem.com](https://typedsystem.com).
