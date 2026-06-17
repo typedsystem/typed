@@ -19,7 +19,7 @@ class Resolver:
 def resolver(func: callable, name: str = None):
     return staticmethod(Resolver(func=func, name=name))
 
-def _resolve(provided: object, default: object) -> object:
+def resolved(provided: object, default: object) -> object:
     from typed.mods.err import NotDefined
     val = default if provided is None or provided is NotDefined else provided
 
@@ -39,7 +39,7 @@ class resolve:
             return conf
         try:
             from typed.mods.init import conf as _conf
-            return _resolve(provided=conf, default=_conf)
+            return resolved(provided=conf, default=_conf)
         except ImportError:
             return None
 
@@ -52,7 +52,7 @@ class resolve:
             c = resolve.conf(conf)
             if c is None:
                 return True
-            return _resolve(provided=multiline, default=c.err.multiline)
+            return resolved(provided=multiline, default=c.err.multiline)
 
     class logic:
         @resolver
@@ -67,7 +67,7 @@ class resolve:
                     return some
                 except ImportError:
                     return any
-            return _resolve(provided=quantifier, default=c.logic.quantifier)
+            return resolved(provided=quantifier, default=c.logic.quantifier)
 
     class typesystem:
         @resolver
@@ -79,7 +79,7 @@ class resolve:
             if c is None:
                 from typed.mods.init import TYPESYSTEM
                 return TYPESYSTEM
-            return _resolve(provided=typesystem, default=c.typesystem.entity)
+            return resolved(provided=typesystem, default=c.typesystem.entity)
 
         @resolver
         def sameness(sameness=None, conf=None):
@@ -90,7 +90,7 @@ class resolve:
             if c is None:
                 from typed.mods.init import SAMENESS
                 return SAMENESS
-            return _resolve(provided=sameness, default=c.typesystem.sameness)
+            return resolved(provided=sameness, default=c.typesystem.sameness)
 
         @resolver
         def stateful(stateful=None, conf=None):
@@ -101,7 +101,7 @@ class resolve:
             if c is None:
                 from typed.mods.init import STATEFUL
                 return STATEFUL
-            return _resolve(provided=stateful, default=c.typesystem.stateful)
+            return resolved(provided=stateful, default=c.typesystem.stateful)
 
         @resolver
         def magic(magic=None, conf=None):
@@ -112,7 +112,7 @@ class resolve:
             if c is None:
                 from typed.mods.init import MAGIC
                 return MAGIC
-            return _resolve(provided=magic, default=c.typesystem.magic)
+            return resolved(provided=magic, default=c.typesystem.magic)
 
         @resolver
         def universe(universe=None, conf=None):
@@ -123,7 +123,7 @@ class resolve:
             if c is None:
                 from typed.mods.init import UNIVERSE
                 return UNIVERSE
-            return _resolve(provided=universe, default=c.typesystem.universe)
+            return resolved(provided=universe, default=c.typesystem.universe)
 
         @resolver
         def abstract(abstract=None, conf=None):
@@ -134,7 +134,7 @@ class resolve:
             if c is None:
                 from typed.mods.init import ABSTRACT
                 return ABSTRACT
-            return _resolve(provided=abstract, default=c.typesystem.abstract)
+            return resolved(provided=abstract, default=c.typesystem.abstract)
 
         @resolver
         def typemap(typemap=None, conf=None):
@@ -145,7 +145,7 @@ class resolve:
             if c is None:
                 from typed.mods.init import __typemap__
                 return __typemap__()
-            return _resolve(provided=typemap, default=c.typesystem.typemap)
+            return resolved(provided=typemap, default=c.typesystem.typemap)
 
         @resolver
         def quantifiers(quantifiers=None, conf=None):
@@ -156,7 +156,7 @@ class resolve:
             if c is None:
                 from typed.mods.init import __quantifiers__
                 return __quantifiers__
-            return _resolve(provided=quantifiers, default=c.typesystem.quantifiers)
+            return resolved(provided=quantifiers, default=c.typesystem.quantifiers)
 
         @resolver
         def kinds(kinds=None, conf=None):
@@ -167,7 +167,7 @@ class resolve:
             if c is None:
                 from typed.mods.init import __kinds__
                 return __kinds__
-            return _resolve(provided=kinds, default=c.typesystem.kinds)
+            return resolved(provided=kinds, default=c.typesystem.kinds)
 
     class typecheck:
         @resolver
@@ -178,12 +178,12 @@ class resolve:
             if check is not None and check is not NotDefined:
                 chk = check
             else:
-                chk = _resolve(provided=check, default=getattr(c.typecheck, 'check', True) if c else True)
+                chk = resolved(provided=check, default=getattr(c.typecheck, 'check', True) if c else True)
 
             if envs is not None and envs is not NotDefined:
                 resolved_envs = envs
             else:
-                resolved_envs = _resolve(provided=envs, default=getattr(c.typecheck, 'envs', ()) if c else ())
+                resolved_envs = resolved(provided=envs, default=getattr(c.typecheck, 'envs', ()) if c else ())
 
             if chk and resolved_envs:
                 import os
@@ -202,7 +202,7 @@ class resolve:
             c = resolve.conf(conf)
             if c is None:
                 return True
-            return _resolve(provided=lazy, default=c.typecheck.lazy)
+            return resolved(provided=lazy, default=c.typecheck.lazy)
 
         @resolver
         def defaults(defaults=None, conf=None):
@@ -212,4 +212,4 @@ class resolve:
             c = resolve.conf(conf)
             if c is None:
                 return False
-            return _resolve(provided=defaults, default=c.typecheck.defaults) 
+            return resolved(provided=defaults, default=c.typecheck.defaults) 

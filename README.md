@@ -14,7 +14,7 @@
 
 # About
 
-`typed` is the main library of [typesystem](https://github.com/typedsystem.com), a Python framework focused in providing type safety and allowing universal constructions.
+`typed` is the main library of [typedsystem](https://github.com/typedsystem.com), a Python framework focused in providing type safety and allowing universal constructions.
 
 # Overview
 
