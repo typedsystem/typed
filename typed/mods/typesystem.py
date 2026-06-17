@@ -3,13 +3,13 @@ from functools import lru_cache as cache
 class __SAMENESS__:
     def __init__(self, suffices: tuple[callable]=(), needed: tuple[callable]=(), use_name: bool=True, use_duck: bool=False):
         if suffices:
-            from typed.mods.check import check
+            from typed.mods.check import require
             for condition in suffices:
-                check.iscallable(condition)
+                require.iscallable(condition)
         if needed:
-            from typed.mods.check import check
+            from typed.mods.check import require
             for condition in needed:
-                check.iscallable(condition)
+                require.iscallable(condition)
 
         self.suffices = suffices
         self.needed = needed

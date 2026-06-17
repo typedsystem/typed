@@ -14,8 +14,8 @@ class RELATED(TYPE):
             print("aaa")
             return False
         relations = getattr(typ, "__relations__", None)
-        from typed.mods.check import check
-        check.every.iscallable(relations)
+        from typed.mods.check import require
+        require.every.iscallable(relations)
         return all(
             quantifier(relation(trm, entity) for entity in entities)
             for relation in relations
@@ -30,8 +30,8 @@ class RELATED(TYPE):
         from typed.mods.resolve import resolve
         quantifier = resolve.logic.quantifier(quantifier)
         typesystem = resolve.typesystem.entity(typesystem)
-        from typed.mods.check import check
-        check.every.iscallable(relations)
+        from typed.mods.check import require
+        require.every.iscallable(relations)
 
         if len(entities) == 1 and isinstance(entities[0], tuple):
             entities = entities[0]
@@ -122,10 +122,10 @@ class HAS(RELATED):
     The metatype of dependent 'has types'.
     """
     def __call__(met, *attrs, quantifier=None):
-        from typed.mods.check import check
+        from typed.mods.check import require
         from typed.mods.poly import has
         if len(attrs) == 1 and isinstance(attrs[0], tuple): attrs = attrs[0]
-        check.every.isinstance(attrs, str)
+        require.every.isinstance(attrs, str)
         return super().__call__(
             entities=attrs,
             relations=(has,),
@@ -136,15 +136,15 @@ class HAS(RELATED):
 class FILTERED(TYPE):
     def __isterm__(typ, trm):
         base = getattr(typ, "__base__", None)
-        from typed.mods.check import check
-        check.isinstance(base, type)
-        check.isterm(trm, base)
+        from typed.mods.check import require
+        require.isinstance(base, type)
+        require.isterm(trm, base)
         filters = getattr(typ, "__filters__", [])
         if not filters: return True
         quantifier = getattr(typ, "__quantifier__")
         from typed.mods.resolve import resolve
         quantifier = resolve.logic.quantifier(quantifier)
-        check.every.iscallable(filters)
+        require.every.iscallable(filters)
         return quantifier(filter(trm) for filter in filters)
 
     def __call__(met, type: type, filters: tuple[callable]=None, typesystem=None):
@@ -183,7 +183,7 @@ class BOUNDED(FINITE):
 
     def __call__(met, type: type=None, bound=-1, op='==', base: type=None, typesystem=None):
         from typed.mods.types.atomic import Empty
-        from typed.mods.check import check
+        from typed.mods.check import require
         from typed.mods.resolve import resolve
 
         typesystem = resolve.typesystem.entity(typesystem)
@@ -194,7 +194,7 @@ class BOUNDED(FINITE):
         if type is None:
             return base
 
-        check.isinstance(bound, int)
+        require.isinstance(bound, int)
 
         if not typesystem.issub(typesystem.typeof(type), FINITE):
             from typed.mods.err import TypeErr

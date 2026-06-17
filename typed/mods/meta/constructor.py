@@ -39,7 +39,7 @@ class TUPLE(TYPE):
 
     def __call__(typ, *types, typesystem=None):
         from typed.mods.resolve import resolve
-        from typed.mods.check import check
+        from typed.mods.check import require
 
         typesystem = resolve.typesystem.entity(typesystem)
 
@@ -47,7 +47,7 @@ class TUPLE(TYPE):
         if cache_key in typ._type_cache:
             return typ._type_cache[cache_key]
 
-        check.every.ismember(types, typesystem)
+        require.every.ismember(types, typesystem)
 
         display_name = f"Tuple({typesystem.nameof(*types)})" if types else "Tuple"
 
@@ -103,7 +103,7 @@ class LIST(TYPE):
 
     def __call__(typ, *types, typesystem=None):
         from typed.mods.resolve import resolve
-        from typed.mods.check import check
+        from typed.mods.check import require
         typesystem = resolve.typesystem.entity(typesystem)
 
         types_set = set(types)
@@ -112,7 +112,7 @@ class LIST(TYPE):
         if cache_key in typ._type_cache:
             return typ._type_cache[cache_key]
 
-        check.every.ismember(types_set, typesystem)
+        require.every.ismember(types_set, typesystem)
 
         display_name = f"List({typesystem.nameof(*types)})" if types else "List"
         from typed.mods.flags import Flags
@@ -167,7 +167,7 @@ class SET(TYPE):
 
     def __call__(typ, *types, typesystem=None):
         from typed.mods.resolve import resolve
-        from typed.mods.check import check
+        from typed.mods.check import require
         typesystem = resolve.typesystem.entity(typesystem)
 
         types_set = set(types)
@@ -176,7 +176,7 @@ class SET(TYPE):
         if cache_key in typ._type_cache:
             return typ._type_cache[cache_key]
 
-        check.every.ismember(types_set, typesystem)
+        require.every.ismember(types_set, typesystem)
 
         display_name = f"Set({typesystem.nameof(*types)})" if types else "Set"
 
@@ -252,7 +252,7 @@ class DICT(TYPE):
 
     def __call__(met, *types, key=None, typesystem=None):
         from typed.mods.resolve import resolve
-        from typed.mods.check import check
+        from typed.mods.check import require
         typesystem = resolve.typesystem.entity(typesystem)
 
         types_set = set(types)
@@ -266,8 +266,8 @@ class DICT(TYPE):
         else:
             display_name = f"Dict({typesystem.nameof(*types)})" if types else "Dict"
 
-        check.ismember(key, typesystem)
-        check.every.ismember(types_set, typesystem)
+        require.ismember(key, typesystem)
+        require.every.ismember(types_set, typesystem)
 
         from typed.mods.flags import Flags
         from typed.mods.init import TYPESYSTEM
@@ -305,7 +305,7 @@ class EXTENSIONAL(TYPE):
 
     def __call__(met, name, *types, bases=(), base=None, quantifier=None, typesystem=None):
         from typed.mods.resolve import resolve
-        from typed.mods.check import check
+        from typed.mods.check import require
         typesystem = resolve.typesystem.entity(typesystem)
 
         types_tuple = tuple(set(types))
@@ -314,8 +314,8 @@ class EXTENSIONAL(TYPE):
         if cache_key in met._type_cache:
             return met._type_cache[cache_key]
 
-        check.ismember(base, typesystem)
-        check.every.ismember(types_tuple, typesystem)
+        require.ismember(base, typesystem)
+        require.every.ismember(types_tuple, typesystem)
 
         if not types_tuple:
             return base
@@ -378,8 +378,8 @@ class ALGEBRAIC(TYPE):
         if cache_key in met._type_cache:
             return met._type_cache[cache_key]
 
-        from typed.mods.check import check
-        check.every.ismember(types_tuple, typesystem)
+        from typed.mods.check import require
+        require.every.ismember(types_tuple, typesystem)
 
         from typed.mods.poly import nullof
 

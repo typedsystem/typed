@@ -188,10 +188,10 @@ class DomTyped(DomHinted, metaclass=DOM_TYPED):
         effective_check = check and getattr(self, '_check', True)
 
         if effective_check:
-            from typed.mods.check import check as _check
+            from typed.mods.check import require
             from typed.mods.func import signature
             sig = signature(self.__func__)
-            _check.bind.dom(self.__func__, sig, args, kwargs)
+            require.bind.dom(self.__func__, sig, args, kwargs)
 
         return self.__func__(*args, **kwargs)
 
@@ -207,10 +207,10 @@ class CodTyped(CodHinted, metaclass=COD_TYPED):
         effective_check = check and getattr(self, '_check', True)
 
         if effective_check:
-            from typed.mods.check import check as _check
+            from typed.mods.check import require
             from typed.mods.func import signature
             sig = signature(self.__func__)
-            _check.bind.cod(self.__func__, sig, r)
+            require.bind.cod(self.__func__, sig, r)
 
         return r
 
@@ -224,10 +224,10 @@ class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
         effective_check = check and getattr(self, '_check', True)
 
         if effective_check:
-            from typed.mods.check import check as _check
+            from typed.mods.check import require
             from typed.mods.func import signature
             sig = signature(self.__func__)
-            _check.bind.dom(self.__func__, sig, args, kwargs)
+            require.bind.dom(self.__func__, sig, args, kwargs)
 
         r = self.__func__(*args, **kwargs)
 
@@ -236,8 +236,8 @@ class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
                 from typed.mods.func import signature
                 sig = signature(self.__func__)
 
-            from typed.mods.check import check as _check
-            _check.bind.cod(self.__func__, sig, r)
+            from typed.mods.check import require
+            require.bind.cod(self.__func__, sig, r)
 
         return r
 

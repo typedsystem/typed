@@ -2,8 +2,8 @@ class __CONF__(type): pass
 
 class ErrConf(metaclass=__CONF__):
     def __init__(self, multiline: bool=True):
-        from typed.mods.check import check
-        check.isinstance(multiline, bool)
+        from typed.mods.check import require
+        require.isinstance(multiline, bool)
         self.multiline=multiline
 
 class LogicConf(metaclass=__CONF__):
@@ -12,13 +12,13 @@ class LogicConf(metaclass=__CONF__):
             from typed.mods.init import some
             quantifier = some
 
-        from typed.mods.check import check
+        from typed.mods.check import require
         from typed.mods.logic import Quantifier
 
-        check.isinstance(quantifier, Quantifier)
+        require.isinstance(quantifier, Quantifier)
         self.quantifier = quantifier
 
-class TypeCheck(metaclass=__CONF__):
+class TypeCheckConf(metaclass=__CONF__):
     def __init__(
         self,
         check:    bool=None,
@@ -42,11 +42,11 @@ class TypeCheck(metaclass=__CONF__):
             from typed.mods.init import __typecheck__
             envs = getattr(__typecheck__, 'envs', [])
 
-        from typed.mods.check import check as _check
-        _check.isinstance(check, bool)
-        _check.isinstance(lazy, bool)
-        _check.isinstance(defaults, bool)
-        _check.isinstance(envs, list, tuple, set)
+        from typed.mods.check import require
+        require.isinstance(check, bool)
+        require.isinstance(lazy, bool)
+        require.isinstance(defaults, bool)
+        require.isinstance(envs, list, tuple, set)
 
         self.check = check
         self.lazy = lazy
@@ -99,19 +99,19 @@ class TypeSystemConf(metaclass=__CONF__):
             quantifiers = __quantifiers__
 
         from typed.mods.typesystem import __SAMENESS__, __STATEFUL__, __MAGIC__, __UNIVERSE__, __ABSTRACT__, __TYPESYSTEM__
-        from typed.mods.check import check
+        from typed.mods.check import require
 
-        check.isinstance(entity, __TYPESYSTEM__)
-        check.isinstance(sameness, __SAMENESS__)
-        check.isinstance(stateful, __STATEFUL__)
-        check.isinstance(magic, __MAGIC__)
-        check.isinstance(universe, __UNIVERSE__)
-        check.isinstance(abstract, __ABSTRACT__)
-        check.isinstance(kinds, set)
-        check.isinstance(quantifiers, set)
+        require.isinstance(entity, __TYPESYSTEM__)
+        require.isinstance(sameness, __SAMENESS__)
+        require.isinstance(stateful, __STATEFUL__)
+        require.isinstance(magic, __MAGIC__)
+        require.isinstance(universe, __UNIVERSE__)
+        require.isinstance(abstract, __ABSTRACT__)
+        require.isinstance(kinds, set)
+        require.isinstance(quantifiers, set)
 
         if typemap is not None:
-            check.isinstance(typemap, dict)
+            require.isinstance(typemap, dict)
 
         self.entity = entity
         self.sameness = sameness
@@ -132,8 +132,8 @@ class TypeSystemConf(metaclass=__CONF__):
 
     @typemap.setter
     def typemap(self, value):
-        from typed.mods.check import check
-        check.isinstance(value, dict)
+        from typed.mods.check import require
+        require.isinstance(value, dict)
         self._typemap = value
 
 class Conf(metaclass=__CONF__):
@@ -142,18 +142,18 @@ class Conf(metaclass=__CONF__):
         logic:      LogicConf=None,
         typesystem: TypeSystemConf=None,
         err:        ErrConf=None,
-        typecheck:  TypeCheck=None
+        typecheck:  TypeCheckConf=None
     ):
         if typesystem is None: typesystem = TypeSystemConf()
         if err is None:        err = ErrConf()
         if logic is None:      logic = LogicConf()
-        if typecheck is None:  typecheck = TypeCheck()
+        if typecheck is None:  typecheck = TypeCheckConf()
 
-        from typed.mods.check import check
-        check.isinstance(logic, LogicConf)
-        check.isinstance(typesystem, TypeSystemConf)
-        check.isinstance(err, ErrConf)
-        check.isinstance(typecheck, TypeCheck)
+        from typed.mods.check import require
+        require.isinstance(logic, LogicConf)
+        require.isinstance(typesystem, TypeSystemConf)
+        require.isinstance(err, ErrConf)
+        require.isinstance(typecheck, TypeCheckConf)
 
         self.typesystem=typesystem
         self.typecheck=typecheck

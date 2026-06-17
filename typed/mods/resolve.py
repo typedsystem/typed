@@ -26,9 +26,9 @@ def resolved(provided: object, default: object) -> object:
     if val is default:
         return val
 
-    from typed.mods.check import check
+    from typed.mods.check import require
 
-    check.isinstance(val, type(default))
+    require.isinstance(val, type(default))
     return val
 
 class resolve:

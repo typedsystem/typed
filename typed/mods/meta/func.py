@@ -19,9 +19,9 @@ class CALLABLE(TYPE):
 
     def __call__(typ, *args, **kwargs):
         if len(args) == 1 and callable(args[0]) and not kwargs:
-            from typed.mods.check import check
+            from typed.mods.check import require
             func = args[0]
-            check.iscallable(func)
+            require.iscallable(func)
             inst = type.__call__(typ)
             inst.__func__ = func
             return inst
@@ -106,12 +106,12 @@ class FUNC(CALLABLE):
             func = args[0]
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.isterm(func, typ, typesystem=typesystem)
+                from typed.mods.check import require
+                require.isterm(func, typ, typesystem=typesystem)
 
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -175,11 +175,11 @@ class DOM_FUNC(FUNC):
         if len(args) == 1 and callable(args[0]):
             func = args[0]
             if chk:
-                from typed.mods.check import check as checker
-                checker.isterm(func, typ, typesystem=typesystem)
+                from typed.mods.check import require
+                require.isterm(func, typ, typesystem=typesystem)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -194,8 +194,8 @@ class DOM_FUNC(FUNC):
         if cache_key in typ._type_cache:
             return typ._type_cache[cache_key]
 
-        from typed.mods.check import check as type_checker
-        type_checker.every.ismember(types, typesystem)
+        from typed.mods.check import require
+        require.every.ismember(types, typesystem)
 
         class_name = f"DomFunc({typesystem.nameof(*types)})"
         from typed.mods.init import TYPESYSTEM
@@ -256,11 +256,11 @@ class COD_FUNC(FUNC):
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
             func = args[0]
             if chk:
-                from typed.mods.check import check as checker
-                checker.isterm(func, typ, typesystem=typesystem)
+                from typed.mods.check import require
+                require.isterm(func, typ, typesystem=typesystem)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -269,20 +269,20 @@ class COD_FUNC(FUNC):
             inst._envs = envs
             return inst
 
-        from typed.mods.check import check as checker
-        if cod is None and len(args) == 1 and checker.isterm(args[0], TYPE, explode=False):
+        from typed.mods.check import require
+        if cod is None and len(args) == 1 and require.isterm(args[0], TYPE, explode=False):
             cod = args[0]
             args = ()
 
         if cod is None and not args and not kwargs:
             return typ
 
-        if checker.isterm(cod, TYPE, explode=False) and not args and not kwargs:
+        if require.isterm(cod, TYPE, explode=False) and not args and not kwargs:
             cache_key = (typ, cod, id(typesystem))
             if cache_key in typ._type_cache:
                 return typ._type_cache[cache_key]
 
-            checker.ismember(cod, typesystem)
+            require.ismember(cod, typesystem)
 
             class_name = f"CodFunc(cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
@@ -350,11 +350,11 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
             func = args[0]
             if chk:
-                from typed.mods.check import check as checker
-                checker.isterm(func, typ, typesystem=typesystem)
+                from typed.mods.check import require
+                require.isterm(func, typ, typesystem=typesystem)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -366,16 +366,16 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
         if not args and cod is None and not kwargs:
             return typ
 
-        from typed.mods.check import check as checker
-        if args and checker.every.isterm(args, TYPE, explode=False) and checker.isterm(cod, TYPE, explode=False) and not kwargs:
+        from typed.mods.check import require
+        if args and require.every.isterm(args, TYPE, explode=False) and require.isterm(cod, TYPE, explode=False) and not kwargs:
             types = tuple(args)
 
             cache_key = (typ, types, cod, id(typesystem))
             if cache_key in typ._type_cache:
                 return typ._type_cache[cache_key]
 
-            checker.every.ismember(types, typesystem)
-            checker.ismember(cod, typesystem)
+            require.every.ismember(types, typesystem)
+            require.ismember(cod, typesystem)
 
             class_name = f"CompFunc({typesystem.nameof(*types)}, cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
@@ -429,11 +429,11 @@ class DOM_HINTED(DOM_FUNC):
             from typed.mods.func import signature
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.ishinted(func, cod=False)
+                from typed.mods.check import require
+                require.ishinted(func, cod=False)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -446,15 +446,15 @@ class DOM_HINTED(DOM_FUNC):
         if not args and not kwargs:
             return typ
 
-        from typed.mods.check import check as checker
-        if args and checker.every.isterm(args, TYPE, explode=False) and not kwargs:
+        from typed.mods.check import require
+        if args and require.every.isterm(args, TYPE, explode=False) and not kwargs:
             types = tuple(args)
 
             cache_key = (typ, types, id(typesystem))
             if cache_key in typ._type_cache:
                 return typ._type_cache[cache_key]
 
-            checker.every.ismember(types, typesystem)
+            require.every.ismember(types, typesystem)
 
             class_name = f"DomHinted({typesystem.nameof(*types)})"
             from typed.mods.init import TYPESYSTEM
@@ -511,11 +511,11 @@ class COD_HINTED(COD_FUNC):
             from typed.mods.func import signature
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.ishinted(func, dom=False)
+                from typed.mods.check import require
+                require.ishinted(func, dom=False)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -525,20 +525,20 @@ class COD_HINTED(COD_FUNC):
             inst._envs = envs
             return inst
 
-        from typed.mods.check import check as checker
-        if cod is None and len(args) == 1 and checker.isterm(args[0], TYPE, explode=False):
+        from typed.mods.check import require
+        if cod is None and len(args) == 1 and require.isterm(args[0], TYPE, explode=False):
             cod = args[0]
             args = ()
 
         if cod is None and not args and not kwargs:
             return typ
 
-        if checker.isterm(cod, TYPE, explode=False) and not args and not kwargs:
+        if require.isterm(cod, TYPE, explode=False) and not args and not kwargs:
             cache_key = (typ, cod, id(typesystem))
             if cache_key in typ._type_cache:
                 return typ._type_cache[cache_key]
 
-            checker.ismember(cod, typesystem)
+            require.ismember(cod, typesystem)
 
             class_name = f"CodHinted(cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
@@ -599,11 +599,11 @@ class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
             from typed.mods.func import signature
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.ishinted(func)
+                from typed.mods.check import require
+                require.ishinted(func)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -619,16 +619,16 @@ class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
         if not args and cod is None and not kwargs:
             return typ
 
-        from typed.mods.check import check as checker
-        if args and checker.every.isterm(args, TYPE, explode=False) and checker.isterm(cod, TYPE, explode=False) and not kwargs:
+        from typed.mods.check import require
+        if args and require.every.isterm(args, TYPE, explode=False) and require.isterm(cod, TYPE, explode=False) and not kwargs:
             types = tuple(args)
-            
+
             cache_key = (typ, types, cod, id(typesystem))
             if cache_key in typ._type_cache:
                 return typ._type_cache[cache_key]
 
-            checker.every.ismember(types, typesystem)
-            checker.ismember(cod, typesystem)
+            require.every.ismember(types, typesystem)
+            require.ismember(cod, typesystem)
 
             class_name = f"Hinted({typesystem.nameof(*types)}; {typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
@@ -677,11 +677,11 @@ class DOM_TYPED(DOM_HINTED):
             from typed.mods.func import signature
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.ishinted(func, cod=False)
+                from typed.mods.check import require
+                require.ishinted(func, cod=False)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -694,15 +694,15 @@ class DOM_TYPED(DOM_HINTED):
         if not args and not kwargs:
             return typ
 
-        from typed.mods.check import check as checker
-        if args and checker.every.isterm(args, TYPE, explode=False) and not kwargs:
+        from typed.mods.check import require
+        if args and require.every.isterm(args, TYPE, explode=False) and not kwargs:
             types = tuple(args)
 
             cache_key = (typ, types, id(typesystem))
             if cache_key in typ._type_cache:
                 return typ._type_cache[cache_key]
 
-            checker.every.ismember(types, typesystem)
+            require.every.ismember(types, typesystem)
 
             class_name = f"DomTyped({typesystem.nameof(*types)})"
             from typed.mods.init import TYPESYSTEM
@@ -753,11 +753,11 @@ class COD_TYPED(COD_HINTED):
             from typed.mods.func import signature
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.ishinted(func, dom=False)
+                from typed.mods.check import require
+                require.ishinted(func, dom=False)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -767,20 +767,20 @@ class COD_TYPED(COD_HINTED):
             inst._envs = envs
             return inst
 
-        from typed.mods.check import check as checker
-        if cod is None and len(args) == 1 and checker.isterm(args[0], TYPE, explode=False):
+        from typed.mods.check import check as __check, require
+        if cod is None and len(args) == 1 and __check.isterm(args[0], TYPE):
             cod = args[0]
             args = ()
 
         if cod is None and not args and not kwargs:
             return typ
 
-        if checker.isterm(cod, TYPE, explode=False) and not args and not kwargs:
+        if __check.isterm(cod, TYPE) and not args and not kwargs:
             cache_key = (typ, cod, id(typesystem))
             if cache_key in typ._type_cache:
                 return typ._type_cache[cache_key]
 
-            checker.ismember(cod, typesystem)
+            require.ismember(cod, typesystem)
 
             class_name = f"CodTyped(cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
@@ -851,11 +851,11 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
             from typed.mods.func import signature
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.ishinted(func)
+                from typed.mods.check import require
+                require.ishinted(func)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -871,16 +871,16 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
         if not args and cod is None and not kwargs:
             return typ
 
-        from typed.mods.check import check as checker
-        if cod is not None and checker.every.isterm(args, TYPE, explode=False):
+        from typed.mods.check import check as __check, require
+        if cod is not None and __check.every.isterm(args, TYPE):
             types = tuple(args)
 
             cache_key = (typ, types, cod, id(typesystem))
             if cache_key in typ._type_cache:
                 return typ._type_cache[cache_key]
 
-            checker.every.ismember(types, typesystem)
-            checker.ismember(cod, typesystem)
+            require.every.ismember(types, typesystem)
+            require.ismember(cod, typesystem)
 
             class_name = f"Typed({typesystem.nameof(*types)}, cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
@@ -926,11 +926,11 @@ class CONDITION(TYPED):
             from typed.mods.func import signature
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.ishinted(func)
+                from typed.mods.check import require
+                require.ishinted(func)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -952,15 +952,15 @@ class CONDITION(TYPED):
         if not args and not kwargs:
             return typ
 
-        from typed.mods.check import check as checker
-        if args and checker.every.isterm(args, Type, explode=False) and not kwargs:
+        from typed.mods.check import check as __check, require
+        if args and __check.every.isterm(args, Type, explode=False) and not kwargs:
             types = tuple(args)
 
             cache_key = (typ, types, id(typesystem))
             if cache_key in typ._type_cache:
                 return typ._type_cache[cache_key]
 
-            checker.every.ismember(types, typesystem)
+            require.every.ismember(types, typesystem)
 
             class_name = f"Condition({typesystem.nameof(*types)})"
             from typed.mods.init import TYPESYSTEM
@@ -1002,11 +1002,11 @@ class FAMILY(TYPED):
             from typed.mods.func import signature
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.ishinted(func)
+                from typed.mods.check import require
+                require.ishinted(func)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func
@@ -1045,11 +1045,11 @@ class CONSTRUCTOR(FAMILY):
             from typed.mods.func import signature
 
             if chk:
-                from typed.mods.check import check as checker
-                checker.ishinted(func)
+                from typed.mods.check import require
+                require.ishinted(func)
             if defs:
-                from typed.mods.check import check as checker
-                checker.defaults(func)
+                from typed.mods.check import require
+                require.defaults(func)
 
             inst = type.__call__(typ)
             inst.__func__ = func

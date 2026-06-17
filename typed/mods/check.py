@@ -919,92 +919,91 @@ def checker(arg=None, name: str = None, quantifier: str = None, count: int = Non
     return Checker(quantifier=quantifier, count=count, explode=explode)
 
 
-__checker__ = Checker(quantifier=None, explode=True)
-__true__ = Checker(quantifier=None, explode=False)
+__require__ = Checker(quantifier=None, explode=True)
+__check__ = Checker(quantifier=None, explode=False)
 
 class check:
-    some = checker("some", explode=True)
-    every = checker("every", explode=True)
-    none = checker("none", explode=True)
-    only = checker("only", explode=True)
-
-    class hint:
-        dom = __checker__.hint_dom
-        cod = __checker__.hint_cod
-
-    class bind:
-        dom = __checker__.bind_dom
-        cod = __checker__.bind_cod
-        defaults = __checker__.defaults
-
-    issafe = __checker__.issafe
-
-    isinstance = __checker__.isinstance
-    iscallable = __checker__.iscallable
-
-    isentity = __checker__.isentity
-    istype = __checker__.istype
-    ismeta = __checker__.ismeta
-    isabstract = __checker__.isabstract
-    isuniverse = __checker__.isuniverse
-
-    iscognate = __checker__.iscognate
-    iscongruent = __checker__.iscongruent
-
-    ismember = __checker__.ismember
-    isterm = __checker__.isterm
-    issub = __checker__.issub
-    issup = __checker__.issup
-    issame = __checker__.issame
-    isequiv = __checker__.isequiv
-    satisfy = __checker__.satisfy
-
-    isfunc = __checker__.isfunc
-    iscomposable = __checker__.iscomposable
-    ishinted = __checker__.ishinted
-    istyped = __checker__.istyped
-    islazy = __checker__.islazy
-
-
-class true:
     some = checker("some", explode=False)
     every = checker("every", explode=False)
     none = checker("none", explode=False)
     only = checker("only", explode=False)
 
     class hint:
-        dom = __true__.hint_dom
-        cod = __true__.hint_cod
+        dom = __check__.hint_dom
+        cod = __check__.hint_cod
 
     class bind:
-        dom = __true__.bind_dom
-        cod = __true__.bind_cod
-        defaults = __true__.defaults
+        dom = __check__.bind_dom
+        cod = __check__.bind_cod
+        defaults = __check__.defaults
 
-    issafe = __true__.issafe
+    issafe = __check__.issafe
 
-    isinstance = __true__.isinstance
-    iscallable = __true__.iscallable
+    isinstance = __check__.isinstance
+    iscallable = __check__.iscallable
 
-    isentity = __true__.isentity
-    istype = __true__.istype
-    ismeta = __true__.ismeta
-    isabstract = __true__.isabstract
-    isuniverse = __true__.isuniverse
+    isentity = __check__.isentity
+    istype = __check__.istype
+    ismeta = __check__.ismeta
+    isabstract = __check__.isabstract
+    isuniverse = __check__.isuniverse
 
-    iscognate = __true__.iscognate
-    iscongruent = __true__.iscongruent
+    iscognate = __check__.iscognate
+    iscongruent = __check__.iscongruent
 
-    ismember = __true__.ismember
-    isterm = __true__.isterm
-    issub = __true__.issub
-    issup = __true__.issup
-    issame = __true__.issame
-    isequiv = __true__.isequiv
-    satisfy = __true__.satisfy
+    ismember = __check__.ismember
+    isterm = __check__.isterm
+    issub = __check__.issub
+    issup = __check__.issup
+    issame = __check__.issame
+    isequiv = __check__.isequiv
+    satisfy = __check__.satisfy
 
-    isfunc = __true__.isfunc
-    iscomposable = __true__.iscomposable
-    ishinted = __true__.ishinted
-    istyped = __true__.istyped
-    islazy = __true__.islazy
+    isfunc = __check__.isfunc
+    iscomposable = __check__.iscomposable
+    ishinted = __check__.ishinted
+    istyped = __check__.istyped
+    islazy = __check__.islazy
+
+class require:
+    some = checker("some", explode=True)
+    every = checker("every", explode=True)
+    none = checker("none", explode=True)
+    only = checker("only", explode=True)
+
+    class hint:
+        dom = __require__.hint_dom
+        cod = __require__.hint_cod
+
+    class bind:
+        dom = __require__.bind_dom
+        cod = __require__.bind_cod
+        defaults = __require__.defaults
+
+    issafe = __require__.issafe
+
+    isinstance = __require__.isinstance
+    iscallable = __require__.iscallable
+
+    isentity = __require__.isentity
+    istype = __require__.istype
+    ismeta = __require__.ismeta
+    isabstract = __require__.isabstract
+    isuniverse = __require__.isuniverse
+
+    iscognate = __require__.iscognate
+    iscongruent = __require__.iscongruent
+
+    ismember = __require__.ismember
+    isterm = __require__.isterm
+    issub = __require__.issub
+    issup = __require__.issup
+    issame = __require__.issame
+    isequiv = __require__.isequiv
+    satisfy = __require__.satisfy
+
+    isfunc = __require__.isfunc
+    iscomposable = __require__.iscomposable
+    ishinted = __require__.ishinted
+    istyped = __require__.istyped
+    islazy = __require__.islazy

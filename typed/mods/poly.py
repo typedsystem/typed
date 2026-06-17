@@ -12,7 +12,7 @@ class Poly:
                 final_args = list(call_args)
 
                 if args:
-                    from typed.mods.check import check
+                    from typed.mods.check import require
 
                     for i, arg in enumerate(args):
                         if i < len(call_args):
@@ -25,7 +25,7 @@ class Poly:
                                 break
 
                         if hasattr(arg, 'hint') and arg.hint not in (None, NotDefined):
-                            check.isterm(val, arg.hint)
+                            require.isterm(val, arg.hint)
 
                 entity_type = typesystem.typeof(entity)
                 if not hasattr(entity_type, attr):
@@ -38,8 +38,8 @@ class Poly:
                 res = method(entity, *final_args)
 
                 if cod is not None:
-                    from typed.mods.check import check
-                    check.isterm(res, cod)
+                    from typed.mods.check import require
+                    require.isterm(res, cod)
 
                 return res
 

@@ -62,10 +62,10 @@ class Discourse(metaclass=__DISCOURSE__):
 
 def prod(*discourses, limit: int = -1):
     from typed.mods.logic import Discourse
-    from typed.mods.check import check
+    from typed.mods.check import require
     from itertools import islice
 
-    check.every.isinstance(discourses, Discourse)
+    require.every.isinstance(discourses, Discourse)
 
     zipped_iterator = zip(*discourses, strict=True)
 
@@ -76,10 +76,10 @@ def prod(*discourses, limit: int = -1):
 
 def diag(*discourses, limit: int = -1):
     from typed.mods.logic import Discourse
-    from typed.mods.check import check
+    from typed.mods.check import require
     from itertools import islice
 
-    check.every.isinstance(discourses, Discourse)
+    require.every.isinstance(discourses, Discourse)
     yielded_count = 0
 
     for i, discourse in enumerate(discourses):
@@ -96,10 +96,10 @@ def diag(*discourses, limit: int = -1):
 
 def coprod(*discourses, limit: int = -1):
     from typed.mods.logic import Discourse
-    from typed.mods.check import check
+    from typed.mods.check import require
     from itertools import islice
 
-    check.every.isinstance(discourses, Discourse)
+    require.every.isinstance(discourses, Discourse)
 
     def __coprod__():
         for i, discourse in enumerate(discourses):

@@ -19,7 +19,7 @@ __imports__ = {
         "NotDefined"
     ],
     "typed.mods.check": [
-        "check", "true"
+        "check", "require"
     ],
     "typed.mods.resolve": [
         "resolve"

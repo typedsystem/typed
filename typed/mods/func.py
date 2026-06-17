@@ -118,11 +118,11 @@ def signature(func: callable) -> Signature:
         orig_dom = hint_dom
         orig_cod = hint_cod
 
-    from typed.mods.check import check
-    check.hint.dom(func, orig_dom, hint_dom)
+    from typed.mods.check import require
+    require.hint.dom(func, orig_dom, hint_dom)
 
     if hint_cod is not None:
-        check.hint.cod(func, orig_cod, hint_cod)
+        require.hint.cod(func, orig_cod, hint_cod)
 
     return Signature(
         func=target,
@@ -165,8 +165,8 @@ def reduce(func, *reduce_args, **reduce_kwargs):
 __wrap_attrs__ = ["__func__", "__wrapped__", "func", "original_func"]
 
 def unwrap(func: callable, attrs: list[str]=None) -> callable:
-    from typed.mods.check import check
-    check.iscallable(func)
+    from typed.mods.check import require
+    require.iscallable(func)
     attrs_tuple = tuple(attrs) if attrs is not None else tuple(__wrap_attrs__)
     from typed.helper.func import _unwrap_cache
     return _unwrap_cache(func, attrs_tuple)
