@@ -4,11 +4,12 @@ __imports__ = {
     "typed.mods.resolve": [
         "Resolver",
         "resolver",
-        "resolve"
+        "resolve",
+        "resolved"
     ]
 }
 
 if lazy(__imports__):
     from typed.mods.resolve import (
-        Resolver, resolver, resolve
+        Resolver, resolver, resolve, resolved
     )
