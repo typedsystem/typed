@@ -60,7 +60,7 @@ if lazy(__imports__):
         NotDefined
     )
     from typed.mods.check import (
-        check, true
+        check, require
     )
     from typed.mods.resolve import (
         resolve
