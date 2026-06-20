@@ -2,7 +2,7 @@ from typed.mods.loader import lazy
 
 __imports__ = {
     "typed.mods.flags": [
-        "__FLAGS__"
+        "__FLAGS__",
         "Flags",
         "flag",
         "flagged"
