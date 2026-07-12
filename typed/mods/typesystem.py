@@ -709,6 +709,7 @@ def kindof(entity, typesystem: __TYPESYSTEM__=None):
     from typed.mods.err import NotDefined
     return NotDefined
 
+@cache
 def nameof(*entities, typesystem: __TYPESYSTEM__=None):
     """
     The 'nameof' polymorphism.
@@ -719,13 +720,16 @@ def nameof(*entities, typesystem: __TYPESYSTEM__=None):
     from typed.mods.err import NotDefined
     from typed.mods.poly import displayof
 
-    @cache
     def __nameof__(entity):
         d = displayof(entity)
         if d is not NotDefined:
             return d
 
-        typ = typemap(entity, typesystem=typesystem)
+        try:
+            hash(entity)
+            typ = typemap(entity, typesystem=typesystem)
+        except TypeError:
+            typ = NotDefined
 
         if typ is not NotDefined:
             return getattr(typ, '__name__', str(entity))

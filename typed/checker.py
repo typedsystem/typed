@@ -9,6 +9,6 @@ __imports__ = {
 
 if lazy(__imports__):
     from typed.mods.check import (
-        Checker, checker,
+        Checker, TypedChecker, checker,
         check, require
     )

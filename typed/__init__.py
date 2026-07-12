@@ -56,23 +56,23 @@ if lazy(__imports__):
         Union, Inter, Prod, Coprod,
         Same, Equiv, Filtered
     )
-    from typed.mods.err import (
+    from typed.err import (
         NotDefined
     )
-    from typed.mods.check import (
+    from typed.checker import (
         check, require
     )
-    from typed.mods.resolve import (
+    from typed.resolve import (
         resolve
     )
-    from typed.mods.func import (
+    from typed.func import (
         func, typed, reduce, compose
     )
-    from typed.mods.flags import (
+    from typed.flags import (
         Flags, flagged, flag
     )
-    from typed.mods.typesystem import new
-    from typed.mods.poly import (
+    from typed.typesystem import new
+    from typed.poly import (
         prod, coprod, include, join, split
     )
-    from typed.mods.prop import get, set, prop
+    from typed.prop import get, set, prop

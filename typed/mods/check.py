@@ -1,4 +1,7 @@
-class Checker:
+class __CHECKER__(type):
+    pass
+
+class Checker(metaclass=__CHECKER__):
     def __init__(self, func: callable = None, name: str = None, quantifier: str = None, count: int = None, explode: bool = True):
         self.__func__ = func
         self._quantifier = quantifier
@@ -33,6 +36,7 @@ class Checker:
             return only(self.count)
         raise ValueError(f"Unknown quantifier {self._quantifier}")
 
+class TypedChecker(Checker):
     def _expected(self, kind, typesystems):
         from typed.mods.resolve import resolve
         expected_list = []
@@ -919,8 +923,8 @@ def checker(arg=None, name: str = None, quantifier: str = None, count: int = Non
     return Checker(quantifier=quantifier, count=count, explode=explode)
 
 
-__require__ = Checker(quantifier=None, explode=True)
-__check__ = Checker(quantifier=None, explode=False)
+__require__ = TypedChecker(quantifier=None, explode=True)
+__check__ = TypedChecker(quantifier=None, explode=False)
 
 class check:
     some = checker("some", explode=False)
