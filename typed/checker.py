@@ -2,13 +2,15 @@ from typed.mods.loader import lazy
 
 __imports__ = {
     "typed.mods.check": [
-        "Checker", "checker",
+        "__CHECKER__",
+        "Checker", "TypedChecker",
         "check", "require" 
     ]
 }
 
 if lazy(__imports__):
     from typed.mods.check import (
-        Checker, TypedChecker, checker,
+        __CHECKER__, 
+        Checker, TypedChecker,
         check, require
     )

@@ -2,7 +2,7 @@ class __CHECKER__(type):
     pass
 
 class Checker(metaclass=__CHECKER__):
-    def __init__(self, func: callable = None, name: str = None, quantifier: str = None, count: int = None, explode: bool = True):
+    def __init__(self, func: callable=None, name: str=None, quantifier: str=None, count: int=None, explode: bool=True):
         self.__func__ = func
         self._quantifier = quantifier
         self.count = count
@@ -14,9 +14,28 @@ class Checker(metaclass=__CHECKER__):
         if self.__func__ is not None:
             return self.__func__(*args, **kwargs)
         if self._quantifier == 'only' and len(args) == 1 and isinstance(args[0], int):
-            return Checker(quantifier=self._quantifier, count=args[0], explode=self.explode)
+            return type(self)(quantifier=self._quantifier, count=args[0], explode=self.explode)
+
+        if len(args) == 1 and callable(args[0]):
+            return staticmethod(type(self)(func=args[0], name=kwargs.get("name"), explode=self.explode))
 
         raise TypeError("This Checker is not callable in this context.")
+
+    @property
+    def some(self):
+        return type(self)(quantifier="some", explode=self.explode)
+
+    @property
+    def every(self):
+        return type(self)(quantifier="every", explode=self.explode)
+
+    @property
+    def none(self):
+        return type(self)(quantifier="none", explode=self.explode)
+
+    @property
+    def only(self):
+        return type(self)(quantifier="only", explode=self.explode)
 
     @property
     def quantifier(self):
@@ -914,23 +933,14 @@ class TypedChecker(Checker):
             return False
         return True
 
-
-def checker(arg=None, name: str = None, quantifier: str = None, count: int = None, explode: bool = True):
-    if isinstance(arg, str):
-        return Checker(quantifier=arg, explode=explode)
-    if callable(arg):
-        return staticmethod(Checker(func=arg, name=name, explode=explode))
-    return Checker(quantifier=quantifier, count=count, explode=explode)
-
-
 __require__ = TypedChecker(quantifier=None, explode=True)
 __check__ = TypedChecker(quantifier=None, explode=False)
 
 class check:
-    some = checker("some", explode=False)
-    every = checker("every", explode=False)
-    none = checker("none", explode=False)
-    only = checker("only", explode=False)
+    some  = __check__.some
+    every = __check__.every
+    none  = __check__.none
+    only  = __check__.only
 
     class hint:
         dom = __check__.hint_dom
@@ -970,10 +980,10 @@ class check:
     islazy = __check__.islazy
 
 class require:
-    some = checker("some", explode=True)
-    every = checker("every", explode=True)
-    none = checker("none", explode=True)
-    only = checker("only", explode=True)
+    some  = __require__.some
+    every = __require__.every
+    none  = __require__.none
+    only  = __require__.only
 
     class hint:
         dom = __require__.hint_dom

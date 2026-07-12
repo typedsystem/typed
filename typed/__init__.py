@@ -15,28 +15,22 @@ __imports__ = {
         "Union", "Inter", "Prod", "Coprod",
         "Same", "Equiv", "Filtered"
     ],
-    "typed.mods.err": [
+    "typed.err": [
         "NotDefined"
     ],
-    "typed.mods.check": [
+    "typed.checker": [
         "check", "require"
     ],
-    "typed.mods.resolve": [
+    "typed.resolve": [
         "resolve"
     ],
-    "typed.mods.func": [
+    "typed.func": [
         "func", "typed", "reduce", "compose"
     ],
-    "typed.mods.flags": [
-        "Flags", "flagged", "flag"
-    ],
-    "typed.mods.typesystem": [
+    "typed.typesystem": [
         "new"
     ],
-    "typed.mods.poly": [
-        "prod", "coprod", "include", "join", "split"
-    ],
-    "typed.mods.prop": [
+    "typed.prop": [
         "get", "set", "prop"
     ]
 }
@@ -68,11 +62,5 @@ if lazy(__imports__):
     from typed.func import (
         func, typed, reduce, compose
     )
-    from typed.flags import (
-        Flags, flagged, flag
-    )
     from typed.typesystem import new
-    from typed.poly import (
-        prod, coprod, include, join, split
-    )
     from typed.prop import get, set, prop
