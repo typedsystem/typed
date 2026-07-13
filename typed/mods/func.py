@@ -276,6 +276,7 @@ def closure(cls=None, *, lt="__lt__"):
                     return NotImplemented
 
             _lt.__name__ = '__lt__'
+            _lt.__doc__ = getattr(source_method, '__doc__', f"Strict partial order derived from {lt}.")
             cls.__lt__ = _lt
 
     _eq_cache = weakref.WeakKeyDictionary()
@@ -283,26 +284,42 @@ def closure(cls=None, *, lt="__lt__"):
     def _eq(self, other):
         if self is other:
             return True
+
         try:
             if self in _eq_cache and other in _eq_cache[self]:
                 return _eq_cache[self][other]
+        except TypeError:
+            pass
 
-            result = self.__lt__(other) and getattr(other, '__lt__')(self)
+        try:
+            lt_self = self.__lt__(other)
+            if lt_self is NotImplemented:
+                result = NotImplemented
+            elif not lt_self:
+                result = False
+            else:
+                try:
+                    lt_other = type(other).__lt__(other, self)
+                except AttributeError:
+                    lt_other = NotImplemented
 
-            if self not in _eq_cache:
-                _eq_cache[self] = weakref.WeakKeyDictionary()
-            _eq_cache[self][other] = result
+                if lt_other is NotImplemented:
+                    result = NotImplemented
+                else:
+                    result = bool(lt_self and lt_other)
 
-            if other not in _eq_cache:
-                _eq_cache[other] = weakref.WeakKeyDictionary()
-            _eq_cache[other][self] = result
+            if result is not NotImplemented:
+                try:
+                    if self not in _eq_cache:
+                        _eq_cache[self] = weakref.WeakKeyDictionary()
+                    _eq_cache[self][other] = result
+                    if other not in _eq_cache:
+                        _eq_cache[other] = weakref.WeakKeyDictionary()
+                    _eq_cache[other][self] = result
+                except TypeError:
+                    pass
 
             return result
-        except TypeError:
-            try:
-                return self.__lt__(other) and getattr(other, '__lt__')(self)
-            except AttributeError:
-                return NotImplemented
         except AttributeError:
             return NotImplemented
 
@@ -314,20 +331,37 @@ def closure(cls=None, *, lt="__lt__"):
 
     def _le(self, other):
         try:
-            return self.__lt__(other) or self.__eq__(other)
+            lt_self = self.__lt__(other)
+            if lt_self is True:
+                return True
+            eq_self = self.__eq__(other)
+            if eq_self is True:
+                return True
+            if lt_self is NotImplemented and eq_self is NotImplemented:
+                return NotImplemented
+            return False
         except AttributeError:
             return NotImplemented
     _le.__name__ = '__le__'
 
     def _gt(self, other):
-        if hasattr(other, '__lt__'):
-            return other.__lt__(self)
-        return NotImplemented
+        try:
+            return type(other).__lt__(other, self)
+        except AttributeError:
+            return NotImplemented
     _gt.__name__ = '__gt__'
 
     def _ge(self, other):
         try:
-            return self.__eq__(other) or getattr(other, '__lt__')(self)
+            lt_other = type(other).__lt__(other, self)
+            if lt_other is True:
+                return True
+            eq_self = self.__eq__(other)
+            if eq_self is True:
+                return True
+            if lt_other is NotImplemented and eq_self is NotImplemented:
+                return NotImplemented
+            return False
         except AttributeError:
             return NotImplemented
     _ge.__name__ = '__ge__'
