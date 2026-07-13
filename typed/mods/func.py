@@ -1,3 +1,4 @@
+import weakref
 from functools import lru_cache as cache
 from typed.mods.types.atomic import Dom, Cod, Nill, Bool, Type
 
@@ -258,6 +259,107 @@ def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool
     if f is None:
         return decorator
     return decorator(f)
+
+def closure(cls=None, *, lt="__lt__"):
+    if cls is None:
+        def wrapper(c):
+            return closure(c, lt=lt)
+        return wrapper
+
+    if lt != "__lt__" and hasattr(cls, lt):
+        if '__lt__' not in cls.__dict__:
+            source_method = getattr(cls, lt)
+            def _lt(self, other):
+                try:
+                    return getattr(self, lt)(other)
+                except Exception:
+                    return NotImplemented
+
+            _lt.__name__ = '__lt__'
+            cls.__lt__ = _lt
+
+    _eq_cache = weakref.WeakKeyDictionary()
+
+    def _eq(self, other):
+        if self is other:
+            return True
+        try:
+            if self in _eq_cache and other in _eq_cache[self]:
+                return _eq_cache[self][other]
+
+            result = self.__lt__(other) and getattr(other, '__lt__')(self)
+
+            if self not in _eq_cache:
+                _eq_cache[self] = weakref.WeakKeyDictionary()
+            _eq_cache[self][other] = result
+
+            if other not in _eq_cache:
+                _eq_cache[other] = weakref.WeakKeyDictionary()
+            _eq_cache[other][self] = result
+
+            return result
+        except TypeError:
+            try:
+                return self.__lt__(other) and getattr(other, '__lt__')(self)
+            except AttributeError:
+                return NotImplemented
+        except AttributeError:
+            return NotImplemented
+
+    _eq.__name__ = '__eq__'
+
+    def _hash(self):
+        return id(self)
+    _hash.__name__ = '__hash__'
+
+    def _le(self, other):
+        try:
+            return self.__lt__(other) or self.__eq__(other)
+        except AttributeError:
+            return NotImplemented
+    _le.__name__ = '__le__'
+
+    def _gt(self, other):
+        if hasattr(other, '__lt__'):
+            return other.__lt__(self)
+        return NotImplemented
+    _gt.__name__ = '__gt__'
+
+    def _ge(self, other):
+        try:
+            return self.__eq__(other) or getattr(other, '__lt__')(self)
+        except AttributeError:
+            return NotImplemented
+    _ge.__name__ = '__ge__'
+
+    def _dir(self):
+        try:
+            base_dir = set(super(cls, self).__dir__())
+        except AttributeError:
+            base_dir = set(dir(type(self)))
+
+        base_dir.update({'__lt__', '__le__', '__eq__', '__gt__', '__ge__', '__hash__'})
+        return sorted(list(base_dir))
+    _dir.__name__ = '__dir__'
+
+    if '__eq__' not in cls.__dict__:
+        cls.__eq__ = _eq
+
+    if '__hash__' not in cls.__dict__ or cls.__hash__ is None:
+        cls.__hash__ = _hash
+
+    if hasattr(cls, '__lt__'):
+        if '__le__' not in cls.__dict__:
+            cls.__le__ = _le
+        if '__gt__' not in cls.__dict__:
+            cls.__gt__ = _gt
+        if '__ge__' not in cls.__dict__:
+            cls.__ge__ = _ge
+
+    if '__dir__' not in cls.__dict__:
+        cls.__dir__ = _dir
+
+    return cls
 
 class nill:
     def func():
