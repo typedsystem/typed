@@ -1,22 +1,39 @@
+from typing import Any, Callable
+
 class Poly:
-    def __new__(self, attr: str, *args, cod=None, typesystem=None, callable: bool=False):
+    def __new__(self, attr: str, *args, cod=None, typesystem=None, callable: bool=False) -> Callable[..., Any]:
         from typed.mods.resolve import resolve
         typesystem = resolve.typesystem.entity(typesystem)
 
         if (args or cod is not None) or callable is True:
             import builtins
 
-            def __poly__(entity, *call_args):
+            def __poly__(*call_args: Any, **kwargs: Any) -> Any:
                 from typed.mods.err import NotDefined
 
-                final_args = list(call_args)
+                if not call_args and not kwargs:
+                    raise TypeError(f"Polymorphism '{attr}' requires at least one argument to dispatch.")
+
+                if call_args:
+                    entity = call_args[1]
+                    user_args = list(call_args[2:])
+                else:
+                    entity = next((v for v in kwargs.values() if isinstance(v, type)), None)
+                    if entity is None:
+                        raise TypeError(
+                            f"Polymorphism '{attr}' requires at least one type/class to dispatch. "
+                            f"Ensure you are passing classes as values (e.g., A=X, not X='A'). Received kwargs: {kwargs}"
+                        )
+                    user_args = []
+
+                final_args = list(user_args)
 
                 if args:
                     from typed.mods.check import require
 
                     for i, arg in enumerate(args):
-                        if i < len(call_args):
-                            val = call_args[i]
+                        if i < len(user_args):
+                            val = user_args[i]
                         else:
                             if hasattr(arg, 'default') and arg.default is not NotDefined:
                                 val = arg.default
@@ -28,14 +45,19 @@ class Poly:
                             require.isterm(val, arg.hint)
 
                 entity_type = typesystem.typeof(entity)
-                if not hasattr(entity_type, attr):
-                    raise AttributeError(f"type '{entity_type.__name__}' has no attribute '{attr}'")
+                method = getattr(entity_type, attr, None)
+                if method is None:
+                    method = getattr(entity, attr, None)
 
-                method = getattr(entity_type, attr)
+                if method is None:
+                    type_name = getattr(entity_type, '__name__', type(entity).__name__)
+                    raise AttributeError(f"type '{type_name}' has no attribute '{attr}'")
+
                 if not builtins.callable(method):
-                    raise TypeError(f"'{attr}' is not callable on type '{entity_type.__name__}'")
+                    type_name = getattr(entity_type, '__name__', type(entity).__name__)
+                    raise TypeError(f"'{attr}' is not callable on type '{type_name}'")
 
-                res = method(entity, *final_args)
+                res = method(entity, *final_args, **kwargs)
 
                 if cod is not None:
                     from typed.mods.check import require
@@ -46,10 +68,23 @@ class Poly:
             __poly__.__name__ = attr
             return __poly__
 
-        def __poly__(entity: object) -> object:
+        def __poly__(*call_args: Any, **kwargs: Any) -> Any:
             f"""
             The '{attr}' parametric polymorphism.
             """
+            if not call_args and not kwargs:
+                raise TypeError(f"Polymorphism '{attr}' requires at least one argument to dispatch.")
+
+            if call_args:
+                entity = call_args[1]
+            else:
+                entity = next((v for v in kwargs.values() if isinstance(v, type)), None)
+                if entity is None:
+                    raise TypeError(
+                        f"Polymorphism '{attr}' requires at least one type/class to dispatch. "
+                        f"Ensure you are passing classes as values (e.g., A=X, not X='A'). Received kwargs: {kwargs}"
+                    )
+
             from typed.mods.err import NotDefined
             return getattr(entity, attr, NotDefined)
 
