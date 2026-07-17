@@ -4,7 +4,7 @@ __imports__ = {
     "typed.mods.types.atomic": [
         "Type", "Meta",
         "Empty", "Any", "Nill",
-        "Int", "Float", "Boll", "Str",
+        "Int", "Float", "Bool", "Str",
         "Enumerable", "Finite",
         "Member", "Dom", "Cod"
     ],
@@ -33,7 +33,7 @@ if lazy(__imports__):
     from typed.mods.types.atomic import (
         Type, Meta,
         Empty, Any, Nill,
-        Int, Float, Boll, Str,
+        Int, Float, Bool, Str,
         Enumerable, Finite,
         Member, Dom, Cod 
     )
