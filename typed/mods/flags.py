@@ -61,5 +61,26 @@ class flag:
     is_related     = "is_related"
     is_ffiltered   = "is_filtered"
 
-def flagged(obj: object, *flags: tuple[str]) -> bool:
-    return all(getattr(obj, f, False) for f in flags)
+def flags(obj):
+    d = getattr(
+        obj,
+        "__dict__",
+        None
+    )
+    if d is not None and "__flags__" in d:
+        f = d["__flags__"]
+    else:
+        f = getattr(
+            obj,
+            "__flags__",
+            None
+        )
+    if f is None:
+        from typed.helper.flags import EMPTY_FLAGS_PROXY
+        return EMPTY_FLAGS_PROXY
+    from typed.helper.flags import _FlagProxy
+    return _FlagProxy(f)
+
+def flagged(obj: object, *args: tuple[str]) -> bool:
+    proxy = flags(obj)
+    return all(getattr(proxy, arg) for arg in args)

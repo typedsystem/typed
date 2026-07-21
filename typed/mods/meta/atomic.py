@@ -255,8 +255,7 @@ class LAZY(TYPE):
         return super().__new__(mcs, name, bases, dct, **kwargs)
 
     def __isterm__(typ, trm):
-        flags = getattr(trm, "__flags__", None)
-        is_lazy = getattr(flags, "is_lazy", False) if flags else False
-        if is_lazy and hasattr(trm, "materialize"):
+        from typed.mods.flags import flags
+        if flags(trm).is_lazy and hasattr(trm, "materialize"):
             return True
         return False

@@ -5,12 +5,13 @@ __imports__ = {
         "__FLAGS__",
         "Flags",
         "flag",
-        "flagged"
+        "flagged",
+        "flags"
     ]
 }
 
 
 if lazy(__imports__):
     from typed.mods.flags import (
-        __FLAGS__, Flags, flag, flagged
+        __FLAGS__, Flags, flag, flags, flagged
     )

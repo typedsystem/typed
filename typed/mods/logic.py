@@ -153,18 +153,15 @@ class __QUANTIFIER__(type):
         return cls
 
     def __instancecheck__(cls, instance):
-        flags = getattr(instance, '__flags__', None)
-        if flags is None or not flags.is_quantifier:
+        from typed.mods.flags import flags
+        if not flags(instance).is_quantifier:
             return False
-
         expected_order = getattr(cls, "__order__", None)
         expected_count = getattr(cls, "__count__", None)
-
         if expected_order is not None and getattr(instance, "order", 1) != expected_order:
             return False
         if expected_count is not None and getattr(instance, "count", None) != expected_count:
             return False
-
         return True
 
     def __call__(cls, *args, **kwargs):
@@ -361,18 +358,20 @@ class Predicate:
     __display__ = "Predicate"
 
     def __init__(self, func: callable):
-        flags = getattr(func, '__flags__', None)
-        if flags is not None and flags.is_predicate:
+        from typed.mods.flags import flags
+        if flags(func).is_predicate:
             self.func = getattr(func, 'func', func)
             self.__name__ = getattr(func, '__name__', 'predicate')
         else:
             if not callable(func):
                 from typed.mods.err import TypeErr
-                raise TypeErr(term=func, expected=("callable",), received=(type(func),))
-
+                raise TypeErr(
+                    term=func,
+                    expected=("callable",),
+                    received=(type(func),)
+                )
             self.func = func
             self.__name__ = getattr(func, '__name__', 'predicate')
-
             from typed.mods.flags import Flags
             self.__flags__ = Flags(is_predicate=True)
 

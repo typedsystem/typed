@@ -829,9 +829,8 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
     _type_cache = weakref.WeakValueDictionary()
 
     def __isterm__(typ, trm):
-        flags = getattr(trm, "__flags__", None)
-        is_lazy = getattr(flags, "is_lazy", False) if flags else False
-        if is_lazy:
+        from typed.mods.flags import flags
+        if flags(trm).is_lazy:
             return False
         if not super().__isterm__(trm):
             return False

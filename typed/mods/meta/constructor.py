@@ -282,7 +282,9 @@ class EXTENSIONAL(TYPE):
         types = (t for t in getattr(typ, "__types__", (typ,)))
         others = (o for o in getattr(other, "__types__", (other,)))
         from typed.mods.typesystem import issub
-        if other.__flags__.is_extensional:
+        from typed.mods.flags import flags
+
+        if flags(other).is_extensional:
             return quantifier(
                 issub(
                     o,
@@ -459,9 +461,11 @@ class PROD(ALGEBRAIC):
 
     def __issub__(typ, other):
         from typed.mods.typesystem import issub
+        from typed.mods.flags import flags
         types = getattr(typ, "__types__", tuple())
         others = getattr(other, "__types__", tuple())
-        if getattr(other.__flags__, "is_prod", False):
+
+        if flags(other).is_prod:
             if not types:
                 return True
             if not others:
@@ -497,9 +501,11 @@ class COPROD(ALGEBRAIC, TUPLE):
 
     def __issub__(typ, other):
         from typed.mods.typesystem import issub
+        from typed.mods.flags import flags
         types = getattr(typ, "__types__", tuple())
         others = getattr(other, "__types__", tuple())
-        if getattr(other.__flags__, "is_coprod", False):
+
+        if flags(other).is_coprod:
             if not types:
                 return False
             if not others:
@@ -515,13 +521,15 @@ class COPROD(ALGEBRAIC, TUPLE):
     def __isequiv__(typ, other):
         from typed.mods.typesystem import isequiv, issame
         from typed.mods.types.atomic import Empty
+        from typed.mods.flags import flags
         types = list(getattr(typ, "__types__", []))
         if len(types) == 2:
             if issame(types[1], Empty) and isequiv(types[0], other):
                 return True
             if issame(types[0], Empty) and isequiv(types[1], other):
                 return True
-        if getattr(other, "__flags__", None) and other.__flags__.is_coprod:
+
+        if flags(other).is_coprod:
             others = list(getattr(other, "__types__", []))
             types_clean = [t for t in types if not issame(t, Empty)]
             others_clean = [o for o in others if not issame(o, Empty)]
