@@ -1,6 +1,7 @@
 import weakref
 from functools import lru_cache as cache
-from typed.mods.types.atomic import Dom, Cod, Nill, Bool, Type
+from typed.mods.types.atomic import Dom, Cod, Nill, Bool
+from typed.mods.meta.atomic import TYPE
 
 class Arg:
     def __init__(self, name: str, hint: object, default: object):
@@ -460,8 +461,8 @@ class nill:
     def condition(x: Nill) -> Bool:
         return False
 
-    def family(x: Nill) -> Type:
+    def family(x: Nill) -> TYPE:
         return Nill
 
-    def constructor(x: Type) -> Type:
+    def constructor(x: TYPE) -> TYPE:
         return Nill

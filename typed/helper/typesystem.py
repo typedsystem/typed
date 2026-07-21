@@ -289,23 +289,17 @@ class STATEFUL:
 
 class MAGIC:
     def __in__(typ, trm):
-        return STATEFUL.__isterm__(typ, trm)
-
+        return STATEFUL.__isterm__(typ, trm) is True
     def __le__(typ, other):
-        return STATEFUL.__issub__(typ, other)
-
+        return STATEFUL.__issub__(typ, other) is True
     def __lt__(typ, other):
-        return STATEFUL.__issub__(typ, other) and not STATEFUL.__issub__(other, typ)
-
+        return STATEFUL.__issub__(typ, other) is True and not (STATEFUL.__issub__(other, typ) is True)
     def __ge__(typ, other):
-        return STATEFUL.__issub__(other, typ)
-
+        return STATEFUL.__issub__(other, typ) is True
     def __gt__(typ, other):
-        return STATEFUL.__issub__(other, typ) and not STATEFUL.__issub__(typ, other)
-
+        return STATEFUL.__issub__(other, typ) is True and not (STATEFUL.__issub__(typ, other) is True)
     def __eq__(typ, other):
-        return STATEFUL.__isequiv__(typ, other)
-
+        return STATEFUL.__isequiv__(typ, other) is True
     def __ne__(typ, other):
         return not MAGIC.__eq__(typ, other)
 

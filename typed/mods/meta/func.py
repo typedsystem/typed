@@ -931,7 +931,8 @@ class CONDITION(TYPED):
         return super().__isterm__(trm) and sig.cod is Bool
 
     def __call__(typ, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
-        from typed.mods.types.atomic import Type, Bool
+        from typed.mods.types.atomic import Bool
+        from typed.mods.meta.atomic import TYPE
         from typed.mods.resolve import resolve
         from typed.mods.err import TypeErr
         typesystem = resolve.typesystem.entity(typesystem)
@@ -968,7 +969,7 @@ class CONDITION(TYPED):
         from typed.mods.check import check as __check, require
         if args and __check.every.isterm(
             args,
-            Type,
+            TYPE,
             explode=False
         ) and not kwargs:
             types = tuple(args)

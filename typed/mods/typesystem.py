@@ -285,26 +285,30 @@ class __UNIVERSE__(type, metaclass=___UNIVERSE___):
     def __call__(typ, *args, typesystem=None, **kwargs):
         if len(args) == 3 and isinstance(args[0], str) and isinstance(args[1], tuple) and isinstance(args[2], dict):
             return super().__call__(*args, **kwargs)
-
         from typed.mods.resolve import resolve
         typesystem = resolve.typesystem.entity(typesystem)
-
         from typed.mods.err import NotDefined
+
+        kind = getattr(typ, "__kind__", "universe")
+
         if len(args) == 1 and isinstance(args[0], int):
             n = args[0]
             if n < 0:
-                return typesystem.__universe__
+                return typesystem.__abstract__ if kind == "abstract" else typesystem.__universe__
 
             typesystem.enrich(level=n+1)
-            UNI = typesystem.__members__["universe"][n]
+            target_kind = kind if kind in typesystem.__members__ else "universe"
+
+            UNI = typesystem.__members__[target_kind][n]
             UNI.__typesystems__ = [typesystem]
-            UNI.__type__ = typesystem.__members__["universe"][n+1]
+            UNI.__type__ = typesystem.__members__[target_kind][n+1]
             UNI.__builtin__ = NotDefined
             UNI.__null__ = NotDefined
             return UNI
 
         if len(args) == 0 and typesystem is not NotDefined:
-            return typesystem.__universe__
+            return typesystem.__abstract__ if kind == "abstract" else typesystem.__universe__
+
         return super().__call__(*args, **kwargs)
 
 
@@ -552,7 +556,7 @@ class __TYPESYSTEM__:
                 if prev is not None:
                     prev.__class__ = univ_cls
                 if prev_abs is not None:
-                    prev_abs.__class__ = univ_cls
+                    prev_abs.__class__ = abs_cls
 
                 prev = univ_cls
                 prev_abs = abs_cls

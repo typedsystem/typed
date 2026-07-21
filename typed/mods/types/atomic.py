@@ -42,30 +42,6 @@ class Any(metaclass=ANY):
     """
     __null__        = None
 
-class Type(metaclass=TYPE):
-    """
-    The atomic type of all types
-
-    : kindof(Type)    is  type
-    : typeof(Type)    is  TYPE := UNIVERSE(0)
-    : isterm(x, Type) iff issub(typeof(x), Type)
-    : nullof(Type)    is  Nill
-    : builtin(Type)   is  type
-    """
-    __null__        = Nill
-    __builtin__     = type
-
-class Meta(metaclass=META):
-    """
-    The atomic type of all metaypes
-
-    : kindof(Meta)    is  type
-    : typeof(Meta)    is  META := ABSTRACT(0)
-    : isterm(x, Meta) iff issub(typeof(x), Meta)
-    : nullof(Meta)    is  NotDefined
-    : builtin(Meta)   is  NotDefined
-    """
-
 class Enumerable(metaclass=ENUMERABLE):
     """
     The atomic type of all enumerable types.
