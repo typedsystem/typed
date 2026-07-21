@@ -331,12 +331,12 @@ def _abstract_isterm(univ, stateful, typesystem):
 
 def _universe_issub(univ, other, stateful):
     if "is_universe" in getattr(other, "__dict__", {}) and "is_universe" in getattr(univ, "__dict__", {}):
-        return getattr(other, "level", -1) <= getattr(univ, "level", -1)
+        return getattr(other, "__level__", -1) <= getattr(univ, "__level__", -1)
     return stateful.__issub__(univ, other)
 
 def _abstract_issub(abs, other, stateful):
     if "is_abstract" in getattr(other, "__dict__", {}) and "is_abstract" in getattr(abs, "__dict__", {}):
-        return getattr(other, "level", -1) <= getattr(abs, "level", -1)
+        return getattr(other, "__level__", -1) <= getattr(abs, "__level__", -1)
     return stateful.__issub__(abs, other)
 
 @cache
