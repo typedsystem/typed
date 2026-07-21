@@ -1,22 +1,22 @@
 from typing import Any, Callable
 
 class Poly:
-    def __new__(self, attr: str, *args, cod=None, typesystem=None, callable: bool=False) -> Callable[..., Any]:
+    def __new__(self, attr, *args, cod=None, typesystem=None, callable=False):
         from typed.mods.resolve import resolve
         typesystem = resolve.typesystem.entity(typesystem)
 
         if (args or cod is not None) or callable is True:
             import builtins
 
-            def __poly__(*call_args: Any, **kwargs: Any) -> Any:
+            def __poly__(*call_args, **kwargs):
                 from typed.mods.err import NotDefined
 
                 if not call_args and not kwargs:
                     raise TypeError(f"Polymorphism '{attr}' requires at least one argument to dispatch.")
 
                 if call_args:
-                    entity = call_args[1]
-                    user_args = list(call_args[2:])
+                    entity = call_args[0]
+                    user_args = list(call_args[1:])
                 else:
                     entity = next((v for v in kwargs.values() if isinstance(v, type)), None)
                     if entity is None:
@@ -45,19 +45,40 @@ class Poly:
                             require.isterm(val, arg.hint)
 
                 entity_type = typesystem.typeof(entity)
-                method = getattr(entity_type, attr, None)
+                
+                method = getattr(
+                    entity_type,
+                    attr,
+                    None
+                )
                 if method is None:
-                    method = getattr(entity, attr, None)
+                    method = getattr(
+                        entity,
+                        attr,
+                        None
+                    )
 
                 if method is None:
-                    type_name = getattr(entity_type, '__name__', type(entity).__name__)
+                    type_name = getattr(
+                        entity_type,
+                        '__name__',
+                        type(entity).__name__
+                    )
                     raise AttributeError(f"type '{type_name}' has no attribute '{attr}'")
 
                 if not builtins.callable(method):
-                    type_name = getattr(entity_type, '__name__', type(entity).__name__)
+                    type_name = getattr(
+                        entity_type,
+                        '__name__',
+                        type(entity).__name__
+                    )
                     raise TypeError(f"'{attr}' is not callable on type '{type_name}'")
 
-                res = method(entity, *final_args, **kwargs)
+                res = method(
+                    entity,
+                    *final_args,
+                    **kwargs
+                )
 
                 if cod is not None:
                     from typed.mods.check import require
@@ -68,7 +89,7 @@ class Poly:
             __poly__.__name__ = attr
             return __poly__
 
-        def __poly__(*call_args: Any, **kwargs: Any) -> Any:
+        def __poly__(*call_args, **kwargs):
             f"""
             The '{attr}' parametric polymorphism.
             """
@@ -76,7 +97,7 @@ class Poly:
                 raise TypeError(f"Polymorphism '{attr}' requires at least one argument to dispatch.")
 
             if call_args:
-                entity = call_args[1]
+                entity = call_args[0]
             else:
                 entity = next((v for v in kwargs.values() if isinstance(v, type)), None)
                 if entity is None:
@@ -86,7 +107,12 @@ class Poly:
                     )
 
             from typed.mods.err import NotDefined
-            return getattr(entity, attr, NotDefined)
+
+            return getattr(
+                entity,
+                attr,
+                NotDefined
+            )
 
         __poly__.__name__ = attr
         return __poly__
