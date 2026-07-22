@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from typed.mods.meta.constructor import (
     TUPLE, LIST, SET, DICT,
     EXTENSIONAL, UNION, INTER, NOT_IN,
@@ -6,6 +7,10 @@ from typed.mods.meta.constructor import (
 from typed.mods.flags import Flags
 
 class Tuple(metaclass=TUPLE):
+    if TYPE_CHECKING:
+        def __new__(cls, *types, typesystem=None):
+            ...
+
     """
     The constructor type of tuples.
 
@@ -34,6 +39,7 @@ class Tuple(metaclass=TUPLE):
 
     def __split__(trm, by=None, size=None, key=None, predicate=None):
         from typed.mods.err import Err
+
         seq = tuple(trm)
         if size is not None:
             if size <= 0:
@@ -54,7 +60,12 @@ class Tuple(metaclass=TUPLE):
 
         raise Err(message="split(seq): must specify at least one of 'size', 'predicate', or 'key'")
 
+
 class List(metaclass=LIST):
+    if TYPE_CHECKING:
+        def __new__(cls, *types, typesystem=None):
+            ...
+
     """
     The constructor type of lists.
 
@@ -85,6 +96,7 @@ class List(metaclass=LIST):
 
     def __split__(trm, by=None, size=None, key=None, predicate=None):
         from typed.mods.err import Err
+
         seq = list(trm)
         if size is not None:
             if size <= 0:
@@ -104,9 +116,14 @@ class List(metaclass=LIST):
                 groups.setdefault(k, []).append(x)
             return {k: type(trm)(v) for k, v in groups.items()}
 
-        raise Err(message="split(seq): must specify at least one of 'size', 'predicate', or 'key'") 
+        raise Err(message="split(seq): must specify at least one of 'size', 'predicate', or 'key'")
+
 
 class Set(metaclass=SET):
+    if TYPE_CHECKING:
+        def __new__(cls, *types, typesystem=None):
+            ...
+
     """
     The constructor type of sets.
 
@@ -137,6 +154,7 @@ class Set(metaclass=SET):
 
     def __split__(trm, by=None, size=None, key=None, predicate=None):
         from typed.mods.err import Err
+
         if predicate is not None:
             left = {x for x in trm if predicate(x)}
             right = {x for x in trm if not predicate(x)}
@@ -149,9 +167,14 @@ class Set(metaclass=SET):
                 groups.setdefault(k, set()).add(x)
             return {k: type(trm)(v) for k, v in groups.items()}
 
-        raise Err(message="split(set): must specify 'predicate' or 'key'") 
+        raise Err(message="split(set): must specify 'predicate' or 'key'")
+
 
 class Dict(metaclass=DICT):
+    if TYPE_CHECKING:
+        def __new__(cls, *types, key=None, typesystem=None):
+            ...
+
     """
     The constructor type of dicts.
 
@@ -171,8 +194,10 @@ class Dict(metaclass=DICT):
 
     def __getitem__(trm, key):
         return trm.__dict__[key]
+
     def __setitem__(trm, key, value):
         trm.__dict__[key] = value
+
     def __contains__(trm, key):
         return key in trm.__dict__
 
@@ -209,6 +234,7 @@ class Dict(metaclass=DICT):
 
     def __split__(trm, by=None, size=None, key=None, predicate=None):
         from typed.mods.err import Err, TypeErr
+
         if by is not None:
             if not isinstance(by, (set, list, tuple)):
                 raise TypeErr(message="split(dict): 'by' must be an iterable of keys", term=by, expected=(set, list, tuple))
@@ -235,7 +261,12 @@ class Dict(metaclass=DICT):
 
         raise Err(message="split(dict): must specify one of 'by', 'predicate', or 'key'")
 
+
 class Extensional(metaclass=EXTENSIONAL):
+    if TYPE_CHECKING:
+        def __new__(cls, name, *types, bases=(), base=None, quantifier=None, typesystem=None):
+            ...
+
     """
     The constructor extensional type.
 
@@ -248,7 +279,12 @@ class Extensional(metaclass=EXTENSIONAL):
     """
     __flags__ = Flags(is_constructor=True, is_extensional=True)
 
+
 class Union(metaclass=UNION):
+    if TYPE_CHECKING:
+        def __new__(cls, *types, base=None, typesystem=None):
+            ...
+
     """
     The constructor extensional 'union' type.
 
@@ -261,7 +297,12 @@ class Union(metaclass=UNION):
     """
     __flags__ = Flags(is_constructor=True, is_extensional=True)
 
+
 class Inter(metaclass=INTER):
+    if TYPE_CHECKING:
+        def __new__(cls, *types, base=None, typesystem=None):
+            ...
+
     """
     The constructor extensional 'intersection' type.
 
@@ -274,7 +315,12 @@ class Inter(metaclass=INTER):
     """
     __flags__ = Flags(is_constructor=True, is_extensional=True)
 
+
 class NotIn(metaclass=NOT_IN):
+    if TYPE_CHECKING:
+        def __new__(cls, name, *types, base=None, typesystem=None):
+            ...
+
     """
     The constructor extensional 'not in' type.
 
@@ -287,7 +333,12 @@ class NotIn(metaclass=NOT_IN):
     """
     __flags__ = Flags(is_constructor=True, is_extensional=True)
 
+
 class Algebraic(metaclass=ALGEBRAIC):
+    if TYPE_CHECKING:
+        def __new__(cls, name, *types, base=None, typesystem=None):
+            ...
+
     """
     The constructor extensional type.
 
@@ -300,7 +351,12 @@ class Algebraic(metaclass=ALGEBRAIC):
     """
     __flags__ = Flags(is_constructor=True, is_extensional=True)
 
+
 class Prod(metaclass=PROD):
+    if TYPE_CHECKING:
+        def __new__(cls, *types, typesystem=None): 
+            ...
+
     """
     The constructor algebraic 'product' type.
 
@@ -313,7 +369,12 @@ class Prod(metaclass=PROD):
     """
     __flags__ = Flags(is_constructor=True, is_algebraic=True)
 
+
 class Coprod(metaclass=COPROD):
+    if TYPE_CHECKING:
+        def __new__(cls, *types, typesystem=None): 
+            ...
+
     """
     The constructor algebraic 'coproduct' type.
 

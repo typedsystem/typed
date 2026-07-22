@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from typed.mods.meta.func import (
     CALLABLE,
     LAMBDA,
@@ -25,7 +26,12 @@ from typed.mods.meta.func import (
 )
 from typed.mods.func import nill
 
+
 class Callable(metaclass=CALLABLE):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, **kwargs):
+            ...
+
     """
     The type of callables.
 
@@ -33,9 +39,7 @@ class Callable(metaclass=CALLABLE):
     : isterm(f, Callable) iff callable(f)
     : nullof(Callable)    is  nill
     """
-
     def __call__(self, *args, **kwargs):
-
         if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
             return self.reduce(*args, **kwargs)
         return self.__func__(*args, **kwargs)
@@ -43,9 +47,7 @@ class Callable(metaclass=CALLABLE):
     def reduce(self, *args, **kwargs):
         from typed.mods.func import reduce as _reduce
         reduced = _reduce(self.__func__, *args, **kwargs)
-
         inst = type(self)(reduced)
-
         try:
             from typed.mods.typesystem import nameof
             base_name = nameof(self)
@@ -54,13 +56,13 @@ class Callable(metaclass=CALLABLE):
             pos = ", ".join(_repr_arg(a) for a in args)
             kw  = ", ".join(f"{k}={_repr_arg(v)}" for k, v in kwargs.items())
             inside = ", ".join(p for p in (pos, kw) if p)
+
             if inside:
                 inst.__display__ = f"{base_name}({inside})"
             else:
                 inst.__display__ = base_name
         except Exception:
             inst.__display__ = reduced.__name__
-
         return inst
 
     @property
@@ -107,36 +109,65 @@ class Callable(metaclass=CALLABLE):
     __null__    = nill.func
     __builtin__ = callable
 
+
 class Lambda(Callable, metaclass=LAMBDA):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, **kwargs):
+            ...
     """
     """
+
+
 class Class(Callable, metaclass=CLASS):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, **kwargs):
+            ...
     """
     """
     __null__ = nill.cls
 
+
 class Method(Callable, metaclass=METHOD):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, **kwargs):
+            ...
     """
     """
     __null__ = nill.cls().nill
 
+
 class Func(Callable, metaclass=FUNC):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     """
     The type of functions.
     """
     __null__ = nill.func
 
+
 class DomFunc(Func, metaclass=DOM_FUNC):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     """
     """
     __null__ = nill.dom.func
 
+
 class CodFunc(Func, metaclass=COD_FUNC):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, cod=None, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     """
     """
     __null__ = nill.cod.func
 
+
 class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, cod=None, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     """
     """
     __null__ = nill.comp
@@ -169,22 +200,37 @@ class CompFunc(DomFunc, CodFunc, metaclass=COMP_FUNC):
         from typed.mods.func import compose
         return compose(other, self)
 
+
 class DomHinted(DomFunc, metaclass=DOM_HINTED):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.dom.hinted
 
+
 class CodHinted(CodFunc, metaclass=COD_HINTED):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, cod=None, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.cod.hinted
 
+
 class Hinted(CompFunc, DomHinted, CodHinted, metaclass=HINTED):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, cod=None, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.hinted
 
+
 class DomTyped(DomHinted, metaclass=DOM_TYPED):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.dom.typed
 
     def __call__(self, *args, check: bool=True, **kwargs):
         if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
             return self.reduce(*args, **kwargs)
-
         effective_check = check and getattr(self, '_check', True)
 
         if effective_check:
@@ -195,7 +241,11 @@ class DomTyped(DomHinted, metaclass=DOM_TYPED):
 
         return self.__func__(*args, **kwargs)
 
+
 class CodTyped(CodHinted, metaclass=COD_TYPED):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, cod=None, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.cod.typed
 
     def __call__(self, *args, check: bool=True, **kwargs):
@@ -203,7 +253,6 @@ class CodTyped(CodHinted, metaclass=COD_TYPED):
             return self.reduce(*args, **kwargs)
 
         r = self.__func__(*args, **kwargs)
-
         effective_check = check and getattr(self, '_check', True)
 
         if effective_check:
@@ -214,7 +263,11 @@ class CodTyped(CodHinted, metaclass=COD_TYPED):
 
         return r
 
+
 class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, cod=None, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.cod.typed
 
     def __call__(self, *args, check: bool=True, **kwargs):
@@ -235,29 +288,43 @@ class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
             if 'sig' not in locals():
                 from typed.mods.func import signature
                 sig = signature(self.__func__)
-
             from typed.mods.check import require
             require.bind.cod(self.__func__, sig, r)
 
         return r
 
+
 class Condition(Typed, metaclass=CONDITION):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.condition
 
+
 class Family(Typed, metaclass=FAMILY):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.family
 
+
 class Constructor(Family, metaclass=CONSTRUCTOR):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.constructor
 
 
 class LazyFunc(Callable, metaclass=LAZY_FUNC):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, target_type=None, check=None, defaults=None, envs=None, typesystem=None, **kwargs):
+            ...
+
     def materialize(self):
         if self._wrapped is None:
             target_type = getattr(self, '_target_type', None)
             if target_type is None:
                 target_type = Func
-
             self._wrapped = target_type(
                 self.__func__, 
                 check=self._check, 
@@ -269,7 +336,6 @@ class LazyFunc(Callable, metaclass=LAZY_FUNC):
     def __call__(self, *args, check: bool=True, **kwargs):
         if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
             return self.reduce(*args, **kwargs)
-
         return self.materialize()(*args, check=check, **kwargs)
 
     def __getattr__(self, name):
@@ -277,17 +343,37 @@ class LazyFunc(Callable, metaclass=LAZY_FUNC):
             return super().__getattribute__(name)
         return getattr(self.materialize(), name)
 
+
 class LazyHinted(LazyFunc, Hinted, metaclass=LAZY_HINTED):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.hinted
 
+
 class LazyTyped(LazyFunc, Typed, metaclass=LAZY_TYPED):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.cod.typed
 
+
 class LazyCondition(LazyFunc, Condition, metaclass=LAZY_CONDITION):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.condition
 
+
 class LazyFamily(LazyFunc, Family, metaclass=LAZY_FAMILY):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.family
 
+
 class LazyConstructor(LazyFunc, Constructor, metaclass=LAZY_CONSTRUCTOR):
+    if TYPE_CHECKING:
+        def __new__(cls, *args, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
+            ...
     __null__ = nill.constructor

@@ -1,11 +1,16 @@
+from typing import TYPE_CHECKING
 from typed.mods.meta.dependent import (
     RELATED, SUBS, SUPS, SAME, EQUIV,
     FILTERED, BOUNDED, HAS
 )
-
 from typed.mods.flags import Flags
 
+
 class Related(metaclass=RELATED):
+    if TYPE_CHECKING:
+        def __new__(cls, entities: tuple[object]=None, relations: tuple[callable]=None, name="Related", base: type=None, quantifier=None, typesystem=None):
+            ...
+
     """
     The dependent 'bounded' type.
 
@@ -18,7 +23,12 @@ class Related(metaclass=RELATED):
     """
     __flags__ = Flags(is_dependent=True, is_related=True)
 
+
 class Subs(metaclass=SUBS):
+    if TYPE_CHECKING:
+        def __new__(cls, *entities, base: type=None, quantifier=None, typesystem=None):
+            ...
+
     """
     The dependent 'issub of them' type.
 
@@ -31,7 +41,12 @@ class Subs(metaclass=SUBS):
     """
     __flags__ = Flags(is_dependent=True, is_related=True)
 
+
 class Sups(metaclass=SUPS):
+    if TYPE_CHECKING:
+        def __new__(cls, *entities, base: type=None, quantifier=None, typesystem=None):
+            ...
+
     """
     The dependent 'issub of them' type.
 
@@ -44,7 +59,12 @@ class Sups(metaclass=SUPS):
     """
     __flags__ = Flags(is_dependent=True, is_related=True)
 
+
 class Same(metaclass=SAME):
+    if TYPE_CHECKING:
+        def __new__(cls, *entities, base: type=None, quantifier=None, typesystem=None):
+            ...
+
     """
     The dependent 'isequiv to them' type.
 
@@ -57,7 +77,12 @@ class Same(metaclass=SAME):
     """
     __flags__ = Flags(is_dependent=True, is_related=True)
 
+
 class Equiv(metaclass=EQUIV):
+    if TYPE_CHECKING:
+        def __new__(cls, *entities, base: type=None, quantifier=None, typesystem=None):
+            ...
+
     """
     The dependent 'isequiv to them' type.
 
@@ -70,7 +95,12 @@ class Equiv(metaclass=EQUIV):
     """
     __flags__ = Flags(is_dependent=True, is_related=True)
 
+
 class Filtered(metaclass=FILTERED):
+    if TYPE_CHECKING:
+        def __new__(cls, type: type, filters: tuple[callable]=None, typesystem=None):
+            ...
+
     """
     The dependent 'bounded' type.
 
@@ -83,7 +113,12 @@ class Filtered(metaclass=FILTERED):
     """
     __flags__ = Flags(is_dependent=True, is_filtered=True)
 
+
 class Bounded(metaclass=BOUNDED):
+    if TYPE_CHECKING:
+        def __new__(cls, type: type=None, bound=-1, op='==', base: type=None, typesystem=None):
+            ...
+
     """
     The dependent 'bounded' type.
 
@@ -96,7 +131,12 @@ class Bounded(metaclass=BOUNDED):
     """
     __flags__ = Flags(is_dependent=True, is_enumerable=True, is_finite=True, is_bounded=True)
 
+
 class Has(metaclass=HAS):
+    if TYPE_CHECKING:
+        def __new__(cls, *attrs, quantifier=None):
+            ...
+
     """
     The dependent 'has' type.
 
