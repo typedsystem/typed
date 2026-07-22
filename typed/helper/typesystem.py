@@ -188,15 +188,14 @@ class STATEFUL:
         key = (id(typ), id(trm))
         if key in STATEFUL.TERMS:
             return False
-
         STATEFUL.TERMS.add(key)
+
         try:
             if typesystem is None:
                 from typed.mods.resolve import resolve
                 typesystem = resolve.typesystem.entity(typesystem)
 
             meta_typ = typesystem.typeof(typ)
-
             for base in getattr(meta_typ, "__mro__", [meta_typ]):
                 if "__isterm__" in getattr(base, "__dict__", {}):
                     isterm = base.__dict__["__isterm__"]
@@ -210,21 +209,10 @@ class STATEFUL:
                     break
 
             type_trm = typesystem.typeof(trm)
-            for base in getattr(type_trm, "__mro__", [type_trm]):
-                if "__issub__" in getattr(base, "__dict__", {}):
-                    issub = base.__dict__["__issub__"]
-                    if issub is not STATEFUL.__issub__:
-                        try:
-                            res = issub(type_trm, typ)
-                            STATEFUL._isterm_cache[cache_key] = res
-                            return res
-                        except TypeError:
-                            pass
-                    break
-
             res = STATEFUL.__issub__(typ, type_trm, typesystem=typesystem)
             STATEFUL._isterm_cache[cache_key] = res
             return res
+
         finally:
             STATEFUL.TERMS.remove(key)
 

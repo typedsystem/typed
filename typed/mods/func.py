@@ -61,11 +61,7 @@ def compose(f, g):
 
 @cache
 def hints(func):
-    from typing import get_type_hints
-    try:
-        return get_type_hints(func)
-    except Exception:
-        return {}
+    return getattr(func, "__annotations__", {})
 
 @cache
 def args(func: callable) -> tuple[Arg, ...]:
@@ -91,22 +87,24 @@ def args(func: callable) -> tuple[Arg, ...]:
 
 @cache
 def signature(func: callable) -> Signature:
-    from typed.mods.meta.atomic import TYPE
     from typed.mods.err import NotDefined
+    from typed.mods.typesystem import isentity, typemap
 
     target = unwrap(func)
-
     target_args = args(func)
     hints_dict = hints(target)
 
     hint_dom = tuple(a.hint for a in target_args if a.hint is not None and a.hint is not NotDefined)
-    hint_cod = hints_dict.get('return', None)
 
-    if not isinstance(hint_cod, TYPE):
-        hint_cod = None
+    hint_cod = hints_dict.get('return', None)
+    if hint_cod is not None:
+        mapped_cod = typemap(hint_cod)
+        if mapped_cod is not NotDefined:
+            hint_cod = mapped_cod
+        elif not isentity(hint_cod):
+            hint_cod = None
 
     orig_dom, orig_cod = (), None
-
     if hasattr(func, "_dom"):
         orig_dom = func._dom
         orig_cod = getattr(func, "_cod", None)
@@ -121,10 +119,19 @@ def signature(func: callable) -> Signature:
         orig_cod = hint_cod
 
     from typed.mods.check import require
-    require.hint.dom(func, orig_dom, hint_dom)
+
+    require.hint.dom(
+        func=func,
+        expected_dom=orig_dom,
+        received_dom=hint_dom
+    )
 
     if hint_cod is not None:
-        require.hint.cod(func, orig_cod, hint_cod)
+        require.hint.cod(
+            func=func,
+            expected_cod=orig_cod,
+            received_cod=hint_cod
+        )
 
     return Signature(
         func=target,
