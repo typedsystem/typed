@@ -55,6 +55,7 @@ class SUBS(RELATED):
     """
     def __call__(met, *entities, base: type=None, quantifier=None, typesystem=None):
         from typed.mods.resolve import resolve
+
         if not entities: entities = None
         elif len(entities) == 1 and isinstance(entities[0], tuple): entities = entities[0]
         return super().__call__(
@@ -147,17 +148,28 @@ class FILTERED(TYPE):
         require.every.iscallable(filters)
         return quantifier(filter(trm) for filter in filters)
 
-    def __call__(met, type: type, filters: tuple[callable]=None, typesystem=None):
+    def __call__(met, type: type, filters: tuple[callable]=(), quantifier=None, typesystem=None):
+        if typesystem is None:
+            from typed.mods.resolve import resolve
+            typesystem = resolve.typesystem.entity(typesystem)
         name = f"Filtered({typesystem.nameof(type)}, filters={typesystem.nameof(filters)})"
         from typed.mods.flags import Flags
         from typed.mods.init import TYPESYSTEM
         from typed.mods.logic import Discourse
 
-        class Filtered(type, metaclass=type(met)):
+        metatype = FILTERED
+        bases = list(metatype.__bases__)
+        bases.insert(0, typesystem.typeof(type))
+        metatype.__bases__ = tuple(bases)
+
+        class Filtered(type, metaclass=metatype):
             __typesystems__ = {TYPESYSTEM, typesystem}
             __flags__       = Flags(is_dependent=True)
             __base__        = type
-            __filters__     = filters if filters in Discourse else (filters, )
+            __quantifier__  = quantifier
+            __filters__     = filters if filters in Discourse else (filters,)
+
+        return Filtered
 
 class BOUNDED(FINITE):
     """
