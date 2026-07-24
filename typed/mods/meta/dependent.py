@@ -136,7 +136,7 @@ class HAS(RELATED):
 
 class FILTERED(TYPE):
     def __isterm__(typ, trm):
-        base = getattr(typ, "__base__", None)
+        base = getattr(typ, "__basis__", None)
         from typed.mods.check import require
         require.isinstance(base, type)
         require.isterm(trm, base)
@@ -148,6 +148,13 @@ class FILTERED(TYPE):
         require.every.iscallable(filters)
         return quantifier(filter(trm) for filter in filters)
 
+    def __issub__(typ, other):
+        base = getattr(typ, "__basis__", None)
+        if base and other <= base:
+            return True
+        from typed.mods.typesystem import issub
+        return issub(other, typ)
+
     def __call__(met, type: type, filters: tuple[callable]=(), quantifier=None, typesystem=None):
         if typesystem is None:
             from typed.mods.resolve import resolve
@@ -157,15 +164,10 @@ class FILTERED(TYPE):
         from typed.mods.init import TYPESYSTEM
         from typed.mods.logic import Discourse
 
-        metatype = FILTERED
-        bases = list(metatype.__bases__)
-        bases.insert(0, typesystem.typeof(type))
-        metatype.__bases__ = tuple(bases)
-
-        class Filtered(type, metaclass=metatype):
+        class Filtered(metaclass=FILTERED):
             __typesystems__ = {TYPESYSTEM, typesystem}
             __flags__       = Flags(is_dependent=True)
-            __base__        = type
+            __basis__        = type
             __quantifier__  = quantifier
             __filters__     = filters if filters in Discourse else (filters,)
 
@@ -178,7 +180,7 @@ class BOUNDED(FINITE):
     def __isterm__(met, trm):
         from typed.mods.typesystem import isterm
 
-        base_type = getattr(met, "__base__", None)
+        base_type = getattr(met, "__basis__", None)
         bound = getattr(met, "__bound__", -1)
         op = getattr(met, "__op__", None)
 
@@ -244,13 +246,13 @@ class BOUNDED(FINITE):
         from typed.mods.init import TYPESYSTEM
 
         class Bounded(type, metaclass=type(met)):
-            __kind__        = "type"
-            __typesystems__ = {TYPESYSTEM, typesystem}
-            __display__     = display_name
-            __base__        = type
-            __bound__       = bound
-            __op__          = op_func
-            __flags__       = Flags(is_dependent=True, is_enumerable=True, is_finite=True, is_bounded=True)
+            __kind__         = "type"
+            __typesystems__  = {TYPESYSTEM, typesystem}
+            __display__      = display_name
+            __basis__        = type
+            __bound__        = bound
+            __op__           = op_func
+            __flags__        = Flags(is_dependent=True, is_enumerable=True, is_finite=True, is_bounded=True)
 
         Bounded.__name__ = display_name
         return Bounded

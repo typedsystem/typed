@@ -89,11 +89,12 @@ class STATEFUL:
 
             meta_typ = typesystem.typeof(typ)
             meta_other = typesystem.typeof(other)
-            if not STATEFUL.__issame__(meta_typ, meta_other, typesystem=typesystem):
-                STATEFUL._issup_cache[cache_key] = False
-                return False
 
-            for base in getattr(meta_typ, "__mro__", [meta_typ]):
+            meta_typ_mro = getattr(meta_typ, "__mro__", [meta_typ])
+            meta_other_mro = getattr(meta_other, "__mro__", [meta_other])
+            _mro = set(meta_typ_mro).union(meta_other_mro)
+
+            for base in _mro:
                 if "__issup__" in getattr(base, "__dict__", {}):
                     issup = base.__dict__["__issup__"]
                     if issup is not STATEFUL.__issup__:
@@ -105,7 +106,7 @@ class STATEFUL:
                             pass
                     break
 
-            for base in getattr(meta_other, "__mro__", [meta_other]):
+            for base in _mro:
                 if "__issub__" in getattr(base, "__dict__", {}):
                     issub = base.__dict__["__issub__"]
                     if issub is not STATEFUL.__issub__:
@@ -145,13 +146,14 @@ class STATEFUL:
 
             meta_typ = typesystem.typeof(typ)
             meta_other = typesystem.typeof(other)
-            if not STATEFUL.__issame__(meta_typ, meta_other, typesystem=typesystem):
-                STATEFUL._issub_cache[cache_key] = False
-                return False
 
-            for base in getattr(meta_typ, "__mro__", [meta_typ]):
-                if "__issub__" in getattr(base, "__dict__", {}):
-                    issub = base.__dict__["__issub__"]
+            meta_typ_mro = getattr(meta_typ, "__mro__", [meta_typ])
+            meta_other_mro = getattr(meta_other, "__mro__", [meta_other])
+            _mro = set(meta_typ_mro).union(meta_other_mro)
+
+            for base in _mro:
+                issub = getattr(base, "__issub__", None)
+                if issub:
                     if issub is not STATEFUL.__issub__:
                         try:
                             res = issub(typ, other)
@@ -161,7 +163,7 @@ class STATEFUL:
                             pass
                     break
 
-            for base in getattr(meta_other, "__mro__", [meta_other]):
+            for base in _mro:
                 if "__issup__" in getattr(base, "__dict__", {}):
                     issup = base.__dict__["__issup__"]
                     if issup is not STATEFUL.__issup__:
