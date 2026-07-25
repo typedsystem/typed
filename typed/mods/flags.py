@@ -22,6 +22,9 @@ class Flags(metaclass=__FLAGS__):
         is_coprod:      bool=False,
         is_related:     bool=False,
         is_filtered:    bool=False,
+        is_service:     bool=False,
+        is_action:      bool=False,
+        is_enriched:    bool=False
     ):
         self.is_discourse   = is_discourse
         self.is_reducer     = is_reducer
@@ -41,25 +44,9 @@ class Flags(metaclass=__FLAGS__):
         self.is_coprod      = is_coprod
         self.is_related     = is_related
         self.is_filtered    = is_filtered
-
-class flag:
-    is_discourse   = "is_discourse"
-    is_reducer     = "is_reducer"
-    is_predicate   = "is_predicate"
-    is_evaluator   = "is_evaluator"
-    is_quantifier  = "is_quantifier"
-    is_parametric  = "is_parametric"
-    is_expression  = "is_expression"
-    is_constructor = "is_constructor"
-    is_dependent   = "is_dependent"
-    is_enumerable  = "is_enumerable"
-    is_finite      = "is_finite"
-    is_bounded     = "is_bounded"
-    is_extensional = "is_extensional"
-    is_prod        = "is_prod"
-    is_coprod      = "is_coprod"
-    is_related     = "is_related"
-    is_ffiltered   = "is_filtered"
+        self.is_service     = is_service
+        self.is_action      = is_action
+        self.is_enriched    = is_enriched
 
 def flags(obj):
     d = getattr(

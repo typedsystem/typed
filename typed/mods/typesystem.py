@@ -690,11 +690,22 @@ def typemap(type, typesystem: __TYPESYSTEM__=None):
     from typed.mods.err import NotDefined
     return NotDefined
 
-def typeof(entity: object, level: int=1, typesystem=None):
+def typeof(entity: object, level: int = 1, typesystem = None):
     from typed.helper.typesystem import _typeof_cache
     from typed.mods.resolve import resolve
+ 
     typesystem = resolve.typesystem.entity(typesystem)
-    return _typeof_cache(type(entity), level, typesystem)
+    if type(entity).__name__ == '_TermProxy':
+        entity_type = object.__getattribute__(entity, "__type__")
+        if level == 1:
+            return entity_type
+        base = entity_type
+        for i in range(2, level + 1):
+            base = _typeof_cache(type(base), 1, typesystem)
+        return base
+
+    entity_type = type(entity)
+    return _typeof_cache(entity_type, level, typesystem)
 
 @cache
 def kindof(entity, typesystem: __TYPESYSTEM__=None):
@@ -901,9 +912,22 @@ def isequiv(entity: type, *others: tuple[type],  quantifier=None, typesystem: __
 
     return quantifier(__isequiv__(other, entity) for other in others)
 
-def term(value, type: type=None, typesystem:__TYPESYSTEM__=None):
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from typing import TypeVar, Type, Any, overload
+    T = TypeVar('T')
+    @overload
+    def term(value: Any, type: Type[T], typesystem: Any=None) -> Type[T]:
+        ...
+
+    @overload
+    def term(value: Any, type: None = None, typesystem: Any = None) -> Any:
+        ...
+
+def term(value, type=None, typesystem=None):
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
+
     if type is None:
         type = typeof(value, typesystem=typesystem)
 
@@ -931,10 +955,18 @@ def term(value, type: type=None, typesystem:__TYPESYSTEM__=None):
     if tracked is not NotDefined:
         value = tracked(value)
 
+    flags = getattr(type, "__flags__", None)
+    if flags and getattr(flags, "is_enriched", False):
+        from typed.helper.typesystem import _TermProxy
+        value = _TermProxy(value, type)
+
     if not hasattr(type, "__terms__"):
         type.__terms__ = WeakSet()
 
-    type.__terms__.add(value)
+    try:
+        type.__terms__.add(value)
+    except TypeError:
+        pass
 
     return value
 

@@ -332,3 +332,49 @@ def _typeof_cache(typ, level: int, typesystem):
     for i in range(2, level+1):
         base = _typeof_cache(type(base), 1, typesystem)
     return base
+
+class _TermProxy:
+    def __init__(self, value, target_type):
+        self.__value__ = value
+        self.__type__ = target_type  # Save the type!
+
+    def __getattr__(self, name):
+        service = self.__type__.__service__
+        target_cls = getattr(service, "__target__", service)
+        if hasattr(target_cls, name):
+            attr = getattr(target_cls, name)
+            if callable(attr):
+                if hasattr(attr, '__get__'):
+                    return attr.__get__(self, type(self))
+                from functools import partial
+                return partial(attr, self)
+            return attr
+        return getattr(self.__value__, name)
+
+    def __dir__(self):
+        attrs = set(super().__dir__())
+        attrs.update(dir(self.__value__))
+
+        service = getattr(self.__type__, '__service__', None)
+        if service is not None:
+            target_cls = getattr(service, "__target__", service)
+            attrs.update(dir(target_cls))
+
+        return sorted(list(attrs))
+
+    @property
+    def __class__(self):
+        return self.__type__
+
+    def __str__(self):
+        return str(self.__value__)
+    def __repr__(self):
+        return repr(self.__value__)
+    def __eq__(self, other):
+        return self.__value__ == getattr(other, '__value__', other)
+    def __hash__(self):
+        return hash(self.__value__)
+    def __add__(self, other):
+        return self.__value__ + getattr(other, '__value__', other)
+    def __len__(self):
+        return len(self.__value__)

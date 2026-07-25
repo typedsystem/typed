@@ -1,4 +1,5 @@
 import weakref
+from typing import TYPE_CHECKING
 from functools import lru_cache as cache
 from typed.mods.types.atomic import Dom, Cod, Nill, Bool
 from typed.mods.meta.atomic import TYPE
@@ -267,6 +268,52 @@ def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool
     if f is None:
         return decorator
     return decorator(f)
+
+if TYPE_CHECKING:
+    from typing import TypeVar, Callable, Any, overload
+    _T = TypeVar('_T')
+    _F = TypeVar('_F', bound=Callable[..., Any])
+
+    @overload
+    def service(*, name: str = None) -> Callable[[type[_T]], type[_T]]: 
+        ...
+    @overload
+    def service(cls: type[_T], *, name: str = None) -> type[_T]:
+        ...
+
+    @overload
+    def action(*, check: bool=None, defaults: bool=None, envs=None) -> Callable[[_F], _F]:
+        ...
+    @overload
+    def action(f: _F, *, check: bool=None, defaults: bool=None, envs=None) -> _F:
+        ...
+
+def action(f=None, *, check: bool=None, defaults: bool=None, envs=None):
+    def decorator(fn):
+        from typed.mods.types.service import Action
+        return Action(fn, check=check, defaults=defaults, envs=envs)
+
+    if f is None:
+        return decorator
+    return decorator(f)
+
+def service(cls=None, *, name: str = None):
+    """
+    User-facing decorator to register a Service.
+    """
+    def decorator(target_cls):
+        from typed.mods.types.service import Service
+        service_obj = Service(target_cls)
+
+        if name:
+            service_obj.__display__ = name
+
+        return service_obj
+
+    if cls is None:
+        return decorator
+    return decorator(cls)
+
 
 def closure(cls=None, *, lt="__lt__"):
     if cls is None:
