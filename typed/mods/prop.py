@@ -102,9 +102,26 @@ class prop:
             typesystem=typesystem
         )
 
-    def set(entity: object, prop: str, value: object) -> object:
-        return set(
-            entity=entity,
-            prop=prop,
-            value=value
-        )
+    class set:
+        def __new__(cls, entity, prop, value):
+            return globals()["set"](
+                entity=entity,
+                prop=prop,
+                value=value
+            )
+
+        @staticmethod
+        def nameof(entity, name):
+            setattr(entity, "__name__", name)
+            setattr(entity, "__display__", name)
+            return entity
+
+        @staticmethod
+        def typeof(entity, type):
+            setattr(entity, "__type__", type)
+            return entity
+
+        @staticmethod
+        def kindof(entity, kind):
+            setattr(entity, "__kind__", kind)
+            return entity
