@@ -26,6 +26,9 @@ __imports__ = {
         "Condition", "Family", "Constructor",
         "LazyTyped", "LazyFunc", "LazyHinted",
         "LazyCondition", "LazyFamily", "LazyConstructor"
+    ],
+    "typed.mods.types.service": [
+        "Action", "Service", "Enriched"
     ]
 }
 
@@ -55,4 +58,7 @@ if lazy(__imports__):
         Condition, Family, Constructor,
         LazyTyped, LazyFunc, LazyHinted,
         LazyCondition, LazyFamily, LazyConstructor
+    )
+    from typed.mods.types.service import (
+        Action, Service, Enriched
     )

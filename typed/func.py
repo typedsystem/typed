@@ -6,6 +6,7 @@ __imports__ = {
         "args", "signature",
         "compose", "reduce", "unwrap", "hints",
         "cache", "func", "hinted", "typed",
+        "service", "action",
         "condition", "family", "constructor",
         "closure"
     ]
@@ -17,6 +18,7 @@ if lazy(__imports__):
         args, signature,
         compose, reduce, unwrap, hints,
         cache, func, hinted, typed,
+        service, action,
         condition, family, constructor,
         closure
     )

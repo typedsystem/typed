@@ -1,0 +1,2 @@
+declare -gA PY_LIB 2>/dev/null || true
+PY_LIB["test"]="lib:test,provider:pypi,version:latest"

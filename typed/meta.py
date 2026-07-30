@@ -26,6 +26,9 @@ __imports__ = {
         "CONDITION", "FAMILY", "CONSTRUCTOR",
         "LAZY_TYPED", "LAZY_FUNC", "LAZY_HINTED",
         "LAZY_CONDITION", "LAZY_FAMILY", "LAZY_CONSTRUCTOR"
+    ],
+    "typed.mods.meta.service": [
+        "ACTION", "SERVICE", "ENRICHED"
     ]
 }
 
@@ -56,4 +59,7 @@ if lazy(__imports__):
         CONDITION, FAMILY, CONSTRUCTOR,
         LAZY_TYPED, LAZY_FUNC, LAZY_HINTED, 
         LAZY_CONDITION, LAZY_FAMILY, LAZY_CONSTRUCTOR
+    )
+    from typed.mods.meta.service import (
+        ACTION, SERVICE, ENRICHED
     )

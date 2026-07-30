@@ -13,7 +13,8 @@ __imports__ = {
         "Finite", "Enumerable", "Bounded",
         "Callable", "Func", "Typed",
         "Union", "Inter", "Prod", "Coprod",
-        "Same", "Equiv", "Filtered"
+        "Same", "Equiv", "Filtered",
+        "Enriched"
     ],
     "typed.err": [
         "NotDefined"
@@ -25,7 +26,8 @@ __imports__ = {
         "resolve"
     ],
     "typed.func": [
-        "func", "typed", "reduce", "compose"
+        "func", "typed", "reduce", "compose",
+        "service", "action"
     ],
     "typed.typesystem": [
         "new"
