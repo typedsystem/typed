@@ -30,7 +30,7 @@ __imports__ = {
         "service", "action"
     ],
     "typed.typesystem": [
-        "new"
+        "new", "term"
     ],
     "typed.prop": [
         "get", "set", "prop"
@@ -64,5 +64,5 @@ if lazy(__imports__):
     from typed.func import (
         func, typed, reduce, compose
     )
-    from typed.typesystem import new
+    from typed.typesystem import new, term
     from typed.prop import get, set, prop
