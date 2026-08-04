@@ -113,6 +113,23 @@ class Callable(metaclass=CALLABLE):
     def __display__(self):
         return self.__name__
 
+    @property
+    def __name__(self):
+        from typed.mods.err import NotDefined
+        return getattr(self, "_name", getattr(self.unwrap, "__name__", NotDefined))
+
+    @__name__.setter
+    def __name__(self, value):
+        self._name = value
+
+    @property
+    def __display__(self):
+        return getattr(self, "_display", self.__name__)
+
+    @__display__.setter
+    def __display__(self, value):
+        self._display = value
+
     __null__    = nill.func
     __builtin__ = callable
 
