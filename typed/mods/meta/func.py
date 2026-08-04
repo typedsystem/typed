@@ -66,10 +66,9 @@ class LAMBDA(CALLABLE):
         return isfunction(unwrapped) and getattr(unwrapped, "__name__", "") == "<lambda>"
 
 class FUNC(CALLABLE):
-    """
-    The metatype of functions.
-    """
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         from typed.mods.func import unwrap
         from inspect import isfunction, ismethod, isbuiltin
         from typed.mods.typesystem import issub
@@ -88,7 +87,6 @@ class FUNC(CALLABLE):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if len(args) == 1 and callable(args[0]) and not kwargs:
             func = args[0]
             if chk:
@@ -107,23 +105,19 @@ class FUNC(CALLABLE):
             inst._defaults = defs
             inst._envs = envs
             return inst
-
         if args or kwargs:
             from typed.mods.err import FuncErr
             raise FuncErr(
                 details="received unexpected number of arguments",
                 func=typ
             )
-
         return typ
 
 class DOM_FUNC(FUNC):
-    """
-    The metatype of domain-specified functions.
-    """
     _type_cache = weakref.WeakValueDictionary()
-
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         if not super().__isterm__(trm):
             return False
         from typed.mods.func import signature
@@ -145,17 +139,14 @@ class DOM_FUNC(FUNC):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if kwargs:
             from typed.mods.err import FuncErr
             raise FuncErr(
                 details="function do not expect kwargs",
                 func=typ
             )
-
         if not args:
             return typ
-
         if len(args) == 1 and callable(args[0]):
             func = args[0]
             if chk:
@@ -174,19 +165,16 @@ class DOM_FUNC(FUNC):
             inst._defaults = defs
             inst._envs = envs
             return inst
-
         types = tuple(args)
         cache_key = (typ, types, id(typesystem))
         if cache_key in typ._type_cache:
             return typ._type_cache[cache_key]
-
         from typed.mods.check import require
         require.every.ismember(types, typesystem)
         class_name = f"DomFunc({typesystem.nameof(*types)})"
         from typed.mods.init import TYPESYSTEM
         from typed.mods.flags import Flags
-
-        class DomFunc(typ, metaclass=type(typ)):
+        class DomFunc(typ, metaclass=DOM_FUNC):
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = class_name
             __types__ = types
@@ -194,18 +182,15 @@ class DOM_FUNC(FUNC):
                 is_func=True,
                 is_dom=True
             )
-
         DomFunc.__name__ = class_name
         typ._type_cache[cache_key] = DomFunc
         return DomFunc
 
 class COD_FUNC(FUNC):
-    """
-    The metatype of codomain-specified functions.
-    """
     _type_cache = weakref.WeakValueDictionary()
-
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         if not super().__isterm__(trm):
             return False
         from typed.mods.func import signature
@@ -215,14 +200,7 @@ class COD_FUNC(FUNC):
             return False
         cod_type = getattr(typ, "__cod__", None)
         if cod_type is None:
-            cod_type = getattr(typ, "__types__", None)
-        if cod_type is None:
             return False
-        try:
-            if cod in tuple(cod_type):
-                return True
-        except TypeError:
-            pass
         return cod is cod_type
 
     def __call__(typ, *args, cod=None, typesystem=None, check=None, defaults=None, envs=None, **kwargs):
@@ -231,10 +209,8 @@ class COD_FUNC(FUNC):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
-
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
             func = args[0]
             if chk:
@@ -253,7 +229,6 @@ class COD_FUNC(FUNC):
             inst._defaults = defs
             inst._envs = envs
             return inst
-
         from typed.mods.check import require
         if cod is None and len(args) == 1 and require.isterm(
             args[0],
@@ -262,10 +237,8 @@ class COD_FUNC(FUNC):
         ):
             cod = args[0]
             args = ()
-
         if cod is None and not args and not kwargs:
             return typ
-
         if require.isterm(
             cod,
             TYPE,
@@ -278,7 +251,6 @@ class COD_FUNC(FUNC):
             class_name = f"CodFunc(cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
             from typed.mods.flags import Flags
-
             class CodFunc(typ, metaclass=type(typ)):
                 __typesystems__ = {TYPESYSTEM, typesystem}
                 __display__ = class_name
@@ -287,22 +259,18 @@ class COD_FUNC(FUNC):
                     is_func=True,
                     is_cod=True
                 )
-
             CodFunc.__name__ = class_name
             typ._type_cache[cache_key] = CodFunc
             return CodFunc
-
         raise TypeErr(
             message="CodFunc(X) expects a single TYPE argument"
         )
 
 class COMP_FUNC(DOM_FUNC, COD_FUNC):
-    """
-    The metatype of composable functions.
-    """
     _type_cache = weakref.WeakValueDictionary()
-
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         if not super().__isterm__(trm):
             return False
         dom_types = getattr(typ, "__types__", None)
@@ -332,10 +300,8 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
-
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
             func = args[0]
             if chk:
@@ -354,10 +320,8 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
             inst._defaults = defs
             inst._envs = envs
             return inst
-
         if not args and cod is None and not kwargs:
             return typ
-
         from typed.mods.check import require
         if args and require.every.isterm(
             args,
@@ -377,7 +341,6 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
             class_name = f"CompFunc({typesystem.nameof(*types)}, cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
             from typed.mods.flags import Flags
-
             class CompFunc(typ, metaclass=type(typ)):
                 __typesystems__ = {TYPESYSTEM, typesystem}
                 __display__ = class_name
@@ -388,11 +351,9 @@ class COMP_FUNC(DOM_FUNC, COD_FUNC):
                     is_dom=True,
                     is_cod=True
                 )
-
             CompFunc.__name__ = class_name
             typ._type_cache[cache_key] = CompFunc
             return CompFunc
-
         raise TypeErr(
             message="CompFunc(X, Y, ..., cod=Z) expects TYPE arguments only"
         )
@@ -479,10 +440,11 @@ class DOM_HINTED(DOM_FUNC):
 
 class COD_HINTED(COD_FUNC):
     _type_cache = weakref.WeakValueDictionary()
-
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         from typed.mods.typesystem import issub
-        if issub(TYPE(trm), typ):
+        if issub(type(trm), typ):
             return True
         if not super().__isterm__(trm):
             return False
@@ -502,10 +464,8 @@ class COD_HINTED(COD_FUNC):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
-
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
             func = args[0]
             from typed.mods.func import signature
@@ -525,7 +485,6 @@ class COD_HINTED(COD_FUNC):
             inst._defaults = defs
             inst._envs = envs
             return inst
-
         from typed.mods.check import require
         if cod is None and len(args) == 1 and require.isterm(
             args[0],
@@ -534,10 +493,8 @@ class COD_HINTED(COD_FUNC):
         ):
             cod = args[0]
             args = ()
-
         if cod is None and not args and not kwargs:
             return typ
-
         if require.isterm(
             cod,
             TYPE,
@@ -550,7 +507,6 @@ class COD_HINTED(COD_FUNC):
             class_name = f"CodHinted(cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
             from typed.mods.flags import Flags
-
             class CodHinted(typ, metaclass=type(typ)):
                 __typesystems__ = {TYPESYSTEM, typesystem}
                 __display__ = class_name
@@ -559,19 +515,18 @@ class COD_HINTED(COD_FUNC):
                     is_type=True,
                     is_cod_hinted=True
                 )
-
             CodHinted.__name__ = class_name
             typ._type_cache[cache_key] = CodHinted
             return CodHinted
-
         raise TypeErr(
             message=f"{getattr(typ, '__name__', 'COD_HINTED')}(): expected 0 args, or a callable, or a single TYPE"
         )
 
 class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
     _type_cache = weakref.WeakValueDictionary()
-
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         if not super().__isterm__(trm):
             return False
         expected_types = getattr(typ, "__types__", None)
@@ -595,10 +550,8 @@ class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
-
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
             func = args[0]
             from typed.mods.func import signature
@@ -617,10 +570,8 @@ class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
             inst._defaults = defs
             inst._envs = envs
             return inst
-
         if not args and cod is None and not kwargs:
             return typ
-
         from typed.mods.check import require
         if args and require.every.isterm(
             args,
@@ -640,7 +591,6 @@ class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
             class_name = f"Hinted({typesystem.nameof(*types)}; {typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
             from typed.mods.flags import Flags
-
             class Hinted(typ, metaclass=type(typ)):
                 __typesystems__ = {TYPESYSTEM, typesystem}
                 __display__ = class_name
@@ -652,19 +602,18 @@ class HINTED(COMP_FUNC, COD_HINTED, DOM_HINTED):
                     is_cod=True,
                     is_hinted=True
                 )
-
             Hinted.__name__ = class_name
             typ._type_cache[cache_key] = Hinted
             return Hinted
-
         raise TypeErr(
             message=f"{getattr(typ, '__name__', 'HINTED')}(): expected 0 args, or a callable, or TYPE arguments plus cod=TYPE"
         )
 
 class DOM_TYPED(DOM_HINTED):
     _type_cache = weakref.WeakValueDictionary()
-
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         if not super().__isterm__(trm):
             return False
         expected = getattr(typ, "__types__", None)
@@ -683,7 +632,6 @@ class DOM_TYPED(DOM_HINTED):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if len(args) == 1 and callable(args[0]) and not kwargs:
             func = args[0]
             from typed.mods.func import signature
@@ -703,10 +651,8 @@ class DOM_TYPED(DOM_HINTED):
             inst._defaults = defs
             inst._envs = envs
             return inst
-
         if not args and not kwargs:
             return typ
-
         from typed.mods.check import require
         if args and require.every.isterm(
             args,
@@ -721,7 +667,6 @@ class DOM_TYPED(DOM_HINTED):
             class_name = f"DomTyped({typesystem.nameof(*types)})"
             from typed.mods.init import TYPESYSTEM
             from typed.mods.flags import Flags
-
             class DomTyped(typ, metaclass=type(typ)):
                 __typesystems__ = {TYPESYSTEM, typesystem}
                 __display__ = class_name
@@ -730,19 +675,18 @@ class DOM_TYPED(DOM_HINTED):
                     is_type=True,
                     is_dom_typed=True
                 )
-
             DomTyped.__name__ = class_name
             typ._type_cache[cache_key] = DomTyped
             return DomTyped
-
         raise TypeErr(
             message=f"{getattr(typ, '__name__', 'DOM_TYPED')}(): expected 0 args, or a callable, or TYPE arguments"
         )
 
 class COD_TYPED(COD_HINTED):
     _type_cache = weakref.WeakValueDictionary()
-
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         if not super().__isterm__(trm):
             return False
         expected = getattr(typ, "__cod__", None)
@@ -761,10 +705,8 @@ class COD_TYPED(COD_HINTED):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
-
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
             func = args[0]
             from typed.mods.func import signature
@@ -784,7 +726,6 @@ class COD_TYPED(COD_HINTED):
             inst._defaults = defs
             inst._envs = envs
             return inst
-
         from typed.mods.check import check as __check, require
         if cod is None and len(args) == 1 and __check.isterm(
             args[0],
@@ -792,10 +733,8 @@ class COD_TYPED(COD_HINTED):
         ):
             cod = args[0]
             args = ()
-
         if cod is None and not args and not kwargs:
             return typ
-
         if __check.isterm(
             cod,
             TYPE
@@ -807,7 +746,6 @@ class COD_TYPED(COD_HINTED):
             class_name = f"CodTyped(cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
             from typed.mods.flags import Flags
-
             class CodTyped(typ, metaclass=type(typ)):
                 __typesystems__ = {TYPESYSTEM, typesystem}
                 __display__ = class_name
@@ -816,19 +754,18 @@ class COD_TYPED(COD_HINTED):
                     is_type=True,
                     is_cod_typed=True
                 )
-
             CodTyped.__name__ = class_name
             typ._type_cache[cache_key] = CodTyped
             return CodTyped
-
         raise TypeErr(
             message=f"{getattr(typ, '__name__', 'COD_TYPED')}(): expected 0 args, or a callable, or a single TYPE"
         )
 
 class TYPED(HINTED, DOM_TYPED, COD_TYPED):
     _type_cache = weakref.WeakValueDictionary()
-
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         from typed.mods.flags import flags
         if flags(trm).is_lazy:
             return False
@@ -859,10 +796,8 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if "cod" in kwargs:
             cod = kwargs.pop("cod")
-
         if len(args) == 1 and callable(args[0]) and cod is None and not kwargs:
             func = args[0]
             from typed.mods.func import signature
@@ -881,10 +816,8 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
             inst._defaults = defs
             inst._envs = envs
             return inst
-
         if not args and cod is None and not kwargs:
             return typ
-
         from typed.mods.check import check as __check, require
         if cod is not None and __check.every.isterm(
             args,
@@ -899,7 +832,6 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
             class_name = f"Typed({typesystem.nameof(*types)}, cod={typesystem.nameof(cod)})"
             from typed.mods.init import TYPESYSTEM
             from typed.mods.flags import Flags
-
             class Typed(typ, metaclass=type(typ)):
                 __typesystems__ = {TYPESYSTEM, typesystem}
                 __display__ = class_name
@@ -909,19 +841,18 @@ class TYPED(HINTED, DOM_TYPED, COD_TYPED):
                     is_func=True,
                     is_typed=True
                 )
-
             Typed.__name__ = class_name
             typ._type_cache[cache_key] = Typed
             return Typed
-
         raise TypeErr(
             message="Typed() expects a callable, or TYPE arguments plus cod=TYPE"
         )
 
 class CONDITION(TYPED):
     _type_cache = weakref.WeakValueDictionary()
-
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         from typed.mods.types.atomic import Bool
         from typed.mods.func import signature
         try:
@@ -938,7 +869,6 @@ class CONDITION(TYPED):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if len(args) == 1 and callable(args[0]) and not kwargs:
             func = args[0]
             from typed.mods.func import signature
@@ -962,10 +892,8 @@ class CONDITION(TYPED):
                     f" ==> '{typesystem.nameof(getattr(inst, '_cod', None))}' is not 'Bool'"
                 )
             return inst
-
         if not args and not kwargs:
             return typ
-
         from typed.mods.check import check as __check, require
         if args and __check.every.isterm(
             args,
@@ -980,7 +908,6 @@ class CONDITION(TYPED):
             class_name = f"Condition({typesystem.nameof(*types)})"
             from typed.mods.init import TYPESYSTEM
             from typed.mods.flags import Flags
-
             class Condition(typ, metaclass=type(typ)):
                 __typesystems__ = {TYPESYSTEM, typesystem}
                 __display__ = class_name
@@ -990,17 +917,17 @@ class CONDITION(TYPED):
                     is_type=True,
                     is_condition=True
                 )
-
             Condition.__name__ = class_name
             typ._type_cache[cache_key] = Condition
             return Condition
-
         raise TypeErr(
             message="Condition() expects a Bool-returning callable, or TYPE arguments"
         )
 
 class FAMILY(TYPED):
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         from typed.mods.typesystem import issub
         from typed.mods.meta.atomic import TYPE
         from typed.mods.func import signature
@@ -1015,7 +942,6 @@ class FAMILY(TYPED):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if len(args) == 1 and callable(args[0]) and not kwargs:
             func = args[0]
             from typed.mods.func import signature
@@ -1045,6 +971,8 @@ class FAMILY(TYPED):
 
 class CONSTRUCTOR(FAMILY):
     def __isterm__(typ, trm):
+        if isinstance(trm, type) and issubclass(trm, typ):
+            return True
         from typed.mods.types.constructor import Tuple
         from typed.mods.typesystem import issub
         from typed.mods.meta.atomic import TYPE
@@ -1060,7 +988,6 @@ class CONSTRUCTOR(FAMILY):
         typesystem = resolve.typesystem.entity(typesystem)
         chk = resolve.typecheck.check(check, envs)
         defs = resolve.typecheck.defaults(defaults)
-
         if len(args) == 1 and callable(args[0]) and not kwargs:
             func = args[0]
             from typed.mods.func import signature

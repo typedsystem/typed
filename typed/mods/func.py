@@ -181,90 +181,109 @@ def unwrap(func: callable, attrs: list[str]=None) -> callable:
     from typed.helper.func import _unwrap_cache
     return _unwrap_cache(func, attrs_tuple)
 
-def func(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+def func(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None, err=None):
     def decorator(fn):
         from typed.mods.resolve import resolve
         lz = resolve.typecheck.lazy(lazy)
-
         from typed.mods.types.func import Func, LazyFunc
         if lz:
-            return LazyFunc(fn, check=check, defaults=defaults, envs=envs)
-        return Func(fn, check=check, defaults=defaults, envs=envs)
-
+            inst = LazyFunc(fn, check=check, defaults=defaults, envs=envs)
+        else:
+            inst = Func(fn, check=check, defaults=defaults, envs=envs)
+        if err is not None:
+            inst.__err__ = err
+        inst.__type__ = type(inst)
+        return inst
     if f is None:
         return decorator
     return decorator(f)
 
 
-def hinted(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+def hinted(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None, err=None):
     def decorator(fn):
         from typed.mods.resolve import resolve
         lz = resolve.typecheck.lazy(lazy)
-
         from typed.mods.types.func import Hinted, LazyHinted
         if lz:
-            return LazyHinted(fn, check=check, defaults=defaults, envs=envs)
-        return Hinted(fn, check=check, defaults=defaults, envs=envs)
-
+            inst = LazyHinted(fn, check=check, defaults=defaults, envs=envs)
+        else:
+            inst = Hinted(fn, check=check, defaults=defaults, envs=envs)
+        if err is not None:
+            inst.__err__ = err
+        inst.__type__ = type(inst)
+        return inst
     if f is None:
         return decorator
     return decorator(f)
 
 
-def typed(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+def typed(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None, err=None):
     def decorator(fn):
         from typed.mods.resolve import resolve
         lz = resolve.typecheck.lazy(lazy)
-
         from typed.mods.types.func import Typed, LazyTyped
         if lz:
-            return LazyTyped(fn, check=check, defaults=defaults, envs=envs)
-        return Typed(fn, check=check, defaults=defaults, envs=envs)
-
+            inst = LazyTyped(fn, check=check, defaults=defaults, envs=envs)
+        else:
+            inst = Typed(fn, check=check, defaults=defaults, envs=envs)
+        if err is not None:
+            inst.__err__ = err
+        inst.__type__ = type(inst)
+        return inst
     if f is None:
         return decorator
     return decorator(f)
 
 
-def condition(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+def condition(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None, err=None):
     def decorator(fn):
         from typed.mods.resolve import resolve
         lz = resolve.typecheck.lazy(lazy)
-
         from typed.mods.types.func import Condition, LazyCondition
         if lz:
-            return LazyCondition(fn, check=check, defaults=defaults, envs=envs)
-        return Condition(fn, check=check, defaults=defaults, envs=envs)
-
+            inst = LazyCondition(fn, check=check, defaults=defaults, envs=envs)
+        else:
+            inst = Condition(fn, check=check, defaults=defaults, envs=envs)
+        if err is not None:
+            inst.__err__ = err
+        inst.__type__ = type(inst)
+        return inst
     if f is None:
         return decorator
     return decorator(f)
 
 
-def family(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+def family(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None, err=None):
     def decorator(fn):
         from typed.mods.resolve import resolve
         lz = resolve.typecheck.lazy(lazy)
-
         from typed.mods.types.func import Family, LazyFamily
         if lz:
-            return LazyFamily(fn, check=check, defaults=defaults, envs=envs)
-        return Family(fn, check=check, defaults=defaults, envs=envs)
-
+            inst = LazyFamily(fn, check=check, defaults=defaults, envs=envs)
+        else:
+            inst = Family(fn, check=check, defaults=defaults, envs=envs)
+        if err is not None:
+            inst.__err__ = err
+        inst.__type__ = type(inst)
+        return inst
     if f is None:
         return decorator
     return decorator(f)
 
-def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None):
+
+def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None, err=None):
     def decorator(fn):
         from typed.mods.resolve import resolve
         lz = resolve.typecheck.lazy(lazy)
-
         from typed.mods.types.func import Constructor, LazyConstructor
         if lz:
-            return LazyConstructor(fn, check=check, defaults=defaults, envs=envs)
-        return Constructor(fn, check=check, defaults=defaults, envs=envs)
-
+            inst = LazyConstructor(fn, check=check, defaults=defaults, envs=envs)
+        else:
+            inst = Constructor(fn, check=check, defaults=defaults, envs=envs)
+        if err is not None:
+            inst.__err__ = err
+        inst.__type__ = type(inst)
+        return inst
     if f is None:
         return decorator
     return decorator(f)
@@ -282,25 +301,51 @@ if TYPE_CHECKING:
         ...
 
     @overload
-    def action(*, check: bool=None, defaults: bool=None, envs=None) -> Callable[[_F], _F]:
+    def action(*, check: bool=None, defaults: bool=None, envs=None, err=None) -> Callable[[_F], _F]:
         ...
     @overload
-    def action(f: _F, *, check: bool=None, defaults: bool=None, envs=None) -> _F:
+    def action(f: _F, *, check: bool=None, defaults: bool=None, envs=None, err=None) -> _F:
         ...
 
-def action(f=None, *, check: bool=None, defaults: bool=None, envs=None):
+def action(f=None, *, check: bool=None, lazy: bool=None, defaults: bool=None, envs=None, err=None):
     def decorator(fn):
-        from typed.mods.types.service import Action
-        return Action(fn, check=check, defaults=defaults, envs=envs)
+        import inspect
+        from typed.mods.types.atomic import Any
+
+        if not hasattr(fn, "__annotations__"):
+            fn.__annotations__ = {}
+
+        try:
+            sig = inspect.signature(fn)
+            for name in sig.parameters:
+                if name not in fn.__annotations__:
+                    fn.__annotations__[name] = Any
+            if "return" not in fn.__annotations__:
+                fn.__annotations__["return"] = Any
+        except Exception:
+            pass
+
+        inst = typed(
+            check=check, 
+            lazy=lazy, 
+            defaults=defaults, 
+            envs=envs, 
+            err=err
+        )(fn)
+
+        if hasattr(inst, "__flags__"):
+            inst.__flags__.is_action = True
+        else:
+            from typed.mods.flags import Flags
+            inst.__flags__ = Flags(is_action=True)
+
+        return inst
 
     if f is None:
         return decorator
     return decorator(f)
 
 def service(cls=None, *, name: str = None):
-    """
-    User-facing decorator to register a Service.
-    """
     def decorator(target_cls):
         from typed.mods.types.service import Service
         service_obj = Service(target_cls)
@@ -313,7 +358,6 @@ def service(cls=None, *, name: str = None):
     if cls is None:
         return decorator
     return decorator(cls)
-
 
 def closure(cls=None, *, lt="__lt__"):
     if cls is None:

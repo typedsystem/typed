@@ -42,7 +42,14 @@ class Callable(metaclass=CALLABLE):
     def __call__(self, *args, **kwargs):
         if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
             return self.reduce(*args, **kwargs)
-        return self.__func__(*args, **kwargs)
+        try:
+            return self.__func__(*args, **kwargs)
+        except Exception as e:
+            err = getattr(self, '__err__', None)
+            if err is not None:
+                from typed.mods.typesystem import nameof
+                raise err(f"Got an error in function {nameof(self.__func__)}: {e}") from None
+            raise 
 
     def reduce(self, *args, **kwargs):
         from typed.mods.func import reduce as _reduce
@@ -232,15 +239,19 @@ class DomTyped(DomHinted, metaclass=DOM_TYPED):
         if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
             return self.reduce(*args, **kwargs)
         effective_check = check and getattr(self, '_check', True)
-
-        if effective_check:
-            from typed.mods.check import require
-            from typed.mods.func import signature
-            sig = signature(self.__func__)
-            require.bind.dom(self.__func__, sig, args, kwargs)
-
-        return self.__func__(*args, **kwargs)
-
+        try:
+            if effective_check:
+                from typed.mods.check import require
+                from typed.mods.func import signature
+                sig = signature(self.__func__)
+                require.bind.dom(self.__func__, sig, args, kwargs)
+            return self.__func__(*args, **kwargs)
+        except Exception as e:
+            err = getattr(self, '__err__', None)
+            if err is not None:
+                from typed.mods.typesystem import nameof
+                raise err(f"Got an error in function {nameof(self.__func__)}: {e}") from None
+            raise 
 
 class CodTyped(CodHinted, metaclass=COD_TYPED):
     if TYPE_CHECKING:
@@ -251,17 +262,21 @@ class CodTyped(CodHinted, metaclass=COD_TYPED):
     def __call__(self, *args, check: bool=True, **kwargs):
         if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
             return self.reduce(*args, **kwargs)
-
-        r = self.__func__(*args, **kwargs)
-        effective_check = check and getattr(self, '_check', True)
-
-        if effective_check:
-            from typed.mods.check import require
-            from typed.mods.func import signature
-            sig = signature(self.__func__)
-            require.bind.cod(self.__func__, sig, r)
-
-        return r
+        try:
+            r = self.__func__(*args, **kwargs)
+            effective_check = check and getattr(self, '_check', True)
+            if effective_check:
+                from typed.mods.check import require
+                from typed.mods.func import signature
+                sig = signature(self.__func__)
+                require.bind.cod(self.__func__, sig, r)
+            return r
+        except Exception as e:
+            err = getattr(self, '__err__', None)
+            if err is not None:
+                from typed.mods.typesystem import nameof
+                raise err(f"Got an error in function {nameof(self.__func__)}: {e}") from None
+            raise 
 
 
 class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
@@ -273,26 +288,27 @@ class Typed(Hinted, DomTyped, CodTyped, metaclass=TYPED):
     def __call__(self, *args, check: bool=True, **kwargs):
         if Ellipsis in args or any(v is Ellipsis for v in kwargs.values()):
             return self.reduce(*args, **kwargs)
-
         effective_check = check and getattr(self, '_check', True)
-
-        if effective_check:
-            from typed.mods.check import require
-            from typed.mods.func import signature
-            sig = signature(self.__func__)
-            require.bind.dom(self.__func__, sig, args, kwargs)
-
-        r = self.__func__(*args, **kwargs)
-
-        if effective_check:
-            if 'sig' not in locals():
+        try:
+            if effective_check:
+                from typed.mods.check import require
                 from typed.mods.func import signature
                 sig = signature(self.__func__)
-            from typed.mods.check import require
-            require.bind.cod(self.__func__, sig, r)
-
-        return r
-
+                require.bind.dom(self.__func__, sig, args, kwargs)
+            r = self.__func__(*args, **kwargs)
+            if effective_check:
+                if 'sig' not in locals():
+                    from typed.mods.func import signature
+                    sig = signature(self.__func__)
+                from typed.mods.check import require
+                require.bind.cod(self.__func__, sig, r)
+            return r
+        except Exception as e:
+            err = getattr(self, '__err__', None)
+            if err is not None:
+                from typed.mods.typesystem import nameof
+                raise err(f"Got an error in function {nameof(self.__func__)}: {e}") from None
+            raise 
 
 class Condition(Typed, metaclass=CONDITION):
     if TYPE_CHECKING:
@@ -331,6 +347,9 @@ class LazyFunc(Callable, metaclass=LAZY_FUNC):
                 defaults=self._defaults, 
                 envs=self._envs
             )
+            if hasattr(self, '__err__'):
+                self._wrapped.__err__ = self.__err__
+            self._wrapped.__type__ = type(self._wrapped)
         return self._wrapped
 
     def __call__(self, *args, check: bool=True, **kwargs):

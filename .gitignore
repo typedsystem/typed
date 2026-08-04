@@ -12,3 +12,4 @@ __test__.py
 *.py[oc]
 models.py
 *.py[oc]
+./py.lock

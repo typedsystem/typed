@@ -24,7 +24,11 @@ class Flags(metaclass=__FLAGS__):
         is_filtered:    bool=False,
         is_service:     bool=False,
         is_action:      bool=False,
-        is_enriched:    bool=False
+        is_enriched:    bool=False,
+        is_func:        bool=False,
+        is_typed:       bool=False,
+        is_hinted:      bool=False,
+    
     ):
         self.is_discourse   = is_discourse
         self.is_reducer     = is_reducer
@@ -47,6 +51,9 @@ class Flags(metaclass=__FLAGS__):
         self.is_service     = is_service
         self.is_action      = is_action
         self.is_enriched    = is_enriched
+        self.is_func        = is_func
+        self.is_hinted      = is_hinted
+        self.is_typed       = is_typed
 
 def flags(obj):
     d = getattr(
