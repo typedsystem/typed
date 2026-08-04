@@ -4,11 +4,6 @@ from typed.mods.flags import Flags
 from typed.mods.meta.func import FUNC
 
 class ACTION(FUNC):
-    """
-    The metatype of framework actions.
-    Inherits from FUNC to allow partial hinting (e.g., unhinted 'self') 
-    and forward references (like 'Path').
-    """
     def __call__(typ, *args, **kwargs):
         if not args and not kwargs:
             return typ

@@ -290,21 +290,21 @@ def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool
 
 if TYPE_CHECKING:
     from typing import TypeVar, Callable, Any, overload
-    _T = TypeVar('_T')
-    _F = TypeVar('_F', bound=Callable[..., Any])
+    T = TypeVar('T')
+    F = TypeVar('F', bound=Callable[..., Any])
 
     @overload
-    def service(*, name: str = None) -> Callable[[type[_T]], type[_T]]: 
+    def service(*, name: str=None) -> Callable[[type[T]], type[T]]: 
         ...
     @overload
-    def service(cls: type[_T], *, name: str = None) -> type[_T]:
+    def service(cls: type[T], *, name: str=None, err: Exception=None) -> type[T]:
         ...
 
     @overload
-    def action(*, check: bool=None, defaults: bool=None, envs=None, err=None) -> Callable[[_F], _F]:
+    def action(*, check: bool=None, defaults: bool=None, envs=None, err: Exception=None) -> Callable[[F], F]:
         ...
     @overload
-    def action(f: _F, *, check: bool=None, defaults: bool=None, envs=None, err=None) -> _F:
+    def action(f: F, *, check: bool=None, defaults: bool=None, envs=None, err: Exception=None) -> F:
         ...
 
 def action(f=None, *, check: bool=None, lazy: bool=None, defaults: bool=None, envs=None, err=None):
@@ -345,14 +345,21 @@ def action(f=None, *, check: bool=None, lazy: bool=None, defaults: bool=None, en
         return decorator
     return decorator(f)
 
-def service(cls=None, *, name: str = None):
+def service(cls=None, *, name: str=None, err=None):
     def decorator(target_cls):
+        if err is not None:
+            for attr_name, attr_value in target_cls.__dict__.items():
+                if callable(attr_value) and not attr_name.startswith('_'):
+                    flags = getattr(attr_value, "__flags__", None)
+                    if flags and getattr(flags, "is_action", False):
+                        if getattr(attr_value, "__err__", None) is None:
+                            attr_value.__err__ = err
         from typed.mods.types.service import Service
         service_obj = Service(target_cls)
-
         if name:
             service_obj.__display__ = name
-
+        if err is not None:
+            service_obj.__err__ = err
         return service_obj
 
     if cls is None:
