@@ -18,7 +18,7 @@
 
 # Overview
 
-The library allows the construction of custom type systems (actually, sub-type systems of Python builtin type system), being strongly influenced by the Type Theory dialect. This means:
+The library allows the construction of custom type systems (actually, sub type systems of Python builtin type system), being strongly influenced by the Type Theory dialect. This means:
 
 1. to allow the definition of new _stratified universes_
 2. which extend _abstract types_
@@ -27,7 +27,7 @@ The library allows the construction of custom type systems (actually, sub-type s
 
 # Install
 
-The stable version can be installed from `pypi`:
+The stable version can be installed from `PyPi`:
 
 With `pip`:
 
@@ -35,7 +35,7 @@ With `pip`:
 pip install typedsystem
 ```
 
-The in-development version can be obtained from this repository:
+The dev version can be obtained from this repository:
 
 ```bash
 pip install git+https://github.com/typedsystem/typed
