@@ -94,6 +94,10 @@ class prop:
         from typed.mods.poly import termsof as _termsof
         return _termsof(entity=entity)
 
+    def nullof(entity: object) -> object:
+        from typed.mods.poly import nullof as _nullof
+        return _nullof(entity=entity)
+
     def get(entity: object, prop: str="", default: object=None, typesystem=None) -> object:
         return get(
             entity=entity,
@@ -124,4 +128,9 @@ class prop:
         @staticmethod
         def kindof(entity, kind):
             setattr(entity, "__kind__", kind)
+            return entity
+
+        @staticmethod
+        def nullof(entity, value):
+            setattr(entity, "__null__", value)
             return entity
