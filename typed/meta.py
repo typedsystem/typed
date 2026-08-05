@@ -3,7 +3,7 @@ from typed.mods.loader import lazy
 __imports__ = {
     "typed.mods.meta.atomic": [
         "TYPE", "META",
-        "EMPTY", "ANY", "NILL",
+        "EMPTY", "ANY", "TERM", "NILL",
         "INT", "FLOAT", "BOOL", "STR",
         "ENUMERABLE", "FINITE",
         "MEMBER", "DOM", "COD"
@@ -35,7 +35,7 @@ __imports__ = {
 if lazy(__imports__):
     from typed.mods.meta.atomic import (
         TYPE, META,
-        EMPTY, ANY, NILL,
+        EMPTY, ANY, TERM, NILL,
         INT, FLOAT, BOOL, STR,
         ENUMERABLE, FINITE,
         MEMBER, DOM, COD,
