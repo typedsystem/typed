@@ -336,15 +336,13 @@ def _typeof_cache(typ, level: int, typesystem):
 class _TermProxy:
     def __init__(self, value, target_type):
         self.__value__ = value
-        self.__type__ = target_type  # Save the type!
+        self.__type__ = target_type
 
     def __getattr__(self, name):
-        service = self.__type__.__service__
-        target_cls = getattr(service, "__target__", service)
-        if hasattr(target_cls, name):
-            attr = getattr(target_cls, name)
+        if hasattr(self.__type__, name):
+            attr = getattr(self.__type__, name)
             if callable(attr):
-                if hasattr(attr, '__get__'):
+                if hasattr(attr, "__get__"):
                     return attr.__get__(self, type(self))
                 from functools import partial
                 return partial(attr, self)

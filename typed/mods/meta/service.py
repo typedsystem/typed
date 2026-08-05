@@ -55,8 +55,8 @@ class ENRICHED(TYPE):
     def __isterm__(typ, trm):
         from typed.mods.typesystem import isterm
         return isterm(
-            term=trm,
-            types=(getattr(typ, "__pure_type__", None),)
+            trm,
+            getattr(typ, "__pure_type__", None)
         )
 
     def __getattr__(typ, name):
