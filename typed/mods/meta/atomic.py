@@ -50,6 +50,11 @@ class ANY(TYPE):
     def __issup__(typ, other):
         return False
 
+class TERM(ANY):
+    """
+    The atomic metatype of terms.
+    """
+
 class NILL(TYPE):
     """
     The atomic metatype of None value type.

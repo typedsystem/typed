@@ -307,45 +307,74 @@ if TYPE_CHECKING:
     def action(f: F, *, check: bool=None, defaults: bool=None, envs=None, err: Exception=None) -> F:
         ...
 
-def action(f=None, *, check: bool=None, lazy: bool=None, defaults: bool=None, envs=None, err=None):
-    def decorator(fn):
-        import inspect
-        from typed.mods.types.atomic import Any
+class action:
+    _fallback_ctx = None
 
-        if not hasattr(fn, "__annotations__"):
-            fn.__annotations__ = {}
+    def __new__(
+        cls,
+        f=None,
+        *,
+        check=None,
+        lazy=None,
+        defaults=None,
+        envs=None,
+        err=None
+    ):
+        def decorator(fn):
+            import inspect
+            from typed.mods.types.atomic import Any
+            
+            if not hasattr(fn, "__annotations__"):
+                fn.__annotations__ = {}
+            try:
+                sig = inspect.signature(fn)
+                for name in sig.parameters:
+                    if name not in fn.__annotations__:
+                        fn.__annotations__[name] = Any
+                if "return" not in fn.__annotations__:
+                    fn.__annotations__["return"] = Any
+            except Exception:
+                pass
+                
+            from typed.mods.func import typed
+            inst = typed(
+                check=check,
+                lazy=lazy,
+                defaults=defaults,
+                envs=envs,
+                err=err
+            )(fn)
+            
+            if hasattr(inst, "__flags__"):
+                inst.__flags__.is_action = True
+            else:
+                from typed.mods.flags import Flags
+                inst.__flags__ = Flags(is_action=True)
+            return inst
+            
+        if f is None:
+            return decorator
+        return decorator(f)
 
-        try:
-            sig = inspect.signature(fn)
-            for name in sig.parameters:
-                if name not in fn.__annotations__:
-                    fn.__annotations__[name] = Any
-            if "return" not in fn.__annotations__:
-                fn.__annotations__["return"] = Any
-        except Exception:
-            pass
+    @classmethod
+    def term(cls, trm, type=None):
+        if type is Ellipsis:
+            if cls._fallback_ctx is not None:
+                type = cls._fallback_ctx
+            else:
+                try:
+                    type = trm.__type__.__service__.__fallback__
+                except AttributeError:
+                    type = getattr(
+                        trm,
+                        '__type__',
+                        trm.__class__
+                    )
+                    
+        from typed.mods.typesystem import term
+        return term(value=trm, type=type)
 
-        inst = typed(
-            check=check, 
-            lazy=lazy, 
-            defaults=defaults, 
-            envs=envs, 
-            err=err
-        )(fn)
-
-        if hasattr(inst, "__flags__"):
-            inst.__flags__.is_action = True
-        else:
-            from typed.mods.flags import Flags
-            inst.__flags__ = Flags(is_action=True)
-
-        return inst
-
-    if f is None:
-        return decorator
-    return decorator(f)
-
-def service(cls=None, *, name: str=None, err=None):
+def service(cls=None, *, name=None, err=None, fallback=Ellipsis):
     def decorator(target_cls):
         if err is not None:
             for attr_name, attr_value in target_cls.__dict__.items():
@@ -360,6 +389,7 @@ def service(cls=None, *, name: str=None, err=None):
             service_obj.__display__ = name
         if err is not None:
             service_obj.__err__ = err
+        service_obj.__fallback__ = fallback
         return service_obj
 
     if cls is None:

@@ -1,6 +1,5 @@
 from typed.mods.meta.atomic import (
-    EMPTY, NILL, ANY,
-    TYPE, META,
+    EMPTY, NILL, ANY, TERM,
     ENUMERABLE, FINITE,
     STR, INT, FLOAT, BOOL, BYTE,
     MEMBER, DOM, COD
@@ -33,12 +32,25 @@ class Any(metaclass=ANY):
     """
     The atomic type of anything
 
-    : kindof(Empty)  is  type
-    : typeof(Any)    is ANY
-    : isterm(x, Any) := True
+    : kindof(Any)    is  type
+    : typeof(Any)    is  ANY
+    : isterm(x, Any) :=  True
     : issub(T, Any)  iff issub(typeof(T), ANY)
-    : nullof(Any)    is None
-    : builtin(Any)   is NotDefined
+    : nullof(Any)    is  None
+    : builtin(Any)   is  NotDefined
+    """
+    __null__        = None
+
+class Term(metaclass=TERM):
+    """
+    The atomic type of anything
+
+    : kindof(Term)    is  type
+    : typeof(Term)    is  TERM
+    : isterm(x, Term) :=  True
+    : issub(T, Term)  iff issub(typeof(T), TERM)
+    : nullof(Term)    is  None
+    : builtin(Term)   is  NotDefined
     """
     __null__        = None
 
@@ -173,7 +185,7 @@ class Member(metaclass=MEMBER):
     : builtin(Member)   is NotDefined
     """
 
-class Dom(metaclass=COD):
+class Dom(metaclass=DOM):
     """
     The atomic type of domains
 

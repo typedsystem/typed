@@ -924,12 +924,34 @@ if TYPE_CHECKING:
     def term(value: Any, type: None = None, typesystem: Any = None) -> Any:
         ...
 
-def term(value, type=None, typesystem=None):
+def term(
+    value,
+    type=None,
+    typesystem=None
+):
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
 
+    if type is Ellipsis:
+        from typed.mods.func import action
+        if getattr(action, "_fallback_ctx", None) is not None:
+            type = action._fallback_ctx
+        else:
+            try:
+                type = value.__type__.__service__.__fallback__
+            except AttributeError:
+                from typed.mods.err import TypeErr
+                raise TypeErr(
+                    message="Cannot use Ellipsis (...) for term declaration outside an action context or without a valid service fallback",
+                    term=value,
+                    expected=Ellipsis
+                )
+
     if type is None:
-        type = typeof(value, typesystem=typesystem)
+        type = typeof(
+            entity=value,
+            typesystem=typesystem
+        )
 
     from weakref import WeakSet
     from typed.mods.err import NotDefined, TypeErr
@@ -937,11 +959,21 @@ def term(value, type=None, typesystem=None):
     if type is NotDefined:
         raise NotDefined(
             message="Type not defined",
-            type=nameof(type, typesystem),
-            typesystem=nameof(type, typesystem)
+            type=nameof(
+                type,
+                typesystem
+            ),
+            typesystem=nameof(
+                type,
+                typesystem
+            )
         )
 
-    if not isterm(value, type, typesystem=typesystem):
+    if not isterm(
+        value,
+        type,
+        typesystem=typesystem
+    ):
         raise TypeErr(
             message="Type mismatch in term declaration",
             term=value,
@@ -950,17 +982,46 @@ def term(value, type=None, typesystem=None):
         )
 
     from typed.mods.poly import builtin
-    tracked = trackof(builtin(type), typesystem=typesystem)
-
+    tracked = trackof(
+        type=builtin(type),
+        typesystem=typesystem
+    )
     if tracked is not NotDefined:
         value = tracked(value)
 
-    flags = getattr(type, "__flags__", None)
-    if flags and getattr(flags, "is_enriched", False):
+    flags = getattr(
+        type,
+        "__flags__",
+        None
+    )
+    if flags and getattr(
+        flags,
+        "is_enriched",
+        False
+    ):
         from typed.helper.typesystem import _TermProxy
-        value = _TermProxy(value, type)
+        value = _TermProxy(
+            value,
+            type
+        )
+    else:
+        try:
+            setattr(
+                value,
+                "__type__",
+                type
+            )
+        except AttributeError:
+            from typed.helper.typesystem import _TermProxy
+            value = _TermProxy(
+                value,
+                type
+            )
 
-    if not hasattr(type, "__terms__"):
+    if not hasattr(
+        type,
+        "__terms__"
+    ):
         type.__terms__ = WeakSet()
 
     try:
