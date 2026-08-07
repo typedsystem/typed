@@ -96,19 +96,25 @@ def signature(func: callable) -> Signature:
     hints_dict = hints(target)
 
     hint_dom = tuple(a.hint for a in target_args if a.hint is not None and a.hint is not NotDefined)
-
     hint_cod = hints_dict.get('return', None)
+
     if hint_cod is not None:
         mapped_cod = typemap(hint_cod)
         if mapped_cod is not NotDefined:
             hint_cod = mapped_cod
+        elif hint_cod is Ellipsis or isinstance(hint_cod, str) or type(hint_cod).__name__ == "ForwardRef":
+            pass
         elif not isentity(hint_cod):
             hint_cod = None
 
     orig_dom, orig_cod = (), None
     if hasattr(func, "_dom"):
         orig_dom = func._dom
-        orig_cod = getattr(func, "_cod", None)
+        orig_cod = getattr(
+            func,
+            "_cod",
+            None
+        )
     elif hasattr(func, "__dict__") and "dom" in func.__dict__:
         orig_dom = func.__dict__["dom"]
         orig_cod = func.__dict__.get("cod", None)
@@ -120,13 +126,11 @@ def signature(func: callable) -> Signature:
         orig_cod = hint_cod
 
     from typed.mods.check import require
-
     require.hint.dom(
         func=func,
         expected_dom=orig_dom,
         received_dom=hint_dom
     )
-
     if hint_cod is not None:
         require.hint.cod(
             func=func,

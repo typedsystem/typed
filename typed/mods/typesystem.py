@@ -894,11 +894,15 @@ def issub(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYP
 
     return quantifier(__issub__(other, entity) for other in others)
 
+@cache
 def isterm(term: object, *types: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
     quantifier = resolve.logic.quantifier(quantifier)
     __isterm__ = typesystem.__stateful__.__isterm__
+
+    if type(term).__name__ == '_TermProxy':
+        term = object.__getattribute__(term, "__value__")
 
     return quantifier(__isterm__(type, term) for type in types)
 
@@ -925,11 +929,7 @@ if TYPE_CHECKING:
         ...
 
 
-def term(
-    value,
-    type=None,
-    typesystem=None
-):
+def term(value, type=None, typesystem=None):
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
 
@@ -990,39 +990,18 @@ def term(
     if tracked is not NotDefined:
         value = tracked(value)
 
-    flags = getattr(
-        type,
-        "__flags__",
-        None
-    )
-    if flags and getattr(
-        flags,
-        "is_enriched",
-        False
-    ):
+    from typed.mods.flags import flagged
+    if flagged(type, "is_enriched"):
         from typed.helper.typesystem import _TermProxy
-        value = _TermProxy(
-            value,
-            type
-        )
+        value = _TermProxy(value, type)
     else:
         try:
-            setattr(
-                value,
-                "__type__",
-                type
-            )
+            setattr(value, "__type__", type)
         except AttributeError:
             from typed.helper.typesystem import _TermProxy
-            value = _TermProxy(
-                value,
-                type
-            )
+            value = _TermProxy(value, type)
 
-    if not hasattr(
-        type,
-        "__terms__"
-    ):
+    if not hasattr(type, "__terms__"):
         type.__terms__ = WeakSet()
 
     try:

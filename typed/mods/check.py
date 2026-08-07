@@ -4,7 +4,7 @@ class __CHECKER__(type):
 class Checker(metaclass=__CHECKER__):
     def __init__(self, func: callable=None, name: str=None, quantifier: str=None, count: int=None, explode: bool=True):
         self.__func__ = func
-        self._quantifier = quantifier
+        self.__quantifier__ = quantifier
         self.count = count
         self.explode = explode
         self.__name__ = name if name is not None else getattr(func, '__name__', 'checker')
@@ -13,8 +13,8 @@ class Checker(metaclass=__CHECKER__):
     def __call__(self, *args, **kwargs):
         if self.__func__ is not None:
             return self.__func__(*args, **kwargs)
-        if self._quantifier == 'only' and len(args) == 1 and isinstance(args[0], int):
-            return type(self)(quantifier=self._quantifier, count=args[0], explode=self.explode)
+        if self.__quantifier__ == 'only' and len(args) == 1 and isinstance(args[0], int):
+            return type(self)(quantifier=self.__quantifier__, count=args[0], explode=self.explode)
 
         if len(args) == 1 and callable(args[0]):
             return staticmethod(type(self)(func=args[0], name=kwargs.get("name"), explode=self.explode))
@@ -39,21 +39,21 @@ class Checker(metaclass=__CHECKER__):
 
     @property
     def quantifier(self):
-        if self._quantifier is None:
+        if self.__quantifier__ is None:
             return None
-        if self._quantifier == 'some':
+        if self.__quantifier__ == 'some':
             from typed.mods.init import some
             return some
-        elif self._quantifier == 'every':
+        elif self.__quantifier__ == 'every':
             from typed.mods.init import every
             return every
-        elif self._quantifier == 'none':
+        elif self.__quantifier__ == 'none':
             from typed.mods.init import none
             return none
-        elif self._quantifier == 'only':
+        elif self.__quantifier__ == 'only':
             from typed.mods.init import only
             return only(self.count)
-        raise ValueError(f"Unknown quantifier {self._quantifier}")
+        raise ValueError(f"Unknown quantifier {self.__quantifier__}")
 
 class TypedChecker(Checker):
     def _expected(self, kind, typesystems):
@@ -102,11 +102,27 @@ class TypedChecker(Checker):
     def bind_dom(self, func, sig, args, kwargs) -> bool:
         from typed.mods.typesystem import typeof, isterm
         from typed.helper.func import _reduce_args
-        arguments = _reduce_args(sig.args, *args, **kwargs)
+
+        arguments = _reduce_args(
+            sig.args,
+            *args,
+            **kwargs
+        )
 
         for i, arg in enumerate(sig.args):
             if i < len(sig.dom):
                 expected_type = sig.dom[i]
+
+                if expected_type is Ellipsis:
+                    from typed.mods.func import action
+                    fallback = getattr(
+                        action,
+                        "_fallback_ctx",
+                        None
+                    )
+                    if fallback is not None:
+                        expected_type = fallback
+
                 if arg.name in arguments:
                     actual_value = arguments[arg.name]
                     if not isterm(actual_value, expected_type):
@@ -123,13 +139,26 @@ class TypedChecker(Checker):
 
     def bind_cod(self, func, sig, result) -> bool:
         from typed.mods.typesystem import typeof, isterm
+
         if sig.cod is not None:
-            if not isterm(result, sig.cod):
+            expected_type = sig.cod
+
+            if expected_type is Ellipsis:
+                from typed.mods.func import action
+                fallback = getattr(
+                    action,
+                    "_fallback_ctx",
+                    None
+                )
+                if fallback is not None:
+                    expected_type = fallback
+
+            if not isterm(result, expected_type):
                 if self.explode:
                     from typed.mods.err import CodErr
                     raise CodErr(
                         func=func,
-                        expected=sig.cod,
+                        expected=expected_type,
                         received=typeof(result)
                     )
                 return False
@@ -937,34 +966,28 @@ __require__ = TypedChecker(quantifier=None, explode=True)
 __check__ = TypedChecker(quantifier=None, explode=False)
 
 class check:
-    some  = __check__.some
+    some = __check__.some
     every = __check__.every
-    none  = __check__.none
-    only  = __check__.only
-
+    none = __check__.none
+    only = __check__.only
     class hint:
         dom = __check__.hint_dom
         cod = __check__.hint_cod
-
     class bind:
         dom = __check__.bind_dom
         cod = __check__.bind_cod
         defaults = __check__.defaults
 
     issafe = __check__.issafe
-
     isinstance = __check__.isinstance
     iscallable = __check__.iscallable
-
     isentity = __check__.isentity
     istype = __check__.istype
     ismeta = __check__.ismeta
     isabstract = __check__.isabstract
     isuniverse = __check__.isuniverse
-
     iscognate = __check__.iscognate
     iscongruent = __check__.iscongruent
-
     ismember = __check__.ismember
     isterm = __check__.isterm
     issub = __check__.issub
@@ -972,7 +995,6 @@ class check:
     issame = __check__.issame
     isequiv = __check__.isequiv
     satisfy = __check__.satisfy
-
     isfunc = __check__.isfunc
     iscomposable = __check__.iscomposable
     ishinted = __check__.ishinted
@@ -980,34 +1002,28 @@ class check:
     islazy = __check__.islazy
 
 class require:
-    some  = __require__.some
+    some = __require__.some
     every = __require__.every
-    none  = __require__.none
-    only  = __require__.only
-
+    none = __require__.none
+    only = __require__.only
     class hint:
         dom = __require__.hint_dom
         cod = __require__.hint_cod
-
     class bind:
         dom = __require__.bind_dom
         cod = __require__.bind_cod
         defaults = __require__.defaults
 
     issafe = __require__.issafe
-
     isinstance = __require__.isinstance
     iscallable = __require__.iscallable
-
     isentity = __require__.isentity
     istype = __require__.istype
     ismeta = __require__.ismeta
     isabstract = __require__.isabstract
     isuniverse = __require__.isuniverse
-
     iscognate = __require__.iscognate
     iscongruent = __require__.iscongruent
-
     ismember = __require__.ismember
     isterm = __require__.isterm
     issub = __require__.issub
@@ -1015,7 +1031,6 @@ class require:
     issame = __require__.issame
     isequiv = __require__.isequiv
     satisfy = __require__.satisfy
-
     isfunc = __require__.isfunc
     iscomposable = __require__.iscomposable
     ishinted = __require__.ishinted
