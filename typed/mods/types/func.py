@@ -49,7 +49,29 @@ class Callable(metaclass=CALLABLE):
             if err is not None:
                 from typed.mods.typesystem import nameof
                 raise err(f"Got an error in function {nameof(self.__func__)}: {e}") from None
-            raise 
+            raise
+
+    def __iter__(self):
+        unwrap = self.unwrap
+        if hasattr(unwrap, '__iter__'):
+            return iter(unwrap)
+        raise TypeError(f"argument of type '{type(self).__name__}' is not iterable")
+
+    def __contains__(self, item):
+        unwrap = self.unwrap
+        if hasattr(unwrap, '__contains__'):
+            return item in unwrap
+        if hasattr(unwrap, '__iter__'):
+            return item in unwrap
+
+        try:
+            res = self(item)
+            if isinstance(res, bool):
+                return res
+        except Exception:
+            pass
+
+        raise TypeError(f"argument of type '{type(self).__name__}' is not iterable")
 
     def reduce(self, *args, **kwargs):
         from typed.mods.func import reduce as _reduce

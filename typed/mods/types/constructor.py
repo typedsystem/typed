@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar, Type
 from typed.mods.meta.constructor import (
     TUPLE, LIST, SET, DICT,
     EXTENSIONAL, UNION, INTER, NOT_IN,
@@ -6,9 +6,10 @@ from typed.mods.meta.constructor import (
 )
 from typed.mods.flags import Flags
 
-class Tuple(metaclass=TUPLE):
+class Tuple(tuple, metaclass=TUPLE):
     if TYPE_CHECKING:
-        def __new__(cls, *types, typesystem=None):
+        T = TypeVar("T")
+        def __new__(cls: Type[T], *types, typesystem=None) -> Type[T]:
             ...
 
     """
@@ -61,9 +62,10 @@ class Tuple(metaclass=TUPLE):
         raise Err(message="split(seq): must specify at least one of 'size', 'predicate', or 'key'")
 
 
-class List(metaclass=LIST):
+class List(list, metaclass=LIST):
     if TYPE_CHECKING:
-        def __new__(cls, *types, typesystem=None):
+        T = TypeVar("T")
+        def __new__(cls: Type[T], *types, typesystem=None) -> Type[T]:
             ...
 
     """
@@ -119,9 +121,10 @@ class List(metaclass=LIST):
         raise Err(message="split(seq): must specify at least one of 'size', 'predicate', or 'key'")
 
 
-class Set(metaclass=SET):
+class Set(set, metaclass=SET):
     if TYPE_CHECKING:
-        def __new__(cls, *types, typesystem=None):
+        T = TypeVar("T")
+        def __new__(cls: Type[T], *types, typesystem=None) -> Type[T]:
             ...
 
     """
@@ -170,9 +173,11 @@ class Set(metaclass=SET):
         raise Err(message="split(set): must specify 'predicate' or 'key'")
 
 
-class Dict(metaclass=DICT):
+class Dict(dict, metaclass=DICT):
     if TYPE_CHECKING:
-        def __new__(cls, *types, key=None, typesystem=None):
+        T = TypeVar("T")
+
+        def __new__(cls: Type[T], *types, key: type=None, typesystem=None) -> Type[T]:
             ...
 
     """
@@ -264,7 +269,17 @@ class Dict(metaclass=DICT):
 
 class Extensional(metaclass=EXTENSIONAL):
     if TYPE_CHECKING:
-        def __new__(cls, name, *types, bases=(), base=None, quantifier=None, typesystem=None):
+        T = TypeVar("T")
+
+        def __new__(
+            cls: Type[T],
+            name,
+            *types,
+            bases=(),
+            base=None,
+            quantifier=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -282,7 +297,14 @@ class Extensional(metaclass=EXTENSIONAL):
 
 class Union(metaclass=UNION):
     if TYPE_CHECKING:
-        def __new__(cls, *types, base=None, typesystem=None):
+        T = TypeVar("T")
+
+        def __new__(
+            cls: Type[T],
+            *types,
+            base=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -300,7 +322,14 @@ class Union(metaclass=UNION):
 
 class Inter(metaclass=INTER):
     if TYPE_CHECKING:
-        def __new__(cls, *types, base=None, typesystem=None):
+        T = TypeVar("T")
+
+        def __new__(
+            cls: Type[T],
+            *types,
+            base=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -318,7 +347,15 @@ class Inter(metaclass=INTER):
 
 class NotIn(metaclass=NOT_IN):
     if TYPE_CHECKING:
-        def __new__(cls, name, *types, base=None, typesystem=None):
+        from typing import TypeVar, Type, Tuple
+        T = TypeVar["T"]
+        def __new__(
+            cls: Type[T],
+            name: str,
+            *types: Tuple[type],
+            base: type=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -336,7 +373,16 @@ class NotIn(metaclass=NOT_IN):
 
 class Algebraic(metaclass=ALGEBRAIC):
     if TYPE_CHECKING:
-        def __new__(cls, name, *types, base=None, typesystem=None):
+        from typing import TypeVar, Type, Tuple
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            name: str,
+            *types: Tuple[type],
+            base: type=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -354,7 +400,14 @@ class Algebraic(metaclass=ALGEBRAIC):
 
 class Prod(metaclass=PROD):
     if TYPE_CHECKING:
-        def __new__(cls, *types, typesystem=None): 
+        from typing import TypeVar, Type, Tuple
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            *types: Tuple[type],
+            typesystem=None
+        ) -> Type[T]: 
             ...
 
     """
@@ -372,7 +425,14 @@ class Prod(metaclass=PROD):
 
 class Coprod(metaclass=COPROD):
     if TYPE_CHECKING:
-        def __new__(cls, *types, typesystem=None): 
+        from typing import TypeVar, Type, Tuple
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            *types: Tuple[type],
+            typesystem=None
+        ) -> Type[T]: 
             ...
 
     """

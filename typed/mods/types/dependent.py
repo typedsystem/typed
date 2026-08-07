@@ -8,7 +8,18 @@ from typed.mods.flags import Flags
 
 class Related(metaclass=RELATED):
     if TYPE_CHECKING:
-        def __new__(cls, entities: tuple[object]=None, relations: tuple[callable]=None, name="Related", base: type=None, quantifier=None, typesystem=None):
+        from typing import TypeVar, Type
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            entities: tuple[object]=None,
+            relations: tuple[callable]=None,
+            name: str="Related",
+            base: type=None,
+            quantifier=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -26,7 +37,16 @@ class Related(metaclass=RELATED):
 
 class Subs(metaclass=SUBS):
     if TYPE_CHECKING:
-        def __new__(cls, *entities, base: type=None, quantifier=None, typesystem=None):
+        from typing import TypeVar, Type
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            *entities,
+            base: type=None,
+            quantifier=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -44,7 +64,16 @@ class Subs(metaclass=SUBS):
 
 class Sups(metaclass=SUPS):
     if TYPE_CHECKING:
-        def __new__(cls, *entities, base: type=None, quantifier=None, typesystem=None):
+        from typing import TypeVar, Type
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            *entities,
+            base: type=None,
+            quantifier=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -62,7 +91,16 @@ class Sups(metaclass=SUPS):
 
 class Same(metaclass=SAME):
     if TYPE_CHECKING:
-        def __new__(cls, *entities, base: type=None, quantifier=None, typesystem=None):
+        from typing import TypeVar, Type
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            *entities,
+            base: type=None,
+            quantifier=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -80,7 +118,16 @@ class Same(metaclass=SAME):
 
 class Equiv(metaclass=EQUIV):
     if TYPE_CHECKING:
-        def __new__(cls, *entities, base: type=None, quantifier=None, typesystem=None):
+        from typing import TypeVar, Type
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            *entities,
+            base: type=None,
+            quantifier=None,
+            typesystem=None
+        ):
             ...
 
     """
@@ -98,7 +145,15 @@ class Equiv(metaclass=EQUIV):
 
 class Filtered(metaclass=FILTERED):
     if TYPE_CHECKING:
-        def __new__(cls, type: type, filters: tuple[callable]=None, typesystem=None):
+        from typing import TypeVar, Type
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            type: type,
+            filters: tuple[callable]=None,
+            typesystem=None
+        ):
             ...
 
     """
@@ -116,7 +171,17 @@ class Filtered(metaclass=FILTERED):
 
 class Bounded(metaclass=BOUNDED):
     if TYPE_CHECKING:
-        def __new__(cls, type: type=None, bound=-1, op='==', base: type=None, typesystem=None):
+        from typing import TypeVar, Type
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            type: type=None,
+            bound: int=-1,
+            op: str='==',
+            base: type=None,
+            typesystem=None
+        ) -> Type[T]:
             ...
 
     """
@@ -134,7 +199,14 @@ class Bounded(metaclass=BOUNDED):
 
 class Has(metaclass=HAS):
     if TYPE_CHECKING:
-        def __new__(cls, *attrs, quantifier=None):
+        from typing import TypeVar, Type, Tuple
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            *attrs: Tuple[str],
+            quantifier=None
+        ):
             ...
 
     """

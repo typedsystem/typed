@@ -3,6 +3,11 @@ from typed.mods.meta.atomic import TYPE
 from typed.mods.flags import Flags
 from typed.mods.meta.func import FUNC
 
+if TYPE_CHECKING:
+    from typing import Type, TypeVar, Any
+    T = TypeVar('T')
+    S = TypeVar('S')
+
 class ACTION(FUNC):
     def __call__(typ, *args, **kwargs):
         if not args and not kwargs:
@@ -27,6 +32,7 @@ class SERVICE(TYPE):
 
     def __call__(typ, *args, fallback=None, **kwargs):
         from typed.mods.types.atomic import Term
+        from typed.mods.flags import flagged
         if fallback is None:
             fallback = Term
 
@@ -36,9 +42,9 @@ class SERVICE(TYPE):
             target_cls = args[0]
             for name, attr in target_cls.__dict__.items():
                 if callable(attr) and not name.startswith('_'):
-                    if not getattr(attr, '__flags__', Flags()).is_action:
-                        from typed.mods.err import TypeErr
-                        raise TypeErr(
+                    if not flagged(attr, 'is_action'):
+                        from typed.mods.err import Err
+                        raise Err(
                             message=f"Method '{name}' in service '{target_cls.__name__}' must be decorated with @action"
                         )
             class Service(metaclass=SERVICE):
@@ -52,6 +58,8 @@ class SERVICE(TYPE):
         )
 
 class ENRICHED(TYPE):
+    _meta_cache = {}
+
     def __isterm__(typ, trm):
         from typed.mods.typesystem import isterm
         return isterm(
@@ -60,6 +68,9 @@ class ENRICHED(TYPE):
         )
 
     def __getattr__(typ, name):
+        if name in ("__service__", "__pure_type__", "__kind__", "is_meta", "__flags__"):
+            raise AttributeError(name)
+
         service = getattr(
             typ,
             "__service__",
@@ -81,7 +92,6 @@ class ENRICHED(TYPE):
                     def __init__(self, action_inst, fallback):
                         self._action_inst = action_inst
                         self._fallback = fallback
-
                     def __call__(self, *args, **kwargs):
                         from typed.mods.func import action
                         prev = getattr(
@@ -94,10 +104,8 @@ class ENRICHED(TYPE):
                             return self._action_inst(*args, **kwargs)
                         finally:
                             action._fallback_ctx = prev
-
                     def __getattr__(self, attr_name):
                         return getattr(self._action_inst, attr_name)
-
                 pure_type = getattr(
                     typ,
                     "__pure_type__",
@@ -105,6 +113,14 @@ class ENRICHED(TYPE):
                 )
                 return BoundAction(attr, pure_type)
             return attr
+
+        pure_type = getattr(
+            typ,
+            "__pure_type__",
+            None
+        )
+        if pure_type is not None and hasattr(pure_type, name):
+            return getattr(pure_type, name)
 
         display_name = getattr(
             typ,
@@ -121,16 +137,49 @@ class ENRICHED(TYPE):
             ...
     else:
         def __call__(met, type, service=None, typesystem=None):
-            display_name = getattr(service, '__name__', 'Enriched')
+            if getattr(type, "__kind__", None) == "enriched":
+                type = getattr(type, "__pure_type__", type)
 
-            if getattr(service, '__fallback__', None) is Ellipsis:
-                setattr(service, '__fallback__', type)
+            display_name = getattr(
+                service,
+                '__name__',
+                'Enriched'
+            )
+            if getattr(
+                service,
+                '__fallback__',
+                None
+            ) is Ellipsis:
+                setattr(
+                    service,
+                    '__fallback__',
+                    type
+                )
 
-            class Enriched(metaclass=ENRICHED):
+            import builtins
+            meta_of_met = builtins.type(met)
+            pure_meta = builtins.type(type)
+
+            if issubclass(meta_of_met, pure_meta):
+                EnrichedMeta = meta_of_met
+            elif issubclass(pure_meta, meta_of_met):
+                EnrichedMeta = pure_meta
+            else:
+                meta_key = (meta_of_met, pure_meta)
+                if meta_key not in ENRICHED._meta_cache:
+                    ENRICHED._meta_cache[meta_key] = builtins.type(
+                        f"{meta_of_met.__name__}_{pure_meta.__name__}",
+                        (meta_of_met, pure_meta),
+                        {}
+                    )
+                EnrichedMeta = ENRICHED._meta_cache[meta_key]
+
+            class Enriched(metaclass=EnrichedMeta):
                 __display__ = display_name
                 __pure_type__ = type
                 __service__ = service
                 __kind__ = "enriched"
                 __flags__ = Flags(is_enriched=True)
+
             Enriched.__name__ = display_name
             return Enriched

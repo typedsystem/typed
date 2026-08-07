@@ -894,7 +894,6 @@ def issub(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYP
 
     return quantifier(__issub__(other, entity) for other in others)
 
-@cache
 def isterm(term: object, *types: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
@@ -914,15 +913,17 @@ def isequiv(entity: type, *others: tuple[type],  quantifier=None, typesystem: __
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from typing import TypeVar, Type, Any, overload
-    T = TypeVar('T')
+    from typing import TypeVar, overload
+    _T = TypeVar("_T")
+
     @overload
-    def term(value: Any, type: Type[T], typesystem: Any=None) -> Type[T]:
+    def term(value, type: type[_T], typesystem=None) -> _T:
         ...
 
     @overload
-    def term(value: Any, type: None = None, typesystem: Any = None) -> Any:
+    def term(value, type=None, typesystem=None):
         ...
+
 
 def term(
     value,
@@ -1030,6 +1031,7 @@ def term(
         pass
 
     return value
+
 
 class new:
     @staticmethod

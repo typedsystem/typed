@@ -76,7 +76,7 @@ class Finite(metaclass=FINITE):
     : builtin(Finite)   is  NotDefined
     """
 
-class Int(metaclass=INT):
+class Int(int, metaclass=INT):
     """
     The atomic type of integers.
 
@@ -89,7 +89,7 @@ class Int(metaclass=INT):
     __null__        = 0
     __builtin__     = int
 
-class Float(metaclass=FLOAT):
+class Float(float, metaclass=FLOAT):
     """
     The atomic type of floats.
 
@@ -115,7 +115,7 @@ class Bool(metaclass=BOOL):
     __null__        = False
     __builtin__     = bool
 
-class Str(metaclass=STR):
+class Str(str, metaclass=STR):
     """
     The atomic type of strings
 
@@ -161,7 +161,7 @@ class Str(metaclass=STR):
             return [obj[i : i + size] for i in range(0, len(obj), size)]
         return obj.split()
 
-class Byte(metaclass=BYTE):
+class Byte(bytes, metaclass=BYTE):
     """
     The atomic type of bytes
 
