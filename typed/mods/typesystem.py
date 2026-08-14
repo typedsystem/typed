@@ -894,7 +894,6 @@ def issub(entity: type, *others: tuple[type], quantifier=None, typesystem: __TYP
 
     return quantifier(__issub__(other, entity) for other in others)
 
-@cache
 def isterm(term: object, *types: tuple[type], quantifier=None, typesystem: __TYPESYSTEM__=None) -> bool:
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
