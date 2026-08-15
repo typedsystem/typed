@@ -5,17 +5,19 @@ __imports__ = {
         "TYPE", "META",
         "EMPTY", "ANY", "TERM", "NILL",
         "INT", "FLOAT", "BOOL", "STR",
+        "BYTE", "PATTERN",
         "ENUMERABLE", "FINITE",
         "MEMBER", "DOM", "COD"
     ],
     "typed.mods.meta.constructor": [
         "LIST", "TUPLE", "SET", "DICT",
         "EXTENSIONAL", "UNION", "INTER", "NOT_IN",
-        "ALGEBRAIC", "PROD", "COPROD"
+        "ALGEBRAIC", "PROD", "COPROD",
+        "NULL", "MAYBE"
     ],
     "typed.mods.meta.dependent": [
         "RELATED", "SUBS", "SUPS", "SAME", "EQUIV",
-        "BOUNDED", "HAS",
+        "BOUNDED", "HAS", "REGEX", "VALUES",
         "FILTERED"
     ],
     "typed.mods.meta.func": [
@@ -36,6 +38,7 @@ if lazy(__imports__):
     from typed.mods.meta.atomic import (
         TYPE, META,
         EMPTY, ANY, TERM, NILL,
+        BYTE, PATTERN,
         INT, FLOAT, BOOL, STR,
         ENUMERABLE, FINITE,
         MEMBER, DOM, COD,
@@ -45,10 +48,11 @@ if lazy(__imports__):
         LIST, TUPLE, SET, DICT,
         EXTENSIONAL, UNION, INTER, NOT_IN,
         ALGEBRAIC, PROD, COPROD,
+        NULL, MAYBE
     )
     from typed.mods.meta.dependent import (
         RELATED, SUBS, SUPS, SAME, EQUIV,
-        BOUNDED, HAS,
+        BOUNDED, HAS, VALUES, REGEX,
         FILTERED
     )
     from typed.mods.meta.func import (

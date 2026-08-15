@@ -8,12 +8,14 @@ __imports__ = {
     "typed.types": [
         "Type", "Meta", "Family", "Member",
         "Empty", "Any", "Term", "Nill",
-        "Int", "Float", "Bool", "Str", "Byte",
+        "Int", "Float", "Bool", "Str", "Byte", "Pattern",
         "Tuple", "List", "Set", "Dict",
         "Finite", "Enumerable", "Bounded",
+        "Null", "Maybe",
         "Callable", "Func", "Typed",
         "Union", "Inter", "Prod", "Coprod",
         "Same", "Equiv", "Filtered",
+        "Values", "Regex",
         "Enriched"
     ],
     "typed.err": [
@@ -45,11 +47,11 @@ if lazy(__imports__):
     from typed.types import (
         Type, Meta, Family, Member, 
         Empty, Any, Term, Nill,
-        Int, Float, Bool, Str, Byte,
+        Int, Float, Bool, Str, Byte, Pattern,
         Tuple, List, Set, Dict,
-        Finite, Enumerable, Bounded,
+        Finite, Enumerable, Bounded, Null, Maybe,
         Callable, Func, Typed,
-        Union, Inter, Prod, Coprod,
+        Union, Inter, Prod, Coprod, Values, Regex,
         Same, Equiv, Filtered, Enriched
     )
     from typed.err import (

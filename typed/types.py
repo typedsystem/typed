@@ -5,17 +5,19 @@ __imports__ = {
         "Type", "Meta",
         "Empty", "Any", "Term", "Nill",
         "Int", "Float", "Bool", "Str",
+        "Byte", "Pattern",
         "Enumerable", "Finite",
         "Member", "Dom", "Cod"
     ],
     "typed.mods.types.constructor": [
         "List", "Tuple", "Set", "Dict",
         "Extensional", "Union", "Inter", "NotIn",
-        "Algebraic", "Prod", "Coprod"
+        "Algebraic", "Prod", "Coprod",
+        "Null", "Maybe"
     ],
     "typed.mods.types.dependent": [
         "Related", "Subs", "Sups", "Same", "Equiv",
-        "Bounded", "Has",
+        "Bounded", "Has", "Values", "Regex",
         "Filtered"
     ],
     "typed.mods.types.func": [
@@ -37,17 +39,19 @@ if lazy(__imports__):
         Type, Meta,
         Empty, Any, Term, Nill,
         Int, Float, Bool, Str,
+        Byte, Pattern,
         Enumerable, Finite,
         Member, Dom, Cod 
     )
     from typed.mods.types.constructor import (
         List, Tuple, Set, Dict,
         Extensional, Union, Inter, NotIn,
-        Algebraic, Prod, Coprod 
+        Algebraic, Prod, Coprod,
+        Null, Maybe
     )
     from typed.mods.types.dependent import (
         Related, Subs, Sups, Same, Equiv,
-        Bounded, Has,
+        Bounded, Has, Values, Regex,
         Filtered 
     )
     from typed.mods.types.func import (
