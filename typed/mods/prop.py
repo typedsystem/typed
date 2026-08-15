@@ -63,6 +63,33 @@ def set(entity: object, prop: str, value: object, typesystem=None) -> object:
 
     return entity
 
+def has(entity: object, prop: str, value: object=None, typesystem=None) -> object:
+    from typed.mods.resolve import resolve
+    typesystem = resolve.typesystem.entity(typesystem)
+
+    if not prop:
+        return True
+
+    keys = prop.split('.')
+
+    parent_path = '.'.join(keys[:-1])
+    target = get(entity, parent_path)
+
+    last_key = keys[-1]
+    typ = typesystem.typeof(target)
+
+    if value is not None:
+        if hasattr(typ, "__getitem__"):
+            try:
+                value_ = getattr(typ, "__getitem__")(target, last_key, None)
+                return value == value_
+            except Exception:
+                value_ = getattr(typ, "__getitem__")(target, int(last_key), None)
+                return value == value_
+    else:
+        return hasattr(target, last_key)
+
+
 class prop:
     def typeof(entity: object, level: int=-1, typesystem=None) -> object:
         from typed.mods.typesystem import typeof as _typeof
@@ -105,6 +132,8 @@ class prop:
             default=default,
             typesystem=typesystem
         )
+
+    has = has
 
     class set:
         def __new__(cls, entity, prop, value):
