@@ -2,7 +2,8 @@ from typing import TYPE_CHECKING, TypeVar, Type
 from typed.mods.meta.constructor import (
     TUPLE, LIST, SET, DICT,
     EXTENSIONAL, UNION, INTER, NOT_IN,
-    ALGEBRAIC, PROD, COPROD
+    ALGEBRAIC, PROD, COPROD,
+    MAYBE, NULL
 )
 from typed.mods.flags import Flags
 
@@ -446,3 +447,32 @@ class Coprod(metaclass=COPROD):
     : flags(Coprod)      is  is_constructor, is_algebraic
     """
     __flags__ = Flags(is_constructor=True, is_algebraic=True)
+
+
+class Maybe(metaclass=MAYBE):
+    if TYPE_CHECKING:
+        from typing import TypeVar, Type, Tuple
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            type: type,
+            typesystem=None
+        ) -> Type[T]: 
+            ...
+
+    __flags__ = Flags(is_constructor=True)
+
+class Null(metaclass=NULL):
+    if TYPE_CHECKING:
+        from typing import TypeVar, Type, Tuple
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            type: type,
+            typesystem=None
+        ) -> Type[T]:
+            ...
+
+    __flags__ = Flags(is_constructor=True)

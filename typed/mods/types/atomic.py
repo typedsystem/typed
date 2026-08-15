@@ -1,7 +1,7 @@
 from typed.mods.meta.atomic import (
     EMPTY, NILL, ANY, TERM,
     ENUMERABLE, FINITE,
-    STR, INT, FLOAT, BOOL, BYTE,
+    STR, INT, FLOAT, BOOL, BYTE, PATTERN,
     MEMBER, DOM, COD
 )
 
@@ -173,6 +173,18 @@ class Byte(bytes, metaclass=BYTE):
     """
     __null__        = bytes()
     __builtin__     = bytes
+
+class Pattern(Str, metaclass=PATTERN):
+    """
+    The atomic type of patterns
+
+    : kindof(Pattern)    is type
+    : typeof(Pattern)    is PATTERN
+    : isterm(x, Pattern) iff issub(typeof(x), Pattern)
+    : nullof(Pattern)    is ""
+    : builtin(Pattern)   is NotDefined
+    """
+    __null__ = ""
 
 class Member(metaclass=MEMBER):
     """

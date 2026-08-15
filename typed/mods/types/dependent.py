@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 from typed.mods.meta.dependent import (
     RELATED, SUBS, SUPS, SAME, EQUIV,
-    FILTERED, BOUNDED, HAS
+    FILTERED, BOUNDED, REGEX, HAS,
+    VALUES
 )
 from typed.mods.flags import Flags
-
 
 class Related(metaclass=RELATED):
     if TYPE_CHECKING:
@@ -196,6 +196,29 @@ class Bounded(metaclass=BOUNDED):
     """
     __flags__ = Flags(is_dependent=True, is_enumerable=True, is_finite=True, is_bounded=True)
 
+class Regex(metaclass=REGEX):
+    if TYPE_CHECKING:
+        from typing import TypeVar, Type, Tuple
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            *attrs: Tuple[str],
+            quantifier=None
+        ):
+            ...
+
+    """
+    The dependent 'has' type.
+
+    : kindof(Has)    is  type
+    : typeof(Has)    is  HAS
+    : isterm(x, Has) iff issub(typeof(x), Has)
+    : nullof(Has)    is  NotDefined
+    : builtin(Has)   is  NotDefined
+    : flags(Has)     is  is_dependent, is_related
+    """
+    __flags__ = Flags(is_dependent=True, is_related=True)
 
 class Has(metaclass=HAS):
     if TYPE_CHECKING:
@@ -220,3 +243,16 @@ class Has(metaclass=HAS):
     : flags(Has)     is  is_dependent, is_related
     """
     __flags__ = Flags(is_dependent=True, is_related=True)
+
+class Values(metaclass=VALUES):
+    if TYPE_CHECKING:
+        from typing import TypeVar, Type, Tuple
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            *values: Tuple,
+        ):
+            ...
+
+    __flags__ = Flags(is_dependent=True)
