@@ -554,76 +554,69 @@ class COPROD(ALGEBRAIC, TUPLE):
             typesystem=typesystem
         )
 
-class DIAG(TYPE):
-    _type_cache = weakref.WeakValueDictionary()
-
+class MAYBE(TYPE):
     def __isterm__(typ, trm):
         from typed.mods.typesystem import isterm
-        base = getattr(typ, "__base_type__", None)
-        if not base:
-            return False
-        if not isinstance(trm, tuple) or len(trm) != 2:
-            return False
-        return trm[0] == trm[1] and isterm(trm[0], base)
+        return isterm(trm, typ.__basis__) or trm is None
 
     def __issub__(typ, other):
-        from typed.mods.types.constructor import Prod
+        if getattr(other, "__type__", None) is MAYBE:
+            from typed.mods.typesystem import issub
+            return issub(other.__basis__, typ.__basis__)
+
         from typed.mods.typesystem import issub
-        base = getattr(typ, "__base_type__", None)
-        if issub(Prod(base, base), other):
-            return True
-        return False
+        return issub(other, typ.__basis__)
 
-    def __call__(met, base_type, typesystem=None):
+    def __call__(met, type, typesystem=None):
+        from typed.mods.typesystem import nameof
+        from typed.mods.check import require
         from typed.mods.resolve import resolve
         typesystem = resolve.typesystem.entity(typesystem)
-        cache_key = (met, base_type, id(typesystem))
-        if cache_key in met._type_cache:
-            return met._type_cache[cache_key]
-        display_name = f"Diag({typesystem.nameof(base_type)})"
-        from typed.mods.flags import Flags
+        require.ismember(type, typesystem)
+
+        display_name = f"Maybe({nameof(type)})"
+
         from typed.mods.init import TYPESYSTEM
-
-        class Diag(met, metaclass=DIAG):
-            __kind__ = "type"
-            __flags__ = Flags(is_constructor=True)
-            __typesystems__ = {TYPESYSTEM, typesystem}
+        from typed.mods.flags import Flags
+        class Maybe(metaclass=MAYBE):
+            __kind__    = "type"
             __display__ = display_name
-            __base_type__ = base_type
+            __name__    = display_name
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __basis__   = type
+            __null__    = None
+            __flags__   = Flags(is_constructor=True)
 
-        Diag.__name__ = display_name
-        met._type_cache[cache_key] = Diag
-        return Diag
+        return Maybe
 
-class CODIAG(TYPE):
-    _type_cache = weakref.WeakValueDictionary()
-
+class NULL(TYPE):
     def __isterm__(typ, trm):
-        from typed.mods.typesystem import isterm
-        base = getattr(typ, "__base_type__", None)
-        if not base:
-            return False
-        if not isinstance(trm, tuple) or len(trm) != 2:
-            return False
-        return trm[0] in (0, 1) and isterm(trm[1], base)
+        from typed.mods.poly import nullof
+        return trm is nullof(typ)
 
-    def __call__(met, base_type, typesystem=None):
+    def __issub__(typ, other):
+        from typed.mods.poly import nullof
+        return nullof(other) is nullof(typ)
+
+    def __call__(met, type, typesystem=None):
+        from typed.mods.typesystem import nameof
+        from typed.mods.check import require
         from typed.mods.resolve import resolve
+
         typesystem = resolve.typesystem.entity(typesystem)
-        cache_key = (met, base_type, id(typesystem))
-        if cache_key in met._type_cache:
-            return met._type_cache[cache_key]
-        display_name = f"Codiag({typesystem.nameof(base_type)})"
-        from typed.mods.flags import Flags
+        require.ismember(type, typesystem)
+
+        display_name = f"Null({nameof(type)})"
+        from typed.mods.poly import nullof
         from typed.mods.init import TYPESYSTEM
+        from typed.mods.flags import Flags
 
-        class Codiag(met, metaclass=CODIAG):
+        class Null(metaclass=NULL):
             __kind__ = "type"
-            __flags__ = Flags(is_constructor=True)
-            __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
-            __base_type__ = base_type
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __name__    = display_name
+            __null__    = nullof(type)
+            __flags__   = Flags(is_constructor=True)
 
-        Codiag.__name__ = display_name
-        met._type_cache[cache_key] = Codiag
-        return Codiag
+        return Null

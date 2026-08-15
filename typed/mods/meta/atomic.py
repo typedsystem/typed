@@ -149,6 +149,26 @@ class BYTE(TYPE):
         from typed.mods.typesystem import typeof, issub
         return isinstance(trm, (bytes, bytearray)) or issub(typeof(typeof(trm)), BYTE)
 
+class PATTERN(STR):
+    """
+    The atomic metatype of patterns.
+
+    kindof(PATTERN)    is  meta
+    typeof(PATTERN)    is  UNIVERSE(1)
+    isterm(T, PATTERN) iff issub(typeof(T), PATTERN)
+    nullof(PATTERN)    is  NotDefined
+    builtin(PATTERN)   is  NotDefined
+    """
+    def __isterm__(typ, trm):
+        if not isinstance(trm, str):
+            return False
+        try:
+            import re
+            re.compile(trm)
+            return True
+        except:
+            return False
+
 class ENUMERABLE(TYPE):
     """
     The atomic metatype of enumerable types.

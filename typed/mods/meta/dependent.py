@@ -1,4 +1,4 @@
-from typed.mods.meta.atomic import TYPE, FINITE
+from typed.mods.meta.atomic import TYPE, STR, FINITE
 
 class RELATED(TYPE):
     """
@@ -11,7 +11,6 @@ class RELATED(TYPE):
             quantifier = resolve.logic.quantifier(quantifier)
         entities = getattr(typ, "__entities__", None)
         if not entities:
-            print("aaa")
             return False
         relations = getattr(typ, "__relations__", None)
         from typed.mods.check import require
@@ -124,12 +123,12 @@ class HAS(RELATED):
     """
     def __call__(met, *attrs, quantifier=None):
         from typed.mods.check import require
-        from typed.mods.poly import has
+        from typed.mods.prop import prop
         if len(attrs) == 1 and isinstance(attrs[0], tuple): attrs = attrs[0]
         require.every.isinstance(attrs, str)
         return super().__call__(
             entities=attrs,
-            relations=(has,),
+            relations=(prop.has,),
             name="Has",
             quantifier=quantifier
         )
@@ -172,6 +171,34 @@ class FILTERED(TYPE):
             __filters__     = filters if filters in Discourse else (filters,)
 
         return Filtered
+
+class REGEX(STR):
+    def __isterm__(typ, trm):
+        if not isinstance(trm, str):
+            return False
+        try:
+            import re
+            pattern = re.compile(typ.__pattern__)
+            return pattern.match(trm) is not None
+        except:
+            return False
+
+    def __call__(typ, pattern):
+        from typed.mods.types.atomic import Str, Pattern
+        from typed.mods.check import require
+        require.isterm(pattern, Pattern)
+
+        display_name = f"Regex({pattern})"
+
+        from typed.mods.flags import Flags
+        class Regex(Str, metaclass=REGEX):
+            __display__ = display_name
+            __name__ = display_name
+            __pattern__ = pattern
+            __flags__ = Flags(is_dependent=True)
+
+        return Regex
+
 
 class BOUNDED(FINITE):
     """
@@ -256,3 +283,34 @@ class BOUNDED(FINITE):
 
         Bounded.__name__ = display_name
         return Bounded
+
+class VALUES(TYPE):
+    def __isterm__(typ, trm):
+        return trm in typ.__values__
+
+    def __issub__(typ, other):
+        if not getattr(other, "__values__", None):
+            return False
+
+        return set(other.__values__).issubset(typ.__values__)
+
+    def __call__(typ, *values, typesystem=None):
+        from typed.mods.resolve import resolve
+        typesystem = resolve.typesystem.entity(typesystem)
+        from typed.mods.check import require
+
+        require.every.ismember([typesystem.typeof(v) for v in  values], typesystem)
+        display_name = f"Values({typesystem.nameof(values)})"
+
+        from typed.mods.init import TYPESYSTEM
+        from typed.mods.flags import Flags
+
+        class Values(metaclass=VALUES):
+            __kind__ = "type"
+            __display__ = display_name
+            __name__ = display_name
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __flags__ = Flags(is_dependent=True)
+            __values__ = values
+
+        return Values
