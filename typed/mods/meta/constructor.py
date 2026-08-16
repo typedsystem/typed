@@ -245,13 +245,12 @@ class DICT(TYPE):
             return met._type_cache[cache_key]
         if key is not None:
             display_name = f"Dict({typesystem.nameof(*types)}, key={typesystem.nameof(key)})" if types else f"Dict(key={typesystem.nameof(key)})"
+            require.ismember(key, typesystem)
         else:
             display_name = f"Dict({typesystem.nameof(*types)})" if types else "Dict"
-        require.ismember(key, typesystem)
         require.every.ismember(types_set, typesystem)
         from typed.mods.flags import Flags
         from typed.mods.init import TYPESYSTEM
-
         class Dict(met, metaclass=DICT):
             __kind__ = "type"
             __flags__ = Flags(is_constructor=True)
@@ -259,7 +258,6 @@ class DICT(TYPE):
             __display__ = display_name
             __types__ = types_set
             __key_type__ = key
-
         Dict.__name__ = display_name
         met._type_cache[cache_key] = Dict
         return Dict
