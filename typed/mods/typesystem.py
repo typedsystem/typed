@@ -725,6 +725,20 @@ def kindof(entity, typesystem: __TYPESYSTEM__=None):
     return NotDefined
 
 @cache
+def _cached_nameof(entity, typesystem):
+    from typed.mods.err import NotDefined
+    from typed.mods.poly import displayof
+
+    d = displayof(entity)
+    if d is not NotDefined:
+        return d
+
+    typ = typemap(entity, typesystem=typesystem)
+    if typ is not NotDefined:
+        return getattr(typ, '__name__', str(entity))
+
+    return getattr(entity, '__name__', str(entity))
+
 def nameof(*entities, typesystem: __TYPESYSTEM__=None):
     """
     The 'nameof' polymorphism.
@@ -732,31 +746,24 @@ def nameof(*entities, typesystem: __TYPESYSTEM__=None):
     from typed.mods.resolve import resolve
     typesystem = resolve.typesystem.entity(typesystem)
 
-    from typed.mods.err import NotDefined
-    from typed.mods.poly import displayof
-
     def __nameof__(entity):
-        d = displayof(entity)
-        if d is not NotDefined:
-            return d
-
         try:
             hash(entity)
-            typ = typemap(entity, typesystem=typesystem)
+            return _cached_nameof(entity, typesystem)
         except TypeError:
-            typ = NotDefined
+            from typed.mods.err import NotDefined
+            from typed.mods.poly import displayof
 
-        if typ is not NotDefined:
-            return getattr(typ, '__name__', str(entity))
+            d = displayof(entity)
+            if d is not NotDefined:
+                return d
 
-        return getattr(entity, '__name__', str(entity))
+            return getattr(entity, '__name__', str(entity))
 
     if not entities:
         return ""
-
     if len(entities) == 1:
         return __nameof__(entities[0])
-
     return ', '.join(__nameof__(entity) for entity in entities)
 
 @cache
@@ -780,12 +787,11 @@ def trackof(type: type, typesystem: __TYPESYSTEM__=None) -> type:
 
 @cache
 def isentity(obj: type) -> bool:
-    if not isinstance(obj, type):
-        return False
-    if not hasattr(obj, "__kind__") or not hasattr(obj, "__typesystems__"):
-        return False
-    if not getattr(obj, "__typesystems__", None):
-        return False
+    if getattr(obj, "__kind__", None) == "enriched":
+        obj = getattr(obj, "__pure_type__", obj)
+    if not isinstance(obj, type): return False
+    if not hasattr(obj, "__kind__") or not hasattr(obj, "__typesystems__"): return False
+    if not getattr(obj, "__typesystems__", None): return False
     kind = obj.__kind__
     typesystems = obj.__typesystems__
     from typed.mods.init import every
@@ -811,6 +817,8 @@ def iscongruent(entity: type, *others: tuple[type], quantifier=None) -> bool:
 
 @cache
 def ismember(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
+    if getattr(entity, "__kind__", None) == "enriched":
+        entity = getattr(entity, "__pure_type__", entity)
     if not isentity(entity): return False
     if not typesystems:
         typesystems = {None}
@@ -821,6 +829,8 @@ def ismember(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None)
 
 @cache
 def istype(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
+    if getattr(entity, "__kind__", None) == "enriched":
+        entity = getattr(entity, "__pure_type__", entity)
     if not isentity(entity): return False
     if not entity.__kind__ == "type":
         return False
@@ -833,6 +843,8 @@ def istype(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -
 
 @cache
 def ismeta(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
+    if getattr(entity, "__kind__", None) == "enriched":
+        entity = getattr(entity, "__pure_type__", entity)
     if not isentity(entity): return False
     if not entity.__kind__ == "meta":
         return False
@@ -845,6 +857,8 @@ def ismeta(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -
 
 @cache
 def isabstract(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
+    if getattr(entity, "__kind__", None) == "enriched":
+        entity = getattr(entity, "__pure_type__", entity)
     if not isinstance(entity, type): return False
     if getattr(entity, "__kind__", None) != "abstract":
         return False
@@ -857,6 +871,8 @@ def isabstract(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=Non
 
 @cache
 def isuniverse(entity: type, *typesystems: tuple[__TYPESYSTEM__], quantifier=None) -> bool:
+    if getattr(entity, "__kind__", None) == "enriched":
+        entity = getattr(entity, "__pure_type__", entity)
     if not isentity(entity): return False
     if not entity.__kind__ == "universe":
         return False
