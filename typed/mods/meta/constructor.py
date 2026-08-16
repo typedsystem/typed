@@ -102,23 +102,20 @@ class LIST(TYPE):
         from typed.mods.resolve import resolve
         from typed.mods.check import require
         typesystem = resolve.typesystem.entity(typesystem)
-        types_set = set(types)
-
-        cache_key = (typ, frozenset(types_set), id(typesystem))
+        types_set = frozenset(types)
+        cache_key = (typ, types_set, id(typesystem))
         if cache_key in typ._type_cache:
             return typ._type_cache[cache_key]
         require.every.ismember(types_set, typesystem)
         display_name = f"List({typesystem.nameof(*types)})" if types else "List"
         from typed.mods.flags import Flags
         from typed.mods.init import TYPESYSTEM
-
         class List(typ, metaclass=LIST):
             __kind__ = "type"
             __flags__ = Flags(is_constructor=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
             __types__ = types_set
-
         List.__name__ = display_name
         typ._type_cache[cache_key] = List
         return List
@@ -164,22 +161,20 @@ class SET(TYPE):
         from typed.mods.resolve import resolve
         from typed.mods.check import require
         typesystem = resolve.typesystem.entity(typesystem)
-        types_set = set(types)
-        cache_key = (typ, frozenset(types_set), id(typesystem))
+        types_set = frozenset(types)
+        cache_key = (typ, types_set, id(typesystem))
         if cache_key in typ._type_cache:
             return typ._type_cache[cache_key]
         require.every.ismember(types_set, typesystem)
         display_name = f"Set({typesystem.nameof(*types)})" if types else "Set"
         from typed.mods.flags import Flags
         from typed.mods.init import TYPESYSTEM
-
         class Set(typ, metaclass=SET):
             __kind__ = "type"
             __flags__ = Flags(is_constructor=True)
             __typesystems__ = {TYPESYSTEM, typesystem}
             __display__ = display_name
             __types__ = types_set
-
         Set.__name__ = display_name
         typ._type_cache[cache_key] = Set
         return Set
@@ -239,8 +234,8 @@ class DICT(TYPE):
         from typed.mods.resolve import resolve
         from typed.mods.check import require
         typesystem = resolve.typesystem.entity(typesystem)
-        types_set = set(types)
-        cache_key = (met, frozenset(types_set), key, id(typesystem))
+        types_set = frozenset(types)
+        cache_key = (met, types_set, key, id(typesystem))
         if cache_key in met._type_cache:
             return met._type_cache[cache_key]
         if key is not None:
