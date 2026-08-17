@@ -177,7 +177,6 @@ class action:
             except Exception:
                 pass
 
-            from typed.mods.func import typed
             inst = typed(
                 check=check,
                 lazy=lazy,
