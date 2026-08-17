@@ -274,7 +274,6 @@ def family(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = No
         return decorator
     return decorator(f)
 
-
 def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool = None, envs=None, err=None):
     def decorator(fn):
         from typed.mods.resolve import resolve
@@ -291,6 +290,22 @@ def constructor(f=None, *, check: bool = None, lazy: bool = None, defaults: bool
     if f is None:
         return decorator
     return decorator(f)
+
+def enum(cls=None, *, typesystem=None):
+    def decorator(target_cls):
+        kwargs = {
+            k: v
+            for k, v in target_cls.__dict__.items()
+            if not k.startswith('_')
+        }
+        from typed.mods.types.dependent import Enum
+        return Enum(
+            typesystem=typesystem,
+            **kwargs
+        )
+    if cls is None:
+        return decorator
+    return decorator(cls)
 
 if TYPE_CHECKING:
     from typing import TypeVar, Callable, Any, overload

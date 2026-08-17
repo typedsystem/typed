@@ -15,7 +15,7 @@ __imports__ = {
         "Callable", "Func", "Typed",
         "Union", "Inter", "Prod", "Coprod",
         "Same", "Equiv", "Filtered",
-        "Values", "Regex",
+        "Values", "Enum", "Regex",
         "Enriched"
     ],
     "typed.err": [
@@ -51,7 +51,7 @@ if lazy(__imports__):
         Tuple, List, Set, Dict,
         Finite, Enumerable, Bounded, Null, Maybe,
         Callable, Func, Typed,
-        Union, Inter, Prod, Coprod, Values, Regex,
+        Union, Inter, Prod, Coprod, Values, Enum, Regex,
         Same, Equiv, Filtered, Enriched
     )
     from typed.err import (
@@ -64,7 +64,8 @@ if lazy(__imports__):
         resolve
     )
     from typed.func import (
-        func, typed, reduce, compose
+        func, typed, reduce, compose,
+        service, action
     )
     from typed.typesystem import new, term
-    from typed.prop import get, set, prop
+    from typed.prop import prop

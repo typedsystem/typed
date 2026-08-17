@@ -17,7 +17,9 @@ __imports__ = {
     ],
     "typed.mods.meta.dependent": [
         "RELATED", "SUBS", "SUPS", "SAME", "EQUIV",
-        "BOUNDED", "HAS", "REGEX", "VALUES",
+        "BOUNDED", "HAS",
+        "VALUES", "ENUM",
+        "REGEX", 
         "FILTERED"
     ],
     "typed.mods.meta.func": [
@@ -52,7 +54,9 @@ if lazy(__imports__):
     )
     from typed.mods.meta.dependent import (
         RELATED, SUBS, SUPS, SAME, EQUIV,
-        BOUNDED, HAS, VALUES, REGEX,
+        BOUNDED, HAS,
+        VALUES, ENUM,
+        REGEX,
         FILTERED
     )
     from typed.mods.meta.func import (

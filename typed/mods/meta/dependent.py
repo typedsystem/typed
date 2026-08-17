@@ -291,26 +291,66 @@ class VALUES(TYPE):
     def __issub__(typ, other):
         if not getattr(other, "__values__", None):
             return False
-
         return set(other.__values__).issubset(typ.__values__)
+
+    def __iter__(typ):
+        return iter(typ.__values__)
 
     def __call__(typ, *values, typesystem=None):
         from typed.mods.resolve import resolve
         typesystem = resolve.typesystem.entity(typesystem)
         from typed.mods.check import require
-
-        require.every.ismember([typesystem.typeof(v) for v in  values], typesystem)
+        for v in values:
+            require.iscallable(hash)
+            hash(v)
+        require.every.ismember([typesystem.typeof(v) for v in values], typesystem)
         display_name = f"Values({typesystem.nameof(values)})"
-
         from typed.mods.init import TYPESYSTEM
         from typed.mods.flags import Flags
-
         class Values(metaclass=VALUES):
             __kind__ = "type"
             __display__ = display_name
             __name__ = display_name
             __typesystems__ = {TYPESYSTEM, typesystem}
             __flags__ = Flags(is_dependent=True)
-            __values__ = values
-
+            __values__ = frozenset(values)
         return Values
+
+class ENUM(TYPE):
+    def __isterm__(typ, trm):
+        return trm in typ.__values__
+
+    def __issub__(typ, other):
+        if not getattr(other, "__values__", None):
+            return False
+        return set(other.__values__).issubset(typ.__values__)
+
+    def __getattr__(typ, name):
+        if name in typ.__kwargs__:
+            return typ.__kwargs__[name]
+        raise AttributeError(f"Enum has no attribute '{name}'")
+
+    def __iter__(typ):
+        return iter(typ.__values__)
+
+    def __call__(typ, typesystem=None, **kwargs):
+        from typed.mods.resolve import resolve
+        typesystem = resolve.typesystem.entity(typesystem)
+        from typed.mods.check import require
+        for v in kwargs.values():
+            require.iscallable(hash)
+            hash(v)
+        values = frozenset(kwargs.values())
+        require.every.ismember([typesystem.typeof(v) for v in values], typesystem)
+        display_name = f"Enum({', '.join(f'{k}={v}' for k, v in kwargs.items())})"
+        from typed.mods.init import TYPESYSTEM
+        from typed.mods.flags import Flags
+        class Enum(metaclass=ENUM):
+            __kind__ = "type"
+            __display__ = display_name
+            __name__ = display_name
+            __typesystems__ = {TYPESYSTEM, typesystem}
+            __flags__ = Flags(is_dependent=True)
+            __values__ = values
+            __kwargs__ = kwargs
+        return Enum

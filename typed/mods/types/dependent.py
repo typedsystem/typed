@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 from typed.mods.meta.dependent import (
     RELATED, SUBS, SUPS, SAME, EQUIV,
     FILTERED, BOUNDED, REGEX, HAS,
-    VALUES
+    VALUES, ENUM
 )
 from typed.mods.flags import Flags
 
@@ -252,6 +252,19 @@ class Values(metaclass=VALUES):
         def __new__(
             cls: Type[T],
             *values: Tuple,
+        ):
+            ...
+
+    __flags__ = Flags(is_dependent=True)
+
+class Enum(metaclass=ENUM):
+    if TYPE_CHECKING:
+        from typing import TypeVar, Type, Dict
+        T = TypeVar["T"]
+
+        def __new__(
+            cls: Type[T],
+            **kwargs: Dict,
         ):
             ...
 

@@ -17,8 +17,9 @@ __imports__ = {
     ],
     "typed.mods.types.dependent": [
         "Related", "Subs", "Sups", "Same", "Equiv",
-        "Bounded", "Has", "Values", "Regex",
-        "Filtered"
+        "Bounded", "Has",
+        "Values", "Enum",
+        "Regex", "Filtered"
     ],
     "typed.mods.types.func": [
         "Callable", "Class", "Method", "Lambda",
@@ -51,7 +52,9 @@ if lazy(__imports__):
     )
     from typed.mods.types.dependent import (
         Related, Subs, Sups, Same, Equiv,
-        Bounded, Has, Values, Regex,
+        Bounded, Has,
+        Values, Enum,
+        Regex,
         Filtered 
     )
     from typed.mods.types.func import (
