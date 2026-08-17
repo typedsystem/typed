@@ -27,9 +27,9 @@ __imports__ = {
     "typed.resolve": [
         "resolve"
     ],
-    "typed.func": [
+    "typed.wrap": [
         "func", "typed", "reduce", "compose",
-        "service", "action"
+        "service", "action", "enum"
     ],
     "typed.typesystem": [
         "new", "term"
@@ -63,9 +63,9 @@ if lazy(__imports__):
     from typed.resolve import (
         resolve
     )
-    from typed.func import (
+    from typed.wrap import (
         func, typed, reduce, compose,
-        service, action
+        service, action, enum
     )
     from typed.typesystem import new, term
     from typed.prop import prop

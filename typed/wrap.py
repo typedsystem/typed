@@ -1,10 +1,8 @@
 from typed.mods.loader import lazy
 
 __imports__ = {
-    "typed.mods.func": [
-        "Arg", "Signature",
-        "args", "signature",
-        "compose", "reduce", "unwrap", "hints",
+    "typed.mods.wrap": [
+        "unwrap",
         "cache", "func", "hinted", "typed",
         "enum",
         "service", "action",
@@ -14,10 +12,8 @@ __imports__ = {
 }
 
 if lazy(__imports__):
-    from typed.mods.func import (
-        Arg, Signature,
-        args, signature,
-        compose, reduce, unwrap, hints,
+    from typed.mods.wrap import (
+        unwrap,
         cache, func, hinted, typed,
         enum,
         service, action,

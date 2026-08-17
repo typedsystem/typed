@@ -4,12 +4,7 @@ __imports__ = {
     "typed.mods.func": [
         "Arg", "Signature",
         "args", "signature",
-        "compose", "reduce", "unwrap", "hints",
-        "cache", "func", "hinted", "typed",
-        "enum",
-        "service", "action",
-        "condition", "family", "constructor",
-        "closure"
+        "compose", "reduce", "hints"
     ]
 }
 
@@ -17,10 +12,5 @@ if lazy(__imports__):
     from typed.mods.func import (
         Arg, Signature,
         args, signature,
-        compose, reduce, unwrap, hints,
-        cache, func, hinted, typed,
-        enum,
-        service, action,
-        condition, family, constructor,
-        closure
+        compose, reduce, hints
     )
