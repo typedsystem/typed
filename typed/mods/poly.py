@@ -1,5 +1,3 @@
-from typing import Any, Callable
-
 class Poly:
     def __new__(self, attr, *args, cod=None, typesystem=None, callable=False):
         from typed.mods.resolve import resolve
@@ -45,7 +43,7 @@ class Poly:
                             require.isterm(val, arg.hint)
 
                 entity_type = typesystem.typeof(entity)
-                
+
                 method = getattr(
                     entity_type,
                     attr,
