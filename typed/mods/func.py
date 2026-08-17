@@ -67,6 +67,7 @@ def args(func: callable) -> tuple[Arg, ...]:
     from inspect import signature as _signature, Parameter
     from typed.mods.err import NotDefined
 
+    from typed.mods.wrap import unwrap
     actual_func = unwrap(func)
     try:
         sig = _signature(actual_func)
@@ -89,6 +90,7 @@ def signature(func: callable) -> Signature:
     from typed.mods.err import NotDefined
     from typed.mods.typesystem import isentity, typemap
 
+    from typed.mods.wrap import unwrap
     target = unwrap(func)
     target_args = args(func)
     hints_dict = hints(target)
