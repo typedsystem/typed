@@ -6,7 +6,8 @@ __imports__ = {
         "prod", "coprod",
         "join", "split",
         "flatten", "unflatten",
-        "include", "remove"
+        "include", "remove",
+        "parse", "serialize"
     ]
 }
 
@@ -16,5 +17,6 @@ if lazy(__imports__):
         prod, coprod,
         join, split,
         flatten, unflatten,
-        include, remove
+        include, remove,
+        parse, serialize
     )

@@ -283,6 +283,11 @@ def unflatten(*args, **kwargs):
         for e in expanded
     )
 
+from typed.mods.types.atomic import Str
+
+serialize = Poly("__serialize__", cod=Str, callable=True)
+parse = Poly("__parse__", Str, callable=True)
+
 nullof  = Poly("__null__")
 displayof  = Poly("__display__")
 builtinof = Poly("__builtin__")
