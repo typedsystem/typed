@@ -35,7 +35,10 @@ __imports__ = {
         "new", "term"
     ],
     "typed.prop": [
-        "get", "set", "prop"
+        "prop"
+    ],
+    "typed.poly": [
+        "poly"
     ]
 }
 
@@ -69,3 +72,4 @@ if lazy(__imports__):
     )
     from typed.typesystem import new, term
     from typed.prop import prop
+    from typed.poly import poly

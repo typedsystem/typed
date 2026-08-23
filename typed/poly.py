@@ -2,15 +2,19 @@ from typed.mods.loader import lazy
 
 __imports__ = {
     "typed.mods.poly": [
-        "Poly",
+        "Poly", "poly",
         "prod", "coprod",
-        "join", "split"
+        "join", "split",
+        "flatten", "unflatten",
+        "include", "remove"
     ]
 }
 
 if lazy(__imports__):
     from typed.mods.poly import (
-        Poly,
+        Poly, poly,
         prod, coprod,
-        include, join, split
+        join, split,
+        flatten, unflatten,
+        include, remove
     )
