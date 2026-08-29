@@ -76,24 +76,19 @@ class STATEFUL:
         cache_key = (id(typ), id(other), id(typesystem))
         if cache_key in STATEFUL._issup_cache:
             return STATEFUL._issup_cache[cache_key]
-
         key = (id(typ), id(other))
         if key in STATEFUL.SUPS:
             return False
-
         STATEFUL.SUPS.add(key)
         try:
             if typesystem is None:
                 from typed.mods.resolve import resolve
                 typesystem = resolve.typesystem.entity(typesystem)
-
             meta_typ = typesystem.typeof(typ)
             meta_other = typesystem.typeof(other)
-
             meta_typ_mro = getattr(meta_typ, "__mro__", [meta_typ])
             meta_other_mro = getattr(meta_other, "__mro__", [meta_other])
-            _mro = set(meta_typ_mro).union(meta_other_mro)
-
+            _mro = list(dict.fromkeys(list(meta_typ_mro) + list(meta_other_mro)))
             for base in _mro:
                 if "__issup__" in getattr(base, "__dict__", {}):
                     issup = base.__dict__["__issup__"]
@@ -105,7 +100,6 @@ class STATEFUL:
                         except TypeError:
                             pass
                     break
-
             for base in _mro:
                 if "__issub__" in getattr(base, "__dict__", {}):
                     issub = base.__dict__["__issub__"]
@@ -117,11 +111,9 @@ class STATEFUL:
                         except TypeError:
                             pass
                     break
-
             if STATEFUL.__extends__(typ, other, typesystem=typesystem):
                 STATEFUL._issup_cache[cache_key] = True
                 return True
-
             from typed.mods.err import NotDefined
             STATEFUL._issup_cache[cache_key] = NotDefined
             return NotDefined
@@ -133,24 +125,19 @@ class STATEFUL:
         cache_key = (id(typ), id(other), id(typesystem))
         if cache_key in STATEFUL._issub_cache:
             return STATEFUL._issub_cache[cache_key]
-
         key = (id(typ), id(other))
         if key in STATEFUL.SUBS:
             return False
-
         STATEFUL.SUBS.add(key)
         try:
             if typesystem is None:
                 from typed.mods.resolve import resolve
                 typesystem = resolve.typesystem.entity(typesystem)
-
             meta_typ = typesystem.typeof(typ)
             meta_other = typesystem.typeof(other)
-
             meta_typ_mro = getattr(meta_typ, "__mro__", [meta_typ])
             meta_other_mro = getattr(meta_other, "__mro__", [meta_other])
-            _mro = set(meta_typ_mro).union(meta_other_mro)
-
+            _mro = list(dict.fromkeys(list(meta_typ_mro) + list(meta_other_mro)))
             for base in _mro:
                 issub = getattr(base, "__issub__", None)
                 if issub:
@@ -162,7 +149,6 @@ class STATEFUL:
                         except TypeError:
                             pass
                     break
-
             for base in _mro:
                 if "__issup__" in getattr(base, "__dict__", {}):
                     issup = base.__dict__["__issup__"]
@@ -174,7 +160,6 @@ class STATEFUL:
                         except TypeError:
                             pass
                     break
-
             res = STATEFUL.__issup__(other, typ, typesystem=typesystem)
             STATEFUL._issub_cache[cache_key] = res
             return res
