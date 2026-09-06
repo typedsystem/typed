@@ -4,7 +4,8 @@ __imports__ = {
     "typed.mods.check": [
         "__CHECKER__",
         "Checker", "TypedChecker",
-        "check", "require" 
+        "check", "require",
+        "typecheck"
     ]
 }
 
@@ -12,5 +13,6 @@ if lazy(__imports__):
     from typed.mods.check import (
         __CHECKER__, 
         Checker, TypedChecker,
-        check, require
+        check, require,
+        typecheck
     )
