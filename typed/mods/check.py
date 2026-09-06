@@ -1036,3 +1036,9 @@ class require:
     ishinted = __require__.ishinted
     istyped = __require__.istyped
     islazy = __require__.islazy
+
+def typecheck(self: object, entity: object, type: type) -> bool:
+    if self.explode:
+        require.isterm(entity, type)
+        return True
+    return check.isterm(entity, type)
